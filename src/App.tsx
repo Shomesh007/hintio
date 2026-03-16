@@ -7,17 +7,23 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase, missingSupabaseEnvVars } from './lib/supabase';
 
-import { 
-  Monitor, 
-  Shield, 
-  Terminal, 
-  Users, 
-  TrendingUp, 
-  Presentation, 
-  Handshake, 
-  BookOpen, 
-  CheckCircle, 
-  Zap, 
+declare global {
+  interface Window {
+    Razorpay?: new (options: Record<string, unknown>) => { open: () => void };
+  }
+}
+
+import {
+  Monitor,
+  Shield,
+  Terminal,
+  Users,
+  TrendingUp,
+  Presentation,
+  Handshake,
+  BookOpen,
+  CheckCircle,
+  Zap,
   Layers,
   ArrowRight,
   ChevronRight,
@@ -50,7 +56,7 @@ const Navbar = ({ onDownloadClick }: { onDownloadClick: () => void }) => {
             h<span className="relative">i<span className="absolute -top-1 left-0 w-1.5 h-1.5 bg-mint rounded-full animate-mint-blink"></span></span>ntio
           </span>
         </div>
-        
+
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center space-x-8 text-sm font-medium text-gray-400">
           <a className="hover:text-mint transition-colors" href="#use-cases">Use Cases</a>
@@ -61,7 +67,7 @@ const Navbar = ({ onDownloadClick }: { onDownloadClick: () => void }) => {
         </div>
 
         <div className="hidden md:block">
-          <button 
+          <button
             onClick={onDownloadClick}
             className="bg-white/5 border border-white/10 hover:border-mint/50 px-5 py-2 rounded-full text-sm font-semibold transition-all glow-hover"
           >
@@ -70,7 +76,7 @@ const Navbar = ({ onDownloadClick }: { onDownloadClick: () => void }) => {
         </div>
 
         {/* Mobile Menu Toggle */}
-        <button 
+        <button
           className="md:hidden text-gray-400 hover:text-mint transition-colors"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         >
@@ -81,7 +87,7 @@ const Navbar = ({ onDownloadClick }: { onDownloadClick: () => void }) => {
       {/* Mobile Menu Overlay */}
       <AnimatePresence>
         {isMobileMenuOpen && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
@@ -93,7 +99,7 @@ const Navbar = ({ onDownloadClick }: { onDownloadClick: () => void }) => {
               <a className="text-lg font-medium text-gray-300 hover:text-mint" href="#shortcuts-help" onClick={() => setIsMobileMenuOpen(false)}>Shortcuts</a>
               <a className="text-lg font-medium text-gray-300 hover:text-mint" href="#pricing" onClick={() => setIsMobileMenuOpen(false)}>Pricing</a>
               <a className="text-lg font-medium text-gray-300 hover:text-mint" href="#faq" onClick={() => setIsMobileMenuOpen(false)}>FAQ</a>
-              <button 
+              <button
                 onClick={() => {
                   onDownloadClick();
                   setIsMobileMenuOpen(false);
@@ -121,7 +127,7 @@ const Hero = ({
     <section className="relative min-h-screen flex flex-col items-center justify-center pt-32 pb-20 px-6 overflow-hidden">
       <div className="mesh-gradient"></div>
       <div className="scanline"></div>
-      
+
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <div className="absolute w-full h-full flex items-center justify-center opacity-40">
           <svg className="w-full max-w-4xl" fill="none" height="200" viewBox="0 0 1000 200" xmlns="http://www.w3.org/2000/svg">
@@ -132,7 +138,7 @@ const Hero = ({
       </div>
 
       <div className="max-w-4xl mx-auto text-center relative z-10">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
@@ -142,17 +148,17 @@ const Hero = ({
           <span className="text-xs font-medium tracking-wide text-gray-300 uppercase">Now live on Mac & Windows</span>
         </motion.div>
 
-        <motion.h1 
+        <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
           className="text-5xl md:text-7xl lg:text-8xl font-display font-extrabold leading-[1.1] mb-6 tracking-tight"
         >
-          The invisible overlay <br/>
+          The invisible overlay <br />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-mint to-white/60">that wins interviews.</span>
         </motion.h1>
 
-        <motion.p 
+        <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
@@ -161,19 +167,19 @@ const Hero = ({
           hintio captures your screen and audio in real time — and whispers the perfect answer before you even pause.
         </motion.p>
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
           className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12"
         >
-          <button 
+          <button
             onClick={onMacDownloadClick}
             className="w-full sm:w-auto px-8 py-4 bg-mint text-charcoal font-bold rounded-xl hover:scale-105 transition-transform flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,255,204,0.3)]"
           >
             Download for Mac
           </button>
-          <button 
+          <button
             onClick={onDownloadClick}
             className="w-full sm:w-auto px-8 py-4 bg-transparent border border-mint/40 text-mint font-bold rounded-xl hover:bg-mint/10 transition-all flex items-center justify-center gap-2"
           >
@@ -195,7 +201,7 @@ const Hero = ({
           </a>
         </motion.div>
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1, delay: 0.5 }}
@@ -252,7 +258,7 @@ const UseCases = ({ onDownloadClick }: { onDownloadClick: () => void }) => {
           Operational Intelligence
         </div>
         <h2 className="text-gradient mb-6 text-5xl font-black leading-tight tracking-tight md:text-6xl font-display">
-          Built for every <br/>high-stakes moment.
+          Built for every <br />high-stakes moment.
         </h2>
         <p className="text-lg leading-relaxed text-slate-400">
           Switch profiles in one click — hintio adapts its AI to your context. Invisible, real-time, and perfectly synced with your conversation flow.
@@ -269,7 +275,7 @@ const UseCases = ({ onDownloadClick }: { onDownloadClick: () => void }) => {
             </div>
             <h3 className="mb-2 text-2xl font-bold text-white">Interviews</h3>
             <p className="mb-8 max-w-md text-slate-400">Real-time answers for technical and behavioral rounds. Stay calm while we source the best responses.</p>
-            
+
             <div className="rounded-lg border border-white/10 bg-black/40 p-4 font-mono text-sm">
               <div className="mb-3 flex items-center justify-between border-b border-white/10 pb-2">
                 <span className="text-[10px] uppercase tracking-widest text-mint">Live Hint Overlay</span>
@@ -600,7 +606,7 @@ const Pricing = ({
   onUpgradeClick,
 }: {
   onDownloadClick: () => void;
-  onUpgradeClick: () => void;
+  onUpgradeClick: (plan: 'monthly' | 'yearly') => void;
 }) => {
   return (
     <section id="pricing" className="relative min-h-screen overflow-x-hidden grid-pattern py-32">
@@ -647,7 +653,7 @@ const Pricing = ({
                 </li>
               </ul>
             </div>
-            <button 
+            <button
               onClick={onDownloadClick}
               className="w-full py-4 rounded-xl border border-mint/20 bg-mint/5 text-white font-bold hover:bg-mint/10 transition-all"
             >
@@ -692,45 +698,45 @@ const Pricing = ({
                 </li>
               </ul>
             </div>
-            <button 
-              onClick={onUpgradeClick}
+            <button
+              onClick={() => onUpgradeClick('monthly')}
               className="w-full py-4 rounded-xl bg-mint text-charcoal font-black hover:scale-[1.02] transition-transform flex items-center justify-center gap-2"
             >
               Get Pro <ArrowRight size={16} />
             </button>
           </div>
 
-          {/* Lifetime */}
+          {/* Yearly */}
           <div className="lg:col-span-4 glass rounded-xl p-8 flex flex-col justify-between group hover:border-mint/30 transition-all">
             <div>
               <div className="flex justify-between items-start mb-8">
                 <div>
                   <h3 className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">Level MAX</h3>
-                  <p className="text-2xl font-bold text-white">Lifetime</p>
+                  <p className="text-2xl font-bold text-white">Yearly</p>
                 </div>
                 <Zap className="text-slate-600 group-hover:text-mint transition-colors" />
               </div>
               <div className="mb-8">
                 <span className="text-5xl font-black text-white">$99</span>
-                <span className="text-slate-500 font-medium">once</span>
+                <span className="text-slate-500 font-medium">/yr</span>
               </div>
               <ul className="space-y-4 mb-10">
                 <li className="flex items-center gap-3 text-sm text-slate-300">
-                  <CheckCircle className="text-mint" size={18} /> Everything in Pro, forever
+                  <CheckCircle className="text-mint" size={18} /> Everything in Pro for 1 year
                 </li>
                 <li className="flex items-center gap-3 text-sm text-slate-300">
-                  <CheckCircle className="text-mint" size={18} /> All future updates included
+                  <CheckCircle className="text-mint" size={18} /> All updates during your annual plan
                 </li>
                 <li className="flex items-center gap-3 text-sm text-slate-300">
-                  <CheckCircle className="text-mint" size={18} /> One-time payment
+                  <CheckCircle className="text-mint" size={18} /> Billed yearly
                 </li>
               </ul>
             </div>
-            <button 
-              onClick={onUpgradeClick}
+            <button
+              onClick={() => onUpgradeClick('yearly')}
               className="w-full py-4 rounded-xl border border-mint/20 bg-mint/5 text-white font-bold hover:bg-mint/10 transition-all"
             >
-              Get Lifetime →
+              Get Yearly →
             </button>
           </div>
 
@@ -755,7 +761,7 @@ const Pricing = ({
                 <p className="text-[10px] text-slate-500 uppercase tracking-widest">Efficiency Metric</p>
                 <p className="text-mint font-mono font-bold">+284% ROI</p>
               </div>
-              <button 
+              <button
                 onClick={onDownloadClick}
                 className="px-6 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-xs font-bold hover:bg-white/10 transition-all flex items-center gap-2"
               >
@@ -807,7 +813,7 @@ const FAQ = () => {
           <div className="flex items-center justify-center px-6 text-mint group-focus-within:scale-110 transition-transform">
             <Search size={32} />
           </div>
-          <input className="flex-1 bg-transparent border-none text-xl font-light placeholder:text-mint/20 focus:ring-0 text-white" placeholder="QUERY_SYSTEM_DATABASE..." type="text"/>
+          <input className="flex-1 bg-transparent border-none text-xl font-light placeholder:text-mint/20 focus:ring-0 text-white" placeholder="QUERY_SYSTEM_DATABASE..." type="text" />
           <div className="flex items-center px-6 font-mono text-[10px] text-mint/40 uppercase tracking-widest">
             Press_Enter_to_Execute
           </div>
@@ -965,7 +971,7 @@ const Footer = ({ onDownloadClick }: { onDownloadClick: () => void }) => {
             <div className="flex flex-col gap-4">
               <h4 className="text-xs font-mono uppercase tracking-widest text-mint">Resources</h4>
               <nav className="flex flex-col gap-3">
-                <button 
+                <button
                   onClick={onDownloadClick}
                   className="text-slate-400 hover:text-mint transition-colors text-sm text-left"
                 >
@@ -1024,14 +1030,14 @@ const AuthGateModal = ({
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
             className="absolute inset-0 bg-black/80 backdrop-blur-sm"
           />
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -1231,17 +1237,162 @@ const PaymentSupportModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
   );
 };
 
+const PaidLicenseModal = ({
+  isOpen,
+  plan,
+  licenseKey,
+  isCopied,
+  onCopy,
+  onDownload,
+  onClose,
+}: {
+  isOpen: boolean;
+  plan: 'monthly' | 'yearly';
+  licenseKey: string;
+  isCopied: boolean;
+  onCopy: () => void;
+  onDownload: () => void;
+  onClose: () => void;
+}) => {
+  const planLabel = plan === 'monthly' ? '1 Month Pro key' : '1 Year Pro key';
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[130] flex items-center justify-center p-6">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="relative w-full max-w-xl glass rounded-2xl overflow-hidden border-white/10 shadow-2xl p-8"
+          >
+            <div className="absolute top-0 right-0 p-4">
+              <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors">
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <div className="size-12 rounded-xl bg-mint/10 flex items-center justify-center text-mint mb-6">
+                <CheckCircle size={24} />
+              </div>
+              <h3 className="text-3xl font-black text-white mb-2 font-display">Payment successful</h3>
+              <p className="text-slate-400">
+                Here is your {planLabel}. Install the app using the button below and use this key for access.
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-white/10 bg-white/5 p-4 mb-4">
+              <p className="text-xs text-slate-500 mb-2 uppercase tracking-widest">{planLabel}</p>
+              <p className="font-mono text-mint break-all">{licenseKey}</p>
+            </div>
+
+            <p className="text-sm text-amber-300 mb-6">
+              Save this key now. You can use it to unlock the desktop app.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <button
+                type="button"
+                onClick={onCopy}
+                className="py-3 bg-white/5 border border-white/10 text-white font-bold rounded-xl hover:bg-white/10 transition-all"
+              >
+                {isCopied ? 'Copied' : 'Copy key'}
+              </button>
+              <button
+                type="button"
+                onClick={onDownload}
+                className="py-3 bg-mint text-charcoal font-bold rounded-xl hover:scale-[1.02] transition-all"
+              >
+                Install app
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="py-3 bg-white/5 border border-white/10 text-white font-bold rounded-xl hover:bg-white/10 transition-all"
+              >
+                Done
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+};
+
 export default function App() {
   const windowsDownloadUrl = 'https://github.com/Shomesh007/hintio/releases/download/v1.0.0/Hintio-1.0.1.Setup.exe';
+  const defaultSupabaseUrl = 'https://vsybqtunyuanxspxhzue.supabase.co';
+  const supabaseFunctionsBaseUrl = import.meta.env.VITE_SUPABASE_URL || defaultSupabaseUrl;
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  type AuthIntent = 'download' | 'upgrade_monthly' | 'upgrade_yearly';
+  const AUTH_INTENT_STORAGE_KEY = 'hintio_auth_intent';
+  const postAuthRunGuardRef = useRef(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [authIntent, setAuthIntent] = useState<AuthIntent>('download');
   const [isTrialModalOpen, setIsTrialModalOpen] = useState(false);
   const [trialKey, setTrialKey] = useState('');
   const [isKeyCopied, setIsKeyCopied] = useState(false);
   const [isMacModalOpen, setIsMacModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
+  const [isPaidLicenseModalOpen, setIsPaidLicenseModalOpen] = useState(false);
+  const [paidLicenseKey, setPaidLicenseKey] = useState('');
+  const [paidLicensePlan, setPaidLicensePlan] = useState<'monthly' | 'yearly'>('monthly');
+  const [isPaidLicenseCopied, setIsPaidLicenseCopied] = useState(false);
   const isHelpRoute = /^\/help\/?$/.test(window.location.pathname);
+
+  const debugLog = (...args: unknown[]) => {
+    void args;
+  };
+
+  useEffect(() => {
+    debugLog('App mounted', {
+      href: window.location.href,
+      origin: window.location.origin,
+      pathname: window.location.pathname,
+      search: window.location.search,
+      hash: window.location.hash,
+      host: window.location.host,
+      hostname: window.location.hostname,
+      port: window.location.port,
+      isDev: import.meta.env.DEV,
+      storedIntent: window.localStorage.getItem(AUTH_INTENT_STORAGE_KEY),
+    });
+  }, []);
+
+  const loadRazorpayScript = async () => {
+    debugLog('loadRazorpayScript called', { hasRazorpay: Boolean(window.Razorpay) });
+    if (window.Razorpay) {
+      debugLog('Razorpay already loaded');
+      return true;
+    }
+
+    return await new Promise<boolean>((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.async = true;
+      script.onload = () => {
+        debugLog('Razorpay script loaded successfully');
+        resolve(true);
+      };
+      script.onerror = () => {
+        debugLog('Razorpay script failed to load');
+        resolve(false);
+      };
+      document.body.appendChild(script);
+      debugLog('Razorpay script tag appended');
+    });
+  };
 
   const downloadAfterTrialKey = () => {
     setIsTrialModalOpen(false);
@@ -1256,83 +1407,635 @@ export default function App() {
   };
 
   const triggerDownload = () => {
+    debugLog('triggerDownload called', { windowsDownloadUrl });
     window.open(windowsDownloadUrl, '_blank', 'noopener,noreferrer');
   };
 
+  const fetchPaidLicenseKey = async (plan: 'monthly' | 'yearly') => {
+    if (!supabase) throw new Error('Supabase is not configured');
+
+    const fetchFromLicensesTable = async (userEmail: string) => {
+      const { data, error } = await supabase
+        .from('licenses')
+        .select('license_key,plan,status,created_at')
+        .eq('email', userEmail)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error || !data?.length) {
+        return null;
+      }
+
+      const matchedPlan = data.find((row) => row.plan === plan && typeof row.license_key === 'string');
+      if (matchedPlan?.license_key) {
+        return String(matchedPlan.license_key);
+      }
+
+      const latest = data.find((row) => typeof row.license_key === 'string');
+      return latest?.license_key ? String(latest.license_key) : null;
+    };
+
+    const attemptCount = 15;
+    for (let attempt = 1; attempt <= attemptCount; attempt++) {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const fallbackEmail = sessionData.session?.user?.email ?? null;
+      if (fallbackEmail) {
+        const fallbackKey = await fetchFromLicensesTable(fallbackEmail);
+        if (fallbackKey) {
+          debugLog('fetchPaidLicenseKey succeeded via licenses table fallback', {
+            attempt,
+            attemptCount,
+            email: fallbackEmail,
+          });
+          return fallbackKey;
+        }
+      }
+
+      debugLog('fetchPaidLicenseKey attempt failed', {
+        attempt,
+        attemptCount,
+        error: 'licenses table fallback did not find key yet',
+        hasLicenseKey: false,
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+
+    throw new Error('Payment was successful, but your key is still processing. Please contact support if it does not appear in 1-2 minutes.');
+  };
+
+  const issuePaidLicenseKey = async (
+    plan: 'monthly' | 'yearly',
+    paymentResponse?: {
+      razorpay_payment_id?: string;
+      razorpay_order_id?: string;
+      razorpay_subscription_id?: string;
+      razorpay_signature?: string;
+    },
+  ) => {
+    if (!supabase) {
+      throw new Error('Supabase is not configured');
+    }
+
+    const { data, error } = await supabase.functions.invoke('issue-paid-license', {
+      body: {
+        plan,
+        paymentId: paymentResponse?.razorpay_payment_id ?? null,
+        orderId: paymentResponse?.razorpay_order_id ?? null,
+        subscriptionId: paymentResponse?.razorpay_subscription_id ?? null,
+        signature: paymentResponse?.razorpay_signature ?? null,
+      },
+    });
+
+    if (error || !data?.licenseKey) {
+      throw new Error(error?.message ?? 'Issue paid license function failed');
+    }
+
+    return String(data.licenseKey);
+  };
+
+  const handleCopyPaidLicenseKey = async () => {
+    if (!paidLicenseKey) return;
+    await navigator.clipboard.writeText(paidLicenseKey);
+    setIsPaidLicenseCopied(true);
+  };
+
+  const startRazorpayCheckout = async (plan: 'monthly' | 'yearly') => {
+    debugLog('startRazorpayCheckout invoked', { plan, href: window.location.href });
+    if (!supabase) {
+      debugLog('startRazorpayCheckout blocked: supabase not configured', { missingSupabaseEnvVars });
+      setAuthError(`Supabase is not configured. Missing: ${missingSupabaseEnvVars.join(', ')}`);
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    debugLog('startRazorpayCheckout getSession result', {
+      hasSession: Boolean(sessionData.session),
+      sessionError: sessionError?.message ?? null,
+      userId: sessionData.session?.user?.id ?? null,
+      email: sessionData.session?.user?.email ?? null,
+    });
+
+    if (!sessionData.session) {
+      debugLog('startRazorpayCheckout no session, opening auth modal', { plan });
+      setAuthIntent(plan === 'monthly' ? 'upgrade_monthly' : 'upgrade_yearly');
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    const getJwtIat = (accessToken: string) => {
+      try {
+        const [, payloadBase64] = accessToken.split('.');
+        if (!payloadBase64) return null;
+        const normalized = payloadBase64.replace(/-/g, '+').replace(/_/g, '/');
+        const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=');
+        const decoded = JSON.parse(window.atob(padded)) as { iat?: number };
+        return typeof decoded.iat === 'number' ? decoded.iat : null;
+      } catch {
+        return null;
+      }
+    };
+
+    const waitForTokenNotInFuture = async (accessToken: string) => {
+      const iat = getJwtIat(accessToken);
+      const nowSec = Math.floor(Date.now() / 1000);
+      const skewBufferSec = 5;
+      if (iat && iat >= nowSec - skewBufferSec) {
+        const waitMs = Math.max(0, (iat - nowSec + skewBufferSec + 1) * 1000);
+        debugLog('Access token iat too close/future; waiting before edge call', {
+          iat,
+          nowSec,
+          skewBufferSec,
+          waitMs,
+        });
+        await new Promise((resolve) => setTimeout(resolve, waitMs));
+      }
+    };
+
+    setIsCheckoutLoading(true);
+    debugLog('Checkout loading started');
+
+    const isScriptLoaded = await loadRazorpayScript();
+    debugLog('Razorpay script load result', { isScriptLoaded, hasRazorpay: Boolean(window.Razorpay) });
+    if (!isScriptLoaded || !window.Razorpay) {
+      debugLog('Checkout blocked: Razorpay script unavailable');
+      setIsCheckoutLoading(false);
+      setIsPaymentModalOpen(true);
+      return;
+    }
+
+    let activeAccessToken = sessionData.session.access_token;
+    await waitForTokenNotInFuture(activeAccessToken);
+
+    const invokeCheckout = async (accessToken: string) =>
+      await supabase.functions.invoke('create-razorpay-checkout', {
+        body: { plan },
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+    const invokeCheckoutViaFetch = async (accessToken: string) => {
+      if (!supabaseAnonKey) {
+        return {
+          ok: false,
+          status: null as number | null,
+          data: null as Record<string, unknown> | null,
+          body: 'Missing VITE_SUPABASE_ANON_KEY for fetch fallback.',
+        };
+      }
+
+      const response = await fetch(`${supabaseFunctionsBaseUrl}/functions/v1/create-razorpay-checkout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: supabaseAnonKey,
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ plan }),
+      });
+
+      const bodyText = await response.text();
+      let parsedBody: Record<string, unknown> | null = null;
+      try {
+        parsedBody = bodyText ? (JSON.parse(bodyText) as Record<string, unknown>) : null;
+      } catch {
+        parsedBody = null;
+      }
+
+      return {
+        ok: response.ok,
+        status: response.status,
+        data: parsedBody,
+        body: bodyText,
+      };
+    };
+
+    let { data: checkoutData, error: checkoutError } = await invokeCheckout(activeAccessToken);
+
+    const getCheckoutErrorStatus = (error: unknown) => {
+      const directStatus = (error as { status?: unknown } | null)?.status;
+      if (typeof directStatus === 'number') return directStatus;
+
+      const contextStatus = (error as { context?: { status?: unknown } } | null)?.context?.status;
+      if (typeof contextStatus === 'number') return contextStatus;
+
+      const responseStatus = (error as { response?: { status?: unknown } } | null)?.response?.status;
+      if (typeof responseStatus === 'number') return responseStatus;
+
+      return null;
+    };
+
+    const readCheckoutErrorContext = async (error: unknown) => {
+      try {
+        const context = (error as { context?: Response } | null)?.context;
+        if (!context) {
+          return {
+            status: null,
+            body: null,
+          };
+        }
+
+        const body = await context.clone().text();
+        return {
+          status: context.status,
+          body,
+        };
+      } catch {
+        return {
+          status: null,
+          body: null,
+        };
+      }
+    };
+
+    const initialCheckoutStatus = getCheckoutErrorStatus(checkoutError);
+    const shouldRetryForAuth =
+      initialCheckoutStatus === 401 ||
+      ((checkoutError as { name?: string } | null)?.name === 'FunctionsHttpError' && !checkoutData);
+
+    if (shouldRetryForAuth) {
+      debugLog('create-razorpay-checkout returned 401, attempting session refresh + retry');
+      const { data: refreshedSessionData, error: refreshError } = await supabase.auth.refreshSession();
+      debugLog('refreshSession result before checkout retry', {
+        refreshError: refreshError?.message ?? null,
+        hasSession: Boolean(refreshedSessionData.session),
+      });
+
+      if (!refreshError && refreshedSessionData.session?.access_token) {
+        activeAccessToken = refreshedSessionData.session.access_token;
+        await waitForTokenNotInFuture(activeAccessToken);
+        ({ data: checkoutData, error: checkoutError } = await invokeCheckout(activeAccessToken));
+
+        const postRetryStatus = getCheckoutErrorStatus(checkoutError);
+        if ((postRetryStatus === 401 || !checkoutData) && activeAccessToken) {
+          debugLog('SDK invoke still failing after retry; trying direct fetch fallback');
+          const fallbackResult = await invokeCheckoutViaFetch(activeAccessToken);
+          debugLog('Direct fetch fallback result', {
+            ok: fallbackResult.ok,
+            status: fallbackResult.status,
+            body: fallbackResult.body,
+          });
+          debugLog('Direct fetch fallback result JSON', JSON.stringify({
+            ok: fallbackResult.ok,
+            status: fallbackResult.status,
+            body: fallbackResult.body,
+          }));
+
+          if (fallbackResult.ok && fallbackResult.data) {
+            checkoutData = fallbackResult.data as typeof checkoutData;
+            checkoutError = null;
+          }
+        }
+      }
+    }
+
+    const finalCheckoutStatus = getCheckoutErrorStatus(checkoutError);
+
+    const checkoutErrorContext = await readCheckoutErrorContext(checkoutError);
+
+    debugLog('create-razorpay-checkout response', {
+      hasData: Boolean(checkoutData),
+      checkoutError: checkoutError?.message ?? null,
+      checkoutErrorName: (checkoutError as { name?: string } | null)?.name ?? null,
+      initialCheckoutStatus,
+      finalCheckoutStatus,
+      contextStatus: checkoutErrorContext.status,
+      contextBody: checkoutErrorContext.body,
+      mode: checkoutData?.mode ?? null,
+      hasKeyId: Boolean(checkoutData?.keyId),
+      orderId: checkoutData?.orderId ?? null,
+      subscriptionId: checkoutData?.subscriptionId ?? null,
+    });
+    debugLog('create-razorpay-checkout response JSON', JSON.stringify({
+      hasData: Boolean(checkoutData),
+      checkoutError: checkoutError?.message ?? null,
+      checkoutErrorName: (checkoutError as { name?: string } | null)?.name ?? null,
+      initialCheckoutStatus,
+      finalCheckoutStatus,
+      contextStatus: checkoutErrorContext.status,
+      contextBody: checkoutErrorContext.body,
+      mode: checkoutData?.mode ?? null,
+      hasKeyId: Boolean(checkoutData?.keyId),
+      orderId: checkoutData?.orderId ?? null,
+      subscriptionId: checkoutData?.subscriptionId ?? null,
+    }));
+
+    if (checkoutError || !checkoutData?.keyId) {
+      debugLog('Checkout blocked: function returned error or missing keyId');
+      setIsCheckoutLoading(false);
+      setIsPaymentModalOpen(true);
+      return;
+    }
+
+    const options: Record<string, unknown> = {
+      key: checkoutData.keyId,
+      name: checkoutData.name ?? 'hintio',
+      description: checkoutData.description ?? 'hintio payment',
+      prefill: checkoutData.prefill ?? {},
+      readonly: {
+        email: true,
+      },
+      notes: {
+        plan_type: plan,
+      },
+      handler: async (paymentResponse?: {
+        razorpay_payment_id?: string;
+        razorpay_order_id?: string;
+        razorpay_subscription_id?: string;
+        razorpay_signature?: string;
+      }) => {
+        setIsCheckoutLoading(true);
+        try {
+          let licenseKey: string | null = null;
+
+          try {
+            licenseKey = await issuePaidLicenseKey(plan, paymentResponse);
+            debugLog('issuePaidLicenseKey succeeded', {
+              plan,
+              hasPaymentId: Boolean(paymentResponse?.razorpay_payment_id),
+              hasOrderId: Boolean(paymentResponse?.razorpay_order_id),
+              hasSubscriptionId: Boolean(paymentResponse?.razorpay_subscription_id),
+            });
+          } catch (issueError) {
+            debugLog('issuePaidLicenseKey failed, falling back to polling', {
+              message: issueError instanceof Error ? issueError.message : String(issueError),
+            });
+            licenseKey = await fetchPaidLicenseKey(plan);
+          }
+
+          setPaidLicensePlan(plan);
+          setPaidLicenseKey(licenseKey);
+          setIsPaidLicenseCopied(false);
+          setIsPaidLicenseModalOpen(true);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Payment was successful, but key retrieval failed.';
+          alert(message);
+        } finally {
+          setIsCheckoutLoading(false);
+        }
+      },
+      modal: {
+        ondismiss: () => setIsCheckoutLoading(false),
+      },
+      theme: {
+        color: '#00FFCC',
+      },
+    };
+
+    if (checkoutData.mode === 'subscription') {
+      options.subscription_id = checkoutData.subscriptionId;
+    } else {
+      options.order_id = checkoutData.orderId;
+      options.amount = checkoutData.amount;
+      options.currency = checkoutData.currency;
+    }
+
+    debugLog('Opening Razorpay checkout', {
+      mode: checkoutData.mode,
+      plan,
+      orderId: checkoutData.orderId ?? null,
+      subscriptionId: checkoutData.subscriptionId ?? null,
+      amount: checkoutData.amount ?? null,
+      currency: checkoutData.currency ?? null,
+    });
+    const razorpay = new window.Razorpay(options);
+    razorpay.open();
+    setIsCheckoutLoading(false);
+    debugLog('Checkout loading ended after razorpay.open()');
+  };
+
   useEffect(() => {
-    const runPostAuthDownload = async () => {
+    const runPostAuthAction = async () => {
+      if (postAuthRunGuardRef.current) {
+        debugLog('runPostAuthAction skipped by guard (StrictMode double-invoke)');
+        return;
+      }
+      postAuthRunGuardRef.current = true;
+
       if (!supabase) return;
 
       const params = new URLSearchParams(window.location.search);
-      const shouldDownload = params.get('download') === '1';
+      const intentParam = params.get('intent');
+      const legacyDownloadParam = params.get('download') === '1';
+      const storedIntent = window.localStorage.getItem(AUTH_INTENT_STORAGE_KEY);
+      const hasAuthCallbackMarkers = Boolean(
+        params.get('code') ||
+        params.get('access_token') ||
+        params.get('refresh_token') ||
+        params.get('error')
+      );
 
-      if (!shouldDownload) return;
+      debugLog('runPostAuthAction started', {
+        href: window.location.href,
+        intentParam,
+        legacyDownloadParam,
+        storedIntent,
+        hasAuthCallbackMarkers,
+      });
 
-      const { data } = await supabase.auth.getSession();
-      if (!data.session) return;
+      const intent =
+        intentParam === 'download' ||
+          intentParam === 'upgrade_monthly' ||
+          intentParam === 'upgrade_yearly'
+          ? (intentParam as AuthIntent)
+          : storedIntent === 'download' ||
+            storedIntent === 'upgrade_monthly' ||
+            storedIntent === 'upgrade_yearly'
+            ? (storedIntent as AuthIntent)
+            : legacyDownloadParam
+              ? 'download'
+              : null;
 
-      const { data: keyData, error: keyError } = await supabase.rpc('claim_three_usage_trial_key');
-      if (keyError || !keyData?.access_key) {
-        setAuthError(keyError?.message ?? 'Could not fetch free trial key.');
-        setIsAuthModalOpen(true);
+      debugLog('runPostAuthAction resolved intent', { intent });
+
+      if (!intent) return;
+
+      const clearIntentMarkers = () => {
+        debugLog('Clearing intent markers from storage and URL');
+        window.localStorage.removeItem(AUTH_INTENT_STORAGE_KEY);
+        params.delete('intent');
+        params.delete('download');
+        const nextSearch = params.toString();
+        const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`;
+        window.history.replaceState({}, '', nextUrl);
+        debugLog('Intent markers cleared', { nextUrl });
+      };
+
+      const continueIntent = async (activeIntent: AuthIntent) => {
+        debugLog('continueIntent entered', { activeIntent });
+        clearIntentMarkers();
+
+        if (activeIntent === 'upgrade_monthly') {
+          debugLog('continueIntent -> upgrade_monthly');
+          await startRazorpayCheckout('monthly');
+          return;
+        }
+
+        if (activeIntent === 'upgrade_yearly') {
+          debugLog('continueIntent -> upgrade_yearly');
+          await startRazorpayCheckout('yearly');
+          return;
+        }
+
+        debugLog('continueIntent -> download flow, requesting trial key');
+        const { data: keyData, error: keyError } = await supabase.rpc('claim_three_usage_trial_key');
+        debugLog('claim_three_usage_trial_key response', {
+          hasKeyData: Boolean(keyData),
+          keyError: keyError?.message ?? null,
+          isNew: keyData?.is_new ?? null,
+          hasAccessKey: Boolean(keyData?.access_key),
+        });
+
+        if (keyError || !keyData?.access_key) {
+          setAuthError(keyError?.message ?? 'Could not fetch free trial key.');
+          setIsAuthModalOpen(true);
+          return;
+        }
+
+        if (keyData.is_new) {
+          setTrialKey(String(keyData.access_key));
+          setIsTrialModalOpen(true);
+        } else {
+          triggerDownload();
+        }
+      };
+
+      const { data, error: postAuthSessionError } = await supabase.auth.getSession();
+      debugLog('runPostAuthAction getSession result', {
+        hasSession: Boolean(data.session),
+        postAuthSessionError: postAuthSessionError?.message ?? null,
+        userId: data.session?.user?.id ?? null,
+        email: data.session?.user?.email ?? null,
+      });
+
+      if (data.session) {
+        debugLog('Session available immediately after OAuth callback');
+        await continueIntent(intent);
         return;
       }
 
-      if (keyData.is_new) {
-        setTrialKey(String(keyData.access_key));
-        setIsTrialModalOpen(true);
-      } else {
-        triggerDownload();
+      if (!hasAuthCallbackMarkers) {
+        debugLog('No callback markers and no session; clearing stale auth intent', { intent });
+        window.localStorage.removeItem(AUTH_INTENT_STORAGE_KEY);
+        return;
       }
-      params.delete('download');
-      const nextSearch = params.toString();
-      const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`;
-      window.history.replaceState({}, '', nextUrl);
+
+      const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+        debugLog('onAuthStateChange event', {
+          event,
+          hasSession: Boolean(session),
+          userId: session?.user?.id ?? null,
+          email: session?.user?.email ?? null,
+        });
+        if (event === 'SIGNED_IN' && session) {
+          authListener.subscription.unsubscribe();
+          debugLog('SIGNED_IN received, continuing intent');
+          void continueIntent(intent);
+        }
+      });
+
+      setTimeout(() => {
+        debugLog('Auth listener timeout reached, unsubscribing');
+        authListener.subscription.unsubscribe();
+        setAuthError('Google login callback did not produce a session. Check device clock and Supabase redirect URL settings.');
+        setIsAuthModalOpen(true);
+      }, 20000);
     };
 
-    runPostAuthDownload();
+    runPostAuthAction();
   }, []);
 
   const startGoogleSignIn = async () => {
     setAuthError(null);
+    debugLog('startGoogleSignIn called', {
+      authIntent,
+      href: window.location.href,
+      origin: window.location.origin,
+      pathname: window.location.pathname,
+      host: window.location.host,
+    });
 
     if (!supabase) {
+      debugLog('startGoogleSignIn blocked: supabase not configured', { missingSupabaseEnvVars });
       setAuthError(`Supabase is not configured. Missing: ${missingSupabaseEnvVars.join(', ')}`);
       return;
     }
 
     setIsAuthModalOpen(false);
     setIsSigningIn(true);
+    window.localStorage.setItem(AUTH_INTENT_STORAGE_KEY, authIntent);
+    debugLog('Stored auth intent before OAuth redirect', {
+      storageKey: AUTH_INTENT_STORAGE_KEY,
+      authIntent,
+    });
 
-    const redirectTo = `${window.location.origin}${window.location.pathname}?download=1`;
-    const { error } = await supabase.auth.signInWithOAuth({
+    const redirectTo = (() => {
+      const redirectUrl = new URL(window.location.href);
+      redirectUrl.hash = '';
+      redirectUrl.search = '';
+      redirectUrl.searchParams.set('intent', authIntent);
+      return redirectUrl.toString();
+    })();
+
+    debugLog('Calling signInWithOAuth', { redirectTo });
+
+    const { data: oauthData, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo,
+        skipBrowserRedirect: true,
       },
     });
 
     if (error) {
+      debugLog('signInWithOAuth returned error', { message: error.message });
       setAuthError(error.message);
       setIsSigningIn(false);
+      return;
     }
+
+    debugLog('signInWithOAuth initiated successfully', {
+      hasUrl: Boolean(oauthData?.url),
+      oauthUrl: oauthData?.url ?? null,
+    });
+
+    if (!oauthData?.url) {
+      setAuthError('OAuth URL was not returned by Supabase.');
+      setIsSigningIn(false);
+      return;
+    }
+
+    window.location.assign(oauthData.url);
   };
 
   const handleDownloadClick = async () => {
     setAuthError(null);
+    setAuthIntent('download');
+    debugLog('handleDownloadClick called');
 
     if (!supabase) {
+      debugLog('handleDownloadClick blocked: supabase not configured', { missingSupabaseEnvVars });
       setAuthError(`Supabase is not configured. Missing: ${missingSupabaseEnvVars.join(', ')}`);
       setIsAuthModalOpen(true);
       return;
     }
 
-    const { data } = await supabase.auth.getSession();
+    const { data, error } = await supabase.auth.getSession();
+    debugLog('handleDownloadClick getSession result', {
+      hasSession: Boolean(data.session),
+      sessionError: error?.message ?? null,
+      userId: data.session?.user?.id ?? null,
+    });
+
     if (data.session) {
       triggerDownload();
       return;
     }
 
+    debugLog('No session, opening auth modal for download flow');
     setIsAuthModalOpen(true);
   };
 
@@ -1340,8 +2043,11 @@ export default function App() {
     setIsMacModalOpen(true);
   };
 
-  const handleUpgradeClick = () => {
-    setIsPaymentModalOpen(true);
+  const handleUpgradeClick = async (plan: 'monthly' | 'yearly') => {
+    setAuthError(null);
+    debugLog('handleUpgradeClick called', { plan });
+    setAuthIntent(plan === 'monthly' ? 'upgrade_monthly' : 'upgrade_yearly');
+    await startRazorpayCheckout(plan);
   };
 
   return (
@@ -1359,7 +2065,7 @@ export default function App() {
           <ShortcutsHelp />
           <Pricing onDownloadClick={handleDownloadClick} onUpgradeClick={handleUpgradeClick} />
           <FAQ />
-          
+
           {/* Final CTA Section */}
           <section className="relative w-full max-w-5xl mx-auto px-6 py-32 z-10">
             <div className="glass glow-border rounded-xl overflow-hidden">
@@ -1390,7 +2096,7 @@ export default function App() {
                   Install in 2 minutes. No setup. No excuses.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 w-full max-w-xl">
-                  <button 
+                  <button
                     onClick={handleMacDownloadClick}
                     className="flex-1 group relative px-8 py-4 bg-mint text-charcoal font-bold rounded-lg overflow-hidden transition-all hover:scale-[1.02] active:scale-95"
                   >
@@ -1399,7 +2105,7 @@ export default function App() {
                       <span>Download for Mac (.dmg)</span>
                     </div>
                   </button>
-                  <button 
+                  <button
                     onClick={handleDownloadClick}
                     className="flex-1 group relative px-8 py-4 bg-white/5 border border-white/10 text-white font-bold rounded-lg overflow-hidden transition-all hover:bg-white/10 hover:border-mint/40 active:scale-95"
                   >
@@ -1442,6 +2148,22 @@ export default function App() {
         isOpen={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}
       />
+
+      <PaidLicenseModal
+        isOpen={isPaidLicenseModalOpen}
+        plan={paidLicensePlan}
+        licenseKey={paidLicenseKey}
+        isCopied={isPaidLicenseCopied}
+        onCopy={handleCopyPaidLicenseKey}
+        onDownload={triggerDownload}
+        onClose={() => setIsPaidLicenseModalOpen(false)}
+      />
+
+      {isCheckoutLoading && (
+        <div className="fixed bottom-6 right-6 z-[140] rounded-lg border border-mint/40 bg-charcoal/90 px-4 py-3 text-sm text-mint">
+          Initializing secure Razorpay checkout...
+        </div>
+      )}
     </div>
   );
 }

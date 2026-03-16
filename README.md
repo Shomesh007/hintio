@@ -176,3 +176,52 @@ Behavior:
 - Token is atomically claimed (`FOR UPDATE SKIP LOCKED`) and reserved to that user (`sold_to`).
 - Claim mapping is stored in `public.trial_key_claims` to ensure a token is never assigned to another user.
 - UI shows popup with key, Copy, and Done. Download starts only after Done.
+
+## Razorpay Payment Gateway (Monthly + Yearly)
+
+Implemented with secure server-side checkout creation using Supabase Edge Function:
+
+- `supabase/functions/create-razorpay-checkout/index.ts`
+
+Frontend wiring:
+
+- `Get Pro` triggers `monthly`
+- `Get Yearly` triggers `yearly`
+- Frontend invokes Edge Function, then opens Razorpay Checkout (`checkout.js`)
+
+### Deploy function
+
+```bash
+supabase functions deploy create-razorpay-checkout
+```
+
+If local OAuth sessions intermittently fail at the edge gateway with `401 Invalid JWT`, deploy with gateway JWT verification disabled and rely on the function's internal token validation (`admin.auth.getUser(jwt)`):
+
+```bash
+supabase functions deploy create-razorpay-checkout --no-verify-jwt
+```
+
+This repository also includes `supabase/functions/create-razorpay-checkout/config.toml` with:
+
+```toml
+verify_jwt = false
+```
+
+### Required Supabase function secrets
+
+```bash
+supabase secrets set RAZORPAY_KEY_ID=...
+supabase secrets set RAZORPAY_KEY_SECRET=...
+supabase secrets set RAZORPAY_CURRENCY=INR
+supabase secrets set RAZORPAY_MONTHLY_AMOUNT_PAISE=1900
+supabase secrets set RAZORPAY_YEARLY_AMOUNT_PAISE=9900
+```
+
+Optional for true recurring monthly subscriptions (recommended):
+
+```bash
+supabase secrets set RAZORPAY_MONTHLY_PLAN_ID=plan_xxxxx
+```
+
+If `RAZORPAY_MONTHLY_PLAN_ID` is set, monthly checkout uses Subscriptions API.
+If not set, it falls back to a one-time monthly order amount.

@@ -14,12 +14,17 @@ type RazorpayWebhookEvent = {
     payment?: {
       entity?: {
         email?: string;
+        notes?: {
+          email?: string;
+          plan_type?: string;
+        };
       };
     };
     subscription?: {
       entity?: {
         notes?: {
           email?: string;
+          plan_type?: string;
         };
       };
     };
@@ -89,7 +94,15 @@ Deno.serve(async (req: Request) => {
   }
 
   const email = event.payload?.payment?.entity?.email
+    ?? event.payload?.payment?.entity?.notes?.email
     ?? event.payload?.subscription?.entity?.notes?.email;
+
+  const planTypeFromNotes = event.payload?.payment?.entity?.notes?.plan_type
+    ?? event.payload?.subscription?.entity?.notes?.plan_type;
+
+  const normalizedPlan = planTypeFromNotes === "monthly" || planTypeFromNotes === "yearly"
+    ? planTypeFromNotes
+    : "pro";
 
   if (!email) {
     return new Response("Missing customer email", { status: 400 });
@@ -108,7 +121,7 @@ Deno.serve(async (req: Request) => {
   const { error } = await supabase.from("licenses").insert({
     email,
     license_key: licenseKey,
-    plan: "pro",
+    plan: normalizedPlan,
     status: "active",
     created_at: new Date().toISOString(),
   });
