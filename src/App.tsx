@@ -55,6 +55,7 @@ const Navbar = ({ onDownloadClick }: { onDownloadClick: () => void }) => {
         <div className="hidden md:flex items-center space-x-8 text-sm font-medium text-gray-400">
           <a className="hover:text-mint transition-colors" href="#use-cases">Use Cases</a>
           <a className="hover:text-mint transition-colors" href="#how-it-works">How it Works</a>
+          <a className="hover:text-mint transition-colors" href="#shortcuts-help">Shortcuts</a>
           <a className="hover:text-mint transition-colors" href="#pricing">Pricing</a>
           <a className="hover:text-mint transition-colors" href="#faq">FAQ</a>
         </div>
@@ -89,6 +90,7 @@ const Navbar = ({ onDownloadClick }: { onDownloadClick: () => void }) => {
             <div className="flex flex-col space-y-4 text-center">
               <a className="text-lg font-medium text-gray-300 hover:text-mint" href="#use-cases" onClick={() => setIsMobileMenuOpen(false)}>Use Cases</a>
               <a className="text-lg font-medium text-gray-300 hover:text-mint" href="#how-it-works" onClick={() => setIsMobileMenuOpen(false)}>How it Works</a>
+              <a className="text-lg font-medium text-gray-300 hover:text-mint" href="#shortcuts-help" onClick={() => setIsMobileMenuOpen(false)}>Shortcuts</a>
               <a className="text-lg font-medium text-gray-300 hover:text-mint" href="#pricing" onClick={() => setIsMobileMenuOpen(false)}>Pricing</a>
               <a className="text-lg font-medium text-gray-300 hover:text-mint" href="#faq" onClick={() => setIsMobileMenuOpen(false)}>FAQ</a>
               <button 
@@ -108,7 +110,13 @@ const Navbar = ({ onDownloadClick }: { onDownloadClick: () => void }) => {
   );
 };
 
-const Hero = ({ onDownloadClick }: { onDownloadClick: () => void }) => {
+const Hero = ({
+  onDownloadClick,
+  onMacDownloadClick,
+}: {
+  onDownloadClick: () => void;
+  onMacDownloadClick: () => void;
+}) => {
   return (
     <section className="relative min-h-screen flex flex-col items-center justify-center pt-32 pb-20 px-6 overflow-hidden">
       <div className="mesh-gradient"></div>
@@ -160,7 +168,7 @@ const Hero = ({ onDownloadClick }: { onDownloadClick: () => void }) => {
           className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12"
         >
           <button 
-            onClick={onDownloadClick}
+            onClick={onMacDownloadClick}
             className="w-full sm:w-auto px-8 py-4 bg-mint text-charcoal font-bold rounded-xl hover:scale-105 transition-transform flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,255,204,0.3)]"
           >
             Download for Mac
@@ -171,6 +179,20 @@ const Hero = ({ onDownloadClick }: { onDownloadClick: () => void }) => {
           >
             Download for Windows
           </button>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.35 }}
+          className="mb-12 text-center"
+        >
+          <a
+            href="/help"
+            className="text-mint font-semibold underline underline-offset-4 hover:text-white transition-colors"
+          >
+            How to use
+          </a>
         </motion.div>
 
         <motion.div 
@@ -573,7 +595,13 @@ const HowItWorks = ({ onDownloadClick }: { onDownloadClick: () => void }) => {
   );
 };
 
-const Pricing = ({ onDownloadClick }: { onDownloadClick: () => void }) => {
+const Pricing = ({
+  onDownloadClick,
+  onUpgradeClick,
+}: {
+  onDownloadClick: () => void;
+  onUpgradeClick: () => void;
+}) => {
   return (
     <section id="pricing" className="relative min-h-screen overflow-x-hidden grid-pattern py-32">
       <div className="max-w-6xl mx-auto px-6 relative z-10">
@@ -665,7 +693,7 @@ const Pricing = ({ onDownloadClick }: { onDownloadClick: () => void }) => {
               </ul>
             </div>
             <button 
-              onClick={onDownloadClick}
+              onClick={onUpgradeClick}
               className="w-full py-4 rounded-xl bg-mint text-charcoal font-black hover:scale-[1.02] transition-transform flex items-center justify-center gap-2"
             >
               Get Pro <ArrowRight size={16} />
@@ -699,7 +727,7 @@ const Pricing = ({ onDownloadClick }: { onDownloadClick: () => void }) => {
               </ul>
             </div>
             <button 
-              onClick={onDownloadClick}
+              onClick={onUpgradeClick}
               className="w-full py-4 rounded-xl border border-mint/20 bg-mint/5 text-white font-bold hover:bg-mint/10 transition-all"
             >
               Get Lifetime →
@@ -805,6 +833,105 @@ const FAQ = () => {
             </div>
           </div>
         ))}
+      </div>
+    </section>
+  );
+};
+
+const ShortcutsHelp = () => {
+  const primaryShortcuts = [
+    {
+      keybind: 'Ctrl+Enter',
+      title: 'Main Action: Screenshot + Answer',
+      description: 'Takes a screenshot of your current screen, checks for questions, and gives you the next answer.',
+    },
+    {
+      keybind: 'Ctrl+\\',
+      title: 'Toggle Visibility',
+      description: 'Instantly hide/show the Hintio overlay.',
+    },
+    {
+      keybind: 'Ctrl+M',
+      title: 'Toggle Click Over',
+      description: 'Switch click-through mode so the overlay does or does not capture mouse interaction.',
+    },
+  ];
+
+  const dockImageShortcuts = [
+    {
+      keybind: 'Ctrl+Shift+Q',
+      title: 'Dock Right',
+      placeholder: 'Dock Right image placeholder',
+    },
+    {
+      keybind: 'Ctrl+Shift+R',
+      title: 'Dock Left',
+      placeholder: 'Dock Left image placeholder',
+    },
+  ];
+
+  const otherShortcuts = [
+    { keybind: 'Ctrl+Up', action: 'Move Up' },
+    { keybind: 'Ctrl+Down', action: 'Move Down' },
+    { keybind: 'Ctrl+Left', action: 'Move Left' },
+    { keybind: 'Ctrl+Right', action: 'Move Right' },
+    { keybind: 'Ctrl+[', action: 'Previous Response' },
+    { keybind: 'Ctrl+]', action: 'Next Response' },
+    { keybind: 'Ctrl+Shift+Up', action: 'Scroll Up' },
+    { keybind: 'Ctrl+Shift+Down', action: 'Scroll Down' },
+    { keybind: 'Ctrl+Shift+T', action: 'Dock Default' },
+    { keybind: 'Ctrl+Shift+X', action: 'Emergency Erase' },
+  ];
+
+  return (
+    <section id="shortcuts-help" className="mx-auto max-w-7xl px-6 py-32 lg:px-20">
+      <div className="mb-14 max-w-4xl">
+        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-mint/30 bg-mint/10 px-3 py-1 text-xs font-bold uppercase tracking-widest text-mint">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-mint opacity-75"></span>
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-mint"></span>
+          </span>
+          Shortcut Protocol
+        </div>
+        <h2 className="text-5xl md:text-7xl font-black tracking-tight text-white font-display mb-4">Hintio Shortcuts Help</h2>
+        <p className="text-lg text-slate-400">A quick blog-style guide to all keyboard shortcuts used in live sessions.</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-10">
+        {primaryShortcuts.map((shortcut, index) => (
+          <div key={shortcut.keybind} className={`glass rounded-xl p-6 border ${index === 0 ? 'border-mint/40' : 'border-white/10'}`}>
+            <p className="text-[10px] uppercase tracking-widest text-mint font-mono mb-3">Priority Shortcut</p>
+            <h3 className="text-2xl font-black text-white mb-2">{shortcut.keybind}</h3>
+            <p className="text-sm text-white mb-2 font-semibold">{shortcut.title}</p>
+            <p className="text-sm text-slate-400 leading-relaxed">{shortcut.description}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
+        {dockImageShortcuts.map((shortcut) => (
+          <div key={shortcut.keybind} className="glass rounded-xl border border-white/10 overflow-hidden">
+            <div className="p-5 border-b border-white/10 flex items-center justify-between">
+              <h3 className="text-xl font-black text-white">{shortcut.title}</h3>
+              <span className="font-mono text-xs text-mint">{shortcut.keybind}</span>
+            </div>
+            <div className="aspect-[16/9] bg-black/40 border-2 border-dashed border-mint/30 m-5 rounded-lg flex items-center justify-center">
+              <span className="text-sm text-mint/70 font-mono uppercase tracking-widest">{shortcut.placeholder}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="glass rounded-xl border border-white/10 p-6">
+        <h3 className="text-2xl font-black text-white mb-5">All Other Shortcuts</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {otherShortcuts.map((shortcut) => (
+            <div key={shortcut.keybind} className="rounded-lg border border-white/10 bg-white/[0.02] px-4 py-3 flex items-center justify-between">
+              <span className="text-sm text-slate-300">{shortcut.action}</span>
+              <span className="text-xs font-mono text-mint">{shortcut.keybind}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -1022,6 +1149,88 @@ const TrialKeyModal = ({
   );
 };
 
+const MacComingSoonModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-6">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="relative w-full max-w-md glass rounded-2xl overflow-hidden border-white/10 shadow-2xl p-8"
+          >
+            <div className="absolute top-0 right-0 p-4">
+              <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors">
+                <X size={24} />
+              </button>
+            </div>
+            <h3 className="text-3xl font-black text-white mb-3 font-display">Mac download coming soon</h3>
+            <p className="text-slate-400 mb-6">
+              Mac installer is not live yet. Please use Windows build for now.
+            </p>
+            <button
+              onClick={onClose}
+              className="w-full py-3 bg-mint text-charcoal font-bold rounded-xl hover:scale-[1.02] transition-all"
+            >
+              Got it
+            </button>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+};
+
+const PaymentSupportModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-6">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="relative w-full max-w-md glass rounded-2xl overflow-hidden border-white/10 shadow-2xl p-8"
+          >
+            <div className="absolute top-0 right-0 p-4">
+              <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors">
+                <X size={24} />
+              </button>
+            </div>
+            <h3 className="text-3xl font-black text-white mb-3 font-display">Payment auth is down</h3>
+            <p className="text-slate-400 mb-6">
+              For upgrade help, contact via WhatsApp at +9174448865095.
+            </p>
+            <a
+              href="https://wa.me/9174448865095"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full inline-flex items-center justify-center py-3 bg-mint text-charcoal font-bold rounded-xl hover:scale-[1.02] transition-all"
+            >
+              Contact on WhatsApp
+            </a>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+};
+
 export default function App() {
   const windowsDownloadUrl = 'https://github.com/Shomesh007/hintio/releases/download/v1.0.0/Hintio-1.0.0.Setup.exe';
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -1030,6 +1239,9 @@ export default function App() {
   const [isTrialModalOpen, setIsTrialModalOpen] = useState(false);
   const [trialKey, setTrialKey] = useState('');
   const [isKeyCopied, setIsKeyCopied] = useState(false);
+  const [isMacModalOpen, setIsMacModalOpen] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const isHelpRoute = /^\/help\/?$/.test(window.location.pathname);
 
   const downloadAfterTrialKey = () => {
     setIsTrialModalOpen(false);
@@ -1124,67 +1336,84 @@ export default function App() {
     setIsAuthModalOpen(true);
   };
 
+  const handleMacDownloadClick = () => {
+    setIsMacModalOpen(true);
+  };
+
+  const handleUpgradeClick = () => {
+    setIsPaymentModalOpen(true);
+  };
+
   return (
     <div className="bg-charcoal min-h-screen text-white selection:bg-mint selection:text-charcoal">
       <Navbar onDownloadClick={handleDownloadClick} />
-      <Hero onDownloadClick={handleDownloadClick} />
-      <UseCases onDownloadClick={handleDownloadClick} />
-      <HowItWorks onDownloadClick={handleDownloadClick} />
-      <Pricing onDownloadClick={handleDownloadClick} />
-      <FAQ />
-      
-      {/* Final CTA Section */}
-      <section className="relative w-full max-w-5xl mx-auto px-6 py-32 z-10">
-        <div className="glass glow-border rounded-xl overflow-hidden">
-          <div className="border-b border-mint/20 bg-mint/5 px-6 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-red-500/50"></div>
-              <div className="w-3 h-3 rounded-full bg-yellow-500/50"></div>
-              <div className="w-3 h-3 rounded-full bg-mint/50"></div>
-              <span className="ml-4 font-mono text-[10px] uppercase tracking-widest text-mint/60">System Deployment // Live_Session</span>
-            </div>
-            <div className="font-mono text-[10px] text-mint/40 flex items-center gap-4">
-              <span>LATENCY: 12ms</span>
-              <span>STATUS: READY</span>
-            </div>
-          </div>
-          <div className="p-8 md:p-16 flex flex-col items-center text-center">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-mint/30 bg-mint/10 mb-8">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-mint opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-mint"></span>
-              </span>
-              <span className="font-mono text-xs text-mint uppercase tracking-tighter">Ready for production</span>
-            </div>
-            <h2 className="text-4xl md:text-6xl font-black tracking-tight mb-6 font-display">
-              Your next offer <span className="text-mint">starts today.</span>
-            </h2>
-            <p className="text-slate-400 text-lg md:text-xl max-w-2xl mb-12">
-              Install in 2 minutes. No setup. No excuses.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 w-full max-w-xl">
-              <button 
-                onClick={handleDownloadClick}
-                className="flex-1 group relative px-8 py-4 bg-mint text-charcoal font-bold rounded-lg overflow-hidden transition-all hover:scale-[1.02] active:scale-95"
-              >
-                <div className="flex items-center justify-center gap-3">
-                  <Monitor size={20} />
-                  <span>Download for Mac (.dmg)</span>
+      {isHelpRoute ? (
+        <main className="pt-20">
+          <ShortcutsHelp />
+        </main>
+      ) : (
+        <>
+          <Hero onDownloadClick={handleDownloadClick} onMacDownloadClick={handleMacDownloadClick} />
+          <UseCases onDownloadClick={handleDownloadClick} />
+          <HowItWorks onDownloadClick={handleDownloadClick} />
+          <ShortcutsHelp />
+          <Pricing onDownloadClick={handleDownloadClick} onUpgradeClick={handleUpgradeClick} />
+          <FAQ />
+          
+          {/* Final CTA Section */}
+          <section className="relative w-full max-w-5xl mx-auto px-6 py-32 z-10">
+            <div className="glass glow-border rounded-xl overflow-hidden">
+              <div className="border-b border-mint/20 bg-mint/5 px-6 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-red-500/50"></div>
+                  <div className="w-3 h-3 rounded-full bg-yellow-500/50"></div>
+                  <div className="w-3 h-3 rounded-full bg-mint/50"></div>
+                  <span className="ml-4 font-mono text-[10px] uppercase tracking-widest text-mint/60">System Deployment // Live_Session</span>
                 </div>
-              </button>
-              <button 
-                onClick={handleDownloadClick}
-                className="flex-1 group relative px-8 py-4 bg-white/5 border border-white/10 text-white font-bold rounded-lg overflow-hidden transition-all hover:bg-white/10 hover:border-mint/40 active:scale-95"
-              >
-                <div className="flex items-center justify-center gap-3">
-                  <Layers size={20} />
-                  <span>Download for Windows (.exe)</span>
+                <div className="font-mono text-[10px] text-mint/40 flex items-center gap-4">
+                  <span>LATENCY: 12ms</span>
+                  <span>STATUS: READY</span>
                 </div>
-              </button>
+              </div>
+              <div className="p-8 md:p-16 flex flex-col items-center text-center">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-mint/30 bg-mint/10 mb-8">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-mint opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-mint"></span>
+                  </span>
+                  <span className="font-mono text-xs text-mint uppercase tracking-tighter">Ready for production</span>
+                </div>
+                <h2 className="text-4xl md:text-6xl font-black tracking-tight mb-6 font-display">
+                  Your next offer <span className="text-mint">starts today.</span>
+                </h2>
+                <p className="text-slate-400 text-lg md:text-xl max-w-2xl mb-12">
+                  Install in 2 minutes. No setup. No excuses.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 w-full max-w-xl">
+                  <button 
+                    onClick={handleMacDownloadClick}
+                    className="flex-1 group relative px-8 py-4 bg-mint text-charcoal font-bold rounded-lg overflow-hidden transition-all hover:scale-[1.02] active:scale-95"
+                  >
+                    <div className="flex items-center justify-center gap-3">
+                      <Monitor size={20} />
+                      <span>Download for Mac (.dmg)</span>
+                    </div>
+                  </button>
+                  <button 
+                    onClick={handleDownloadClick}
+                    className="flex-1 group relative px-8 py-4 bg-white/5 border border-white/10 text-white font-bold rounded-lg overflow-hidden transition-all hover:bg-white/10 hover:border-mint/40 active:scale-95"
+                  >
+                    <div className="flex items-center justify-center gap-3">
+                      <Layers size={20} />
+                      <span>Download for Windows (.exe)</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      </section>
+          </section>
+        </>
+      )}
 
       <Footer onDownloadClick={handleDownloadClick} />
 
@@ -1202,6 +1431,16 @@ export default function App() {
         onCopy={handleCopyTrialKey}
         onDone={downloadAfterTrialKey}
         isCopied={isKeyCopied}
+      />
+
+      <MacComingSoonModal
+        isOpen={isMacModalOpen}
+        onClose={() => setIsMacModalOpen(false)}
+      />
+
+      <PaymentSupportModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
       />
     </div>
   );

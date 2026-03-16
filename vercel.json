@@ -16,6 +16,16 @@
       "permanent": true
     }
   ],
+  "rewrites": [
+    {
+      "source": "/help",
+      "destination": "/"
+    },
+    {
+      "source": "/help/",
+      "destination": "/"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
