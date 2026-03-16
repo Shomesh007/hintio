@@ -159,3 +159,20 @@ http://localhost:3000/?download=1
 
 - Free tier supports OAuth providers, including Google.
 - No paid Supabase plan is required for this authentication gate flow.
+
+## Unique Free-Trial Key Assignment (Per Authenticated User)
+
+Implemented via Supabase migration:
+
+- `supabase/migrations/20260316_add_unique_trial_key_claim_function.sql`
+
+Behavior:
+
+- After successful Google auth with `?download=1`, frontend calls `public.claim_three_usage_trial_key()`.
+- Function selects an unassigned token from `public.access_tokens` where:
+   - `max_interviews = 3`
+   - active + not expired
+   - linked `public.provider_secrets.metadata.plan_type = 'three_usage'`
+- Token is atomically claimed (`FOR UPDATE SKIP LOCKED`) and reserved to that user (`sold_to`).
+- Claim mapping is stored in `public.trial_key_claims` to ensure a token is never assigned to another user.
+- UI shows popup with key, Copy, and Done. Download starts only after Done.

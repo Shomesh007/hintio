@@ -950,11 +950,98 @@ const AuthGateModal = ({
   );
 };
 
+const TrialKeyModal = ({
+  isOpen,
+  trialKey,
+  onCopy,
+  onDone,
+  isCopied,
+}: {
+  isOpen: boolean;
+  trialKey: string;
+  onCopy: () => void;
+  onDone: () => void;
+  isCopied: boolean;
+}) => {
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="relative w-full max-w-lg glass rounded-2xl overflow-hidden border-white/10 shadow-2xl p-8"
+          >
+            <div className="mb-6">
+              <div className="size-12 rounded-xl bg-mint/10 flex items-center justify-center text-mint mb-6">
+                <Shield size={24} />
+              </div>
+              <h3 className="text-3xl font-black text-white mb-2 font-display">Your free trial key</h3>
+              <p className="text-slate-400">
+                This is the free trial key for hintio. It works for 3 interviews for 15 minutes.
+                Upgrade to Pro tier for unlimited interviews.
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-white/10 bg-white/5 p-4 mb-4">
+              <p className="text-xs text-slate-500 mb-2 uppercase tracking-widest">Trial Key</p>
+              <p className="font-mono text-mint break-all">{trialKey}</p>
+            </div>
+
+            <p className="text-sm text-amber-300 mb-6">
+              You won&apos;t see this key again. Please save it.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                type="button"
+                onClick={onCopy}
+                className="flex-1 py-3 bg-white/5 border border-white/10 text-white font-bold rounded-xl hover:bg-white/10 transition-all"
+              >
+                {isCopied ? 'Copied' : 'Copy'}
+              </button>
+              <button
+                type="button"
+                onClick={onDone}
+                className="flex-1 py-3 bg-mint text-charcoal font-bold rounded-xl hover:scale-[1.02] transition-all"
+              >
+                Done
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+};
+
 export default function App() {
   const windowsDownloadUrl = 'https://github.com/Shomesh007/hintio/releases/download/v1.0.0/Hintio-1.0.0.Setup.exe';
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [isTrialModalOpen, setIsTrialModalOpen] = useState(false);
+  const [trialKey, setTrialKey] = useState('');
+  const [isKeyCopied, setIsKeyCopied] = useState(false);
+
+  const downloadAfterTrialKey = () => {
+    setIsTrialModalOpen(false);
+    setIsKeyCopied(false);
+    triggerDownload();
+  };
+
+  const handleCopyTrialKey = async () => {
+    if (!trialKey) return;
+    await navigator.clipboard.writeText(trialKey);
+    setIsKeyCopied(true);
+  };
 
   const triggerDownload = () => {
     window.open(windowsDownloadUrl, '_blank', 'noopener,noreferrer');
@@ -972,7 +1059,15 @@ export default function App() {
       const { data } = await supabase.auth.getSession();
       if (!data.session) return;
 
-      triggerDownload();
+      const { data: keyData, error: keyError } = await supabase.rpc('claim_three_usage_trial_key');
+      if (keyError || !keyData?.access_key) {
+        setAuthError(keyError?.message ?? 'Could not fetch free trial key.');
+        setIsAuthModalOpen(true);
+        return;
+      }
+
+      setTrialKey(String(keyData.access_key));
+      setIsTrialModalOpen(true);
       params.delete('download');
       const nextSearch = params.toString();
       const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`;
@@ -990,6 +1085,7 @@ export default function App() {
       return;
     }
 
+    setIsAuthModalOpen(false);
     setIsSigningIn(true);
 
     const redirectTo = `${window.location.origin}${window.location.pathname}?download=1`;
@@ -1094,6 +1190,14 @@ export default function App() {
         onSignIn={startGoogleSignIn}
         isSigningIn={isSigningIn}
         error={authError}
+      />
+
+      <TrialKeyModal
+        isOpen={isTrialModalOpen}
+        trialKey={trialKey}
+        onCopy={handleCopyTrialKey}
+        onDone={downloadAfterTrialKey}
+        isCopied={isKeyCopied}
       />
     </div>
   );
