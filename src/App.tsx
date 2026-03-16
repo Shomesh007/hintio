@@ -640,7 +640,10 @@ const Pricing = ({
               </div>
               <ul className="space-y-4 mb-10">
                 <li className="flex items-center gap-3 text-sm text-slate-300">
-                  <CheckCircle className="text-mint" size={18} /> 5 interviews/month
+                  <CheckCircle className="text-mint" size={18} /> 3 interviews/month
+                </li>
+                <li className="flex items-center gap-3 text-sm text-slate-300">
+                  <CheckCircle className="text-mint" size={18} /> 15 mins per interview limit
                 </li>
                 <li className="flex items-center gap-3 text-sm text-slate-300">
                   <CheckCircle className="text-mint" size={18} /> Cloud AI mode
@@ -2077,10 +2080,10 @@ export default function App() {
       ) : (
         <>
           <Hero onDownloadClick={handleDownloadClick} onMacDownloadClick={handleMacDownloadClick} />
+          <Pricing onDownloadClick={handleDownloadClick} onUpgradeClick={handleUpgradeClick} />
           <UseCases onDownloadClick={handleDownloadClick} />
           <HowItWorks onDownloadClick={handleDownloadClick} />
           <ShortcutsHelp />
-          <Pricing onDownloadClick={handleDownloadClick} onUpgradeClick={handleUpgradeClick} />
           <FAQ />
 
           {/* Final CTA Section */}
