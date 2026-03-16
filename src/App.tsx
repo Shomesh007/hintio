@@ -872,12 +872,14 @@ const ShortcutsHelp = () => {
     {
       keybind: 'Ctrl+Shift+Q',
       title: 'Dock Right',
-      placeholder: 'Dock Right image placeholder',
+      image: '/right_dock.png',
+      alt: 'hintio docked to the right side of the screen',
     },
     {
       keybind: 'Ctrl+Shift+R',
       title: 'Dock Left',
-      placeholder: 'Dock Left image placeholder',
+      image: '/left_dock.png',
+      alt: 'hintio docked to the left side of the screen',
     },
   ];
 
@@ -926,8 +928,8 @@ const ShortcutsHelp = () => {
               <h3 className="text-xl font-black text-white">{shortcut.title}</h3>
               <span className="font-mono text-xs text-mint">{shortcut.keybind}</span>
             </div>
-            <div className="aspect-[16/9] bg-black/40 border-2 border-dashed border-mint/30 m-5 rounded-lg flex items-center justify-center">
-              <span className="text-sm text-mint/70 font-mono uppercase tracking-widest">{shortcut.placeholder}</span>
+            <div className="m-5 rounded-lg overflow-hidden">
+              <img src={shortcut.image} alt={shortcut.alt} className="w-full h-auto object-cover rounded-lg" />
             </div>
           </div>
         ))}
