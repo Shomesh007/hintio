@@ -34,3 +34,96 @@ Hintio is a real-time, invisible desktop copilot designed primarily for intervie
 
 ## Architecture Note
 This repository contains the marketing **web frontend** only. The actual Hintio product is a separate cross-platform desktop application built using Tauri, React, and Rust.
+
+## Supabase + Razorpay License Flow
+
+This repo is wired for the flow:
+
+`Razorpay webhook -> Supabase Edge Function -> Save to DB -> Activate in app`
+
+### 1) Database
+
+Migration file is included at:
+
+- `supabase/migrations/20260316_create_licenses_table.sql`
+
+### 2) Edge Function
+
+Function source is included at:
+
+- `supabase/functions/razorpay-webhook/index.ts`
+
+It verifies `x-razorpay-signature`, then inserts an active license into `licenses`.
+
+> Note: Email sending is intentionally not used (free-tier friendly).
+
+### 3) Deploy webhook function
+
+Deploy to Supabase:
+
+```bash
+supabase functions deploy razorpay-webhook --no-verify-jwt
+```
+
+Webhook URL for this project:
+
+```txt
+https://vsybqtunyuanxspxhzue.supabase.co/functions/v1/razorpay-webhook
+```
+
+Add function secret in Supabase:
+
+```bash
+supabase secrets set RAZORPAY_WEBHOOK_SECRET=your_webhook_secret
+```
+
+### 4) Frontend license validation
+
+The modal in `src/App.tsx` validates the entered key against `public.licenses` where:
+
+- `license_key = user input`
+- `status = active`
+
+Set local env vars before running:
+
+```bash
+VITE_SUPABASE_URL=https://vsybqtunyuanxspxhzue.supabase.co
+VITE_SUPABASE_ANON_KEY=your_anon_key
+```
+
+## Vercel Production (www.hintio.tech)
+
+This repo is ready for Vercel production deploy.
+
+### Domain + redirects
+
+- Canonical domain is configured as `https://www.hintio.tech`.
+- `vercel.json` includes a permanent redirect from apex `hintio.tech` to `www.hintio.tech`.
+
+### Required Vercel environment variables
+
+Set these in Vercel Project Settings -> Environment Variables:
+
+- `VITE_SUPABASE_URL=https://vsybqtunyuanxspxhzue.supabase.co`
+- `VITE_SUPABASE_ANON_KEY=<your_anon_key>`
+- `VITE_SITE_URL=https://www.hintio.tech`
+
+Optional:
+
+- `VITE_MAC_DOWNLOAD_URL=<public .dmg URL>`
+- `VITE_WINDOWS_DOWNLOAD_URL=<public .exe URL>`
+
+### SEO/static files included
+
+- `index.html` includes canonical, Open Graph, Twitter metadata
+- `public/robots.txt`
+- `public/sitemap.xml`
+- `public/site.webmanifest`
+
+### Build settings
+
+Vercel settings are codified in `vercel.json`:
+
+- framework: `vite`
+- build command: `npm run build`
+- output directory: `dist`

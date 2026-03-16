@@ -1,0 +1,10 @@
+{
+  "name": "hintio",
+  "short_name": "hintio",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B0F14",
+  "theme_color": "#0B0F14",
+  "description": "The invisible overlay that wins interviews.",
+  "icons": []
+}

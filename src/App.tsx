@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { supabase } from './lib/supabase';
 
 import { 
   Monitor, 
@@ -26,8 +27,7 @@ import {
   Option,
   Menu,
   X,
-  Loader2,
-  Send
+  Loader2
 } from 'lucide-react';
 
 // --- Components ---
@@ -880,20 +880,43 @@ const Footer = ({ onDownloadClick }: { onDownloadClick: () => void }) => {
 
 
 const WaitlistModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
-  const [email, setEmail] = useState("");
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [licenseKey, setLicenseKey] = useState("");
+  const [isActivated, setIsActivated] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activationError, setActivationError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
-    
+    if (!licenseKey.trim()) return;
+
     setIsSubmitting(true);
-    // Simulate API call
-    setTimeout(() => {
+    setActivationError(null);
+
+    if (!supabase) {
+      setActivationError('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
       setIsSubmitting(false);
-      setIsSubmitted(true);
-    }, 1500);
+      return;
+    }
+
+    const normalizedKey = licenseKey.trim().toUpperCase();
+
+    const { data, error } = await supabase
+      .from('licenses')
+      .select('*')
+      .eq('license_key', normalizedKey)
+      .eq('status', 'active')
+      .single();
+
+    if (error || !data) {
+      setActivationError('Invalid or inactive license key.');
+      setIsSubmitting(false);
+      return;
+    }
+
+    localStorage.setItem('hintio_license_key', normalizedKey);
+    localStorage.setItem('hintio_license_plan', data.plan ?? 'pro');
+    setIsSubmitting(false);
+    setIsActivated(true);
   };
 
   return (
@@ -920,38 +943,41 @@ const WaitlistModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => vo
             </div>
 
             <div className="p-8 md:p-10">
-              {!isSubmitted ? (
+              {!isActivated ? (
                 <>
                   <div className="mb-8">
                     <div className="size-12 rounded-xl bg-mint/10 flex items-center justify-center text-mint mb-6">
                       <Shield size={24} />
                     </div>
-                    <h3 className="text-3xl font-black text-white mb-2 font-display">Join the Stealth Beta.</h3>
-                    <p className="text-slate-400">We're rolling out access in waves to ensure system stability. Secure your spot in the next deployment.</p>
+                    <h3 className="text-3xl font-black text-white mb-2 font-display">Activate hintio Pro.</h3>
+                    <p className="text-slate-400">Enter your license key to unlock Pro features instantly.</p>
                   </div>
 
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="relative">
                       <input 
-                        type="email" 
+                        type="text" 
                         required
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Enter your professional email"
+                        value={licenseKey}
+                        onChange={(e) => setLicenseKey(e.target.value)}
+                        placeholder="HINT-XXXX-XXXX-XXXX"
                         className="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-white placeholder:text-slate-600 focus:outline-none focus:border-mint/50 transition-all"
                       />
                     </div>
+                    {activationError && (
+                      <p className="text-sm text-red-400">{activationError}</p>
+                    )}
                     <button 
                       type="submit"
                       disabled={isSubmitting}
                       className="w-full py-4 bg-mint text-charcoal font-bold rounded-xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                     >
-                      {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
-                      Request Access
+                      {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : <CheckCircle size={20} />}
+                      Activate Pro
                     </button>
                   </form>
                   <p className="mt-6 text-[10px] text-slate-600 text-center uppercase tracking-widest">
-                    No credit card required. Private beta access only.
+                    Purchased via Razorpay? Use the same license key sent by your checkout workflow.
                   </p>
                 </>
               ) : (
@@ -963,13 +989,13 @@ const WaitlistModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => vo
                   <div className="size-20 rounded-full bg-mint/10 flex items-center justify-center text-mint mx-auto mb-8">
                     <CheckCircle size={48} />
                   </div>
-                  <h3 className="text-3xl font-black text-white mb-4 font-display">You're in the queue.</h3>
-                  <p className="text-slate-400 mb-8">Check your inbox. We've sent a verification link to <span className="text-white font-medium">{email}</span>. Your deployment ID is <span className="text-mint font-mono">#HNT-8829</span>.</p>
+                  <h3 className="text-3xl font-black text-white mb-4 font-display">Pro unlocked.</h3>
+                  <p className="text-slate-400 mb-8">License <span className="text-white font-medium">{licenseKey.trim().toUpperCase()}</span> is active. Continue to download and sign in to your desktop app.</p>
                   <button 
                     onClick={onClose}
                     className="px-8 py-3 bg-white/5 border border-white/10 text-white font-bold rounded-xl hover:bg-white/10 transition-all"
                   >
-                    Back to Site
+                    Continue
                   </button>
                 </motion.div>
               )}
