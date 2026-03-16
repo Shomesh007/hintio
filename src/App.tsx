@@ -1394,6 +1394,25 @@ export default function App() {
     });
   };
 
+  useEffect(() => {
+    const preload = () => {
+      void loadRazorpayScript();
+    };
+
+    if ('requestIdleCallback' in window) {
+      const idleCallbackId = (window as Window & { requestIdleCallback: (callback: () => void) => number }).requestIdleCallback(preload);
+      return () => {
+        const idleWindow = window as Window & {
+          cancelIdleCallback?: (id: number) => void;
+        };
+        idleWindow.cancelIdleCallback?.(idleCallbackId);
+      };
+    }
+
+    const timeoutId = globalThis.setTimeout(preload, 250);
+    return () => globalThis.clearTimeout(timeoutId);
+  }, []);
+
   const downloadAfterTrialKey = () => {
     setIsTrialModalOpen(false);
     setIsKeyCopied(false);
@@ -1541,13 +1560,11 @@ export default function App() {
     const waitForTokenNotInFuture = async (accessToken: string) => {
       const iat = getJwtIat(accessToken);
       const nowSec = Math.floor(Date.now() / 1000);
-      const skewBufferSec = 5;
-      if (iat && iat >= nowSec - skewBufferSec) {
-        const waitMs = Math.max(0, (iat - nowSec + skewBufferSec + 1) * 1000);
+      if (iat && iat > nowSec + 1) {
+        const waitMs = Math.max(0, (iat - nowSec + 1) * 1000);
         debugLog('Access token iat too close/future; waiting before edge call', {
           iat,
           nowSec,
-          skewBufferSec,
           waitMs,
         });
         await new Promise((resolve) => setTimeout(resolve, waitMs));
