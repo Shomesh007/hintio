@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { GoogleGenAI } from "@google/genai";
+
 import { 
   Monitor, 
   Shield, 
@@ -27,7 +27,6 @@ import {
   Menu,
   X,
   Loader2,
-  Sparkles,
   Send
 } from 'lucide-react';
 
@@ -115,9 +114,8 @@ const Hero = ({ onDownloadClick }: { onDownloadClick: () => void }) => {
       <div className="mesh-gradient"></div>
       <div className="scanline"></div>
       
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-40">
-        <div className="w-[600px] h-[600px] bg-mint/5 rounded-full blur-[120px] animate-float"></div>
-        <div className="absolute w-full h-full flex items-center justify-center">
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div className="absolute w-full h-full flex items-center justify-center opacity-40">
           <svg className="w-full max-w-4xl" fill="none" height="200" viewBox="0 0 1000 200" xmlns="http://www.w3.org/2000/svg">
             <path d="M0 100C50 100 100 20 150 100C200 180 250 100 300 100C350 100 400 50 450 100C500 150 550 80 600 100C650 120 700 100 750 100C800 100 850 140 900 100C950 60 1000 100 1050 100" stroke="#00FFCC" strokeOpacity="0.2" strokeWidth="1"></path>
             <path d="M0 100C50 100 100 140 150 100C200 60 250 100 300 100C350 100 400 150 450 100C500 50 550 120 600 100C650 80 700 100 750 100C800 100 850 20 900 100C950 180 1000 100 1050 100" stroke="#00FFCC" strokeOpacity="0.1" strokeWidth="1"></path>
@@ -239,9 +237,9 @@ const UseCases = ({ onDownloadClick }: { onDownloadClick: () => void }) => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3 lg:grid-cols-4">
+      <div className="flex w-full overflow-x-auto snap-x snap-mandatory gap-4 md:grid md:grid-cols-3 lg:grid-cols-4 md:gap-6 pb-8 md:pb-0 -mx-6 px-6 md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         {/* Interview Card */}
-        <div className="glass-effect group relative flex flex-col justify-between overflow-hidden rounded-xl p-8 md:col-span-2">
+        <div className="shrink-0 w-[85vw] md:w-auto snap-center glass-effect group relative flex flex-col justify-between overflow-hidden rounded-xl p-6 md:p-8 md:col-span-2">
           <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-mint/10 blur-[80px]"></div>
           <div className="relative z-10">
             <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-mint/10 text-mint">
@@ -268,7 +266,7 @@ const UseCases = ({ onDownloadClick }: { onDownloadClick: () => void }) => {
         </div>
 
         {/* Sales Card */}
-        <div className="glass-effect group relative flex flex-col justify-between overflow-hidden rounded-xl p-8 lg:col-span-1">
+        <div className="shrink-0 w-[85vw] md:w-auto snap-center glass-effect group relative flex flex-col justify-between overflow-hidden rounded-xl p-6 md:p-8 lg:col-span-1">
           <div className="relative z-10">
             <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-mint/10 text-mint">
               <TrendingUp size={24} />
@@ -282,7 +280,7 @@ const UseCases = ({ onDownloadClick }: { onDownloadClick: () => void }) => {
         </div>
 
         {/* Meeting Card */}
-        <div className="glass-effect group relative flex flex-col justify-between overflow-hidden rounded-xl p-8 lg:col-span-1">
+        <div className="shrink-0 w-[85vw] md:w-auto snap-center glass-effect group relative flex flex-col justify-between overflow-hidden rounded-xl p-6 md:p-8 lg:col-span-1">
           <div className="relative z-10">
             <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-mint/10 text-mint">
               <MessageSquare size={24} />
@@ -296,7 +294,7 @@ const UseCases = ({ onDownloadClick }: { onDownloadClick: () => void }) => {
         </div>
 
         {/* Presentation Card */}
-        <div className="glass-effect group relative flex flex-col justify-between overflow-hidden rounded-xl p-8 lg:col-span-1">
+        <div className="shrink-0 w-[85vw] md:w-auto snap-center glass-effect group relative flex flex-col justify-between overflow-hidden rounded-xl p-6 md:p-8 lg:col-span-1">
           <div className="relative z-10">
             <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-mint/10 text-mint">
               <Presentation size={24} />
@@ -313,7 +311,7 @@ const UseCases = ({ onDownloadClick }: { onDownloadClick: () => void }) => {
         </div>
 
         {/* Negotiation Card */}
-        <div className="glass-effect group relative flex flex-col justify-between overflow-hidden rounded-xl p-8 md:row-span-2 lg:col-span-1">
+        <div className="shrink-0 w-[85vw] md:w-auto snap-center glass-effect group relative flex flex-col justify-between overflow-hidden rounded-xl p-6 md:p-8 md:row-span-2 lg:col-span-1">
           <div className="absolute inset-0 bg-gradient-to-b from-mint/5 to-transparent opacity-50"></div>
           <div className="relative z-10">
             <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-mint/10 text-mint">
@@ -336,7 +334,7 @@ const UseCases = ({ onDownloadClick }: { onDownloadClick: () => void }) => {
         </div>
 
         {/* Exam Card */}
-        <div className="glass-effect group relative flex flex-col justify-between overflow-hidden rounded-xl p-8 md:col-span-2">
+        <div className="shrink-0 w-[85vw] md:w-auto snap-center glass-effect group relative flex flex-col justify-between overflow-hidden rounded-xl p-6 md:p-8 md:col-span-2">
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="max-w-md">
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-mint/10 text-mint">
@@ -361,7 +359,7 @@ const UseCases = ({ onDownloadClick }: { onDownloadClick: () => void }) => {
         </div>
 
         {/* Custom Profiles */}
-        <div className="group relative flex flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-white/10 p-8 transition-all hover:border-mint/40 lg:col-span-1">
+        <div className="shrink-0 w-[85vw] md:w-auto snap-center group relative flex flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-white/10 p-6 md:p-8 transition-all hover:border-mint/40 lg:col-span-1">
           <p className="text-center text-sm font-medium text-slate-500 group-hover:text-slate-300">Your Use Case?</p>
           <button className="mt-4 flex items-center gap-2 text-xs font-bold text-mint">
             Custom Profiles
@@ -388,19 +386,19 @@ const HowItWorks = ({ onDownloadClick }: { onDownloadClick: () => void }) => {
         </p>
       </div>
 
-      <div className="relative space-y-24">
+      <div className="flex w-full overflow-x-auto snap-x snap-mandatory gap-6 md:block md:space-y-24 pb-12 md:pb-0 -mx-6 px-6 md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         <div className="absolute left-1/2 top-0 -z-10 hidden h-full w-px bg-gradient-to-b from-mint/20 via-mint/5 to-transparent lg:block"></div>
 
         {/* Step 01 */}
-        <div className="relative grid gap-12 lg:grid-cols-2 lg:items-center">
+        <div className="shrink-0 w-[90vw] md:w-auto snap-center relative grid gap-8 md:gap-12 lg:grid-cols-2 lg:items-center">
           <div className="order-2 lg:order-1">
             <div className="mb-6 flex items-center gap-4">
               <span className="text-4xl font-black text-mint/20">01</span>
               <div className="h-px flex-1 bg-gradient-to-r from-mint/40 to-transparent"></div>
             </div>
-            <h3 className="text-3xl font-extrabold text-white mb-4">Secure Overlay Initialization</h3>
+            <h3 className="text-3xl font-extrabold text-white mb-4">Invisible Overlay</h3>
             <p className="text-lg text-slate-400 leading-relaxed mb-6">
-              Install hintio on Mac or Windows. Once active, it creates a dedicated kernel-level rendering layer that remains <span className="text-mint">completely invisible</span> to screen-sharing software and system recording tools.
+              Install hintio on Mac or Windows. It runs as a <span className="text-mint">completely invisible</span> transparent layer over your screen that screen-sharing tools cannot see.
             </p>
             <div className="flex items-center gap-6">
               <div className="flex flex-col">
@@ -446,7 +444,7 @@ const HowItWorks = ({ onDownloadClick }: { onDownloadClick: () => void }) => {
         </div>
 
         {/* Step 02 */}
-        <div className="relative grid gap-12 lg:grid-cols-2 lg:items-center">
+        <div className="shrink-0 w-[90vw] md:w-auto snap-center relative grid gap-8 md:gap-12 lg:grid-cols-2 lg:items-center">
           <div className="group relative">
             <div className="absolute -inset-4 bg-mint/5 blur-2xl rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
             <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-black/40 p-6">
@@ -505,9 +503,9 @@ const HowItWorks = ({ onDownloadClick }: { onDownloadClick: () => void }) => {
               <span className="text-4xl font-black text-mint/20">02</span>
               <div className="h-px flex-1 bg-gradient-to-r from-mint/40 to-transparent"></div>
             </div>
-            <h3 className="text-3xl font-extrabold text-white mb-4">Biometric Calibration</h3>
+            <h3 className="text-3xl font-extrabold text-white mb-4">Voice Setup</h3>
             <p className="text-lg text-slate-400 leading-relaxed mb-6">
-              Choose from 6 specialized AI profiles. hintio runs a quick 30-second voice calibration to isolate your speech from background noise and interviewers, ensuring the AI focuses exclusively on your needs.
+              Choose an AI profile like Interview or Sales. Hintio will run a quick voice test so it knows who is speaking and ignores background noise or other people.
             </p>
             <div className="grid grid-cols-2 gap-4">
               <div className="rounded-lg glass p-3 border-white/5">
@@ -523,15 +521,15 @@ const HowItWorks = ({ onDownloadClick }: { onDownloadClick: () => void }) => {
         </div>
 
         {/* Step 03 */}
-        <div className="relative grid gap-12 lg:grid-cols-2 lg:items-center">
+        <div className="shrink-0 w-[90vw] md:w-auto snap-center relative grid gap-8 md:gap-12 lg:grid-cols-2 lg:items-center">
           <div className="order-2 lg:order-1">
             <div className="mb-6 flex items-center gap-4">
               <span className="text-4xl font-black text-mint/20">03</span>
               <div className="h-px flex-1 bg-gradient-to-r from-mint/40 to-transparent"></div>
             </div>
-            <h3 className="text-3xl font-extrabold text-white mb-4">Synchronized Real-time Output</h3>
+            <h3 className="text-3xl font-extrabold text-white mb-4">Live Answers</h3>
             <p className="text-lg text-slate-400 leading-relaxed mb-6">
-              Go live instantly. hintio begins capturing system audio and OCR-ing your screen. Answers appear within milliseconds. Control the flow with silent keyboard shortcuts without ever taking your eyes off the screen.
+              Start your meeting. Hintio listens to the audio and reads your screen to give you fast, helpful answers. Use keyboard shortcuts to skip or hide answers smoothly.
             </p>
             <div className="inline-flex items-center gap-3 rounded-xl bg-white/5 px-4 py-3 border border-white/10">
               <kbd className="px-2 py-1 rounded bg-slate-800 border border-slate-700 text-xs font-mono text-mint font-bold">Ctrl</kbd>
@@ -748,19 +746,19 @@ const FAQ = () => {
     {
       id: "STLTH_01",
       q: "Can interviewers detect hintio?",
-      a: "NEGATIVE. hintio is a frameless desktop overlay that runs completely outside your browser or video call. It remains invisible to screen recording, screen share, and proctoring software due to low-level system injection.",
+      a: "No. hintio runs as a custom transparent window on your computer that screen-sharing and recording tools can't capture.",
       tag: "Secure_Overlay"
     },
     {
       id: "PRIV_SYNC",
       q: "Does it send data to servers?",
-      a: "Only in Cloud mode. In BYOK or Local mode, your data streams directly between your machine and your chosen AI provider. We never act as a man-in-the-middle for your sensitive sessions.",
+      a: "If you use Cloud mode, yes. If you use your own API key or run AI locally, your data stays completely private on your machine.",
       tag: "Local_First"
     },
     {
       id: "ARCH_COMP",
-      q: "Support for Mac M1/M2?",
-      a: "AFFIRMATIVE. hintio runs natively on Apple Silicon (M1, M2, M3 architectures) as well as Intel-based Macs. Full support is also maintained for Windows 10 and 11 environments.",
+      q: "Does it work on Mac and Windows?",
+      a: "Yes. It fully supports all modern Macs (including M1/M2/M3) and Windows 10/11 computers.",
       tag: "Multi_Arch_Support"
     }
   ];
@@ -773,7 +771,7 @@ const FAQ = () => {
           <span className="h-px w-12 bg-mint/30"></span>
         </div>
         <h2 className="text-5xl md:text-7xl font-black tracking-tighter uppercase text-white font-display">Got questions?</h2>
-        <p className="text-mint font-mono text-sm max-w-xl">System Protocol v2.4.0 - Knowledge Database Access. Decrypting common inquiries regarding stealth deployment and neural processing architecture.</p>
+        <p className="text-mint font-mono text-sm max-w-xl">System Protocol v2.4.0 - Knowledge Database Access. Answers to your most common questions about how the app works.</p>
       </div>
 
       <div className="mb-12">
@@ -879,142 +877,7 @@ const Footer = ({ onDownloadClick }: { onDownloadClick: () => void }) => {
   );
 };
 
-const DemoSection = () => {
-  const [prompt, setPrompt] = useState("");
-  const [hint, setHint] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
 
-  const generateHint = async () => {
-    if (!prompt.trim()) return;
-    
-    setIsLoading(true);
-    setError("");
-    setHint("");
-
-    try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: `You are an interview co-pilot. Give a short, punchy, and professional "hint" or "talking point" for the following interview question or situation. Keep it under 30 words. Situation: ${prompt}`,
-        config: {
-          systemInstruction: "You are hintio, an invisible interview co-pilot. You provide concise, high-impact talking points for candidates in real-time.",
-        }
-      });
-      
-      setHint(response.text || "No hint generated.");
-    } catch (err) {
-      console.error(err);
-      setError("Failed to connect to neural network. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <section className="py-32 px-6 max-w-5xl mx-auto relative">
-      <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-mint/20 to-transparent"></div>
-      
-      <div className="text-center mb-16">
-        <h2 className="text-4xl md:text-5xl font-black mb-4 font-display">Experience the <span className="text-mint">Invisible</span>.</h2>
-        <p className="text-slate-400">Type a question you're nervous about. See how hintio helps.</p>
-      </div>
-
-      <div className="glass rounded-2xl p-1 md:p-2 border-white/10 shadow-2xl overflow-hidden">
-        <div className="bg-charcoal/40 rounded-xl p-6 md:p-10">
-          <div className="flex flex-col md:flex-row gap-4 mb-8">
-            <div className="flex-1 relative">
-              <input 
-                type="text" 
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && generateHint()}
-                placeholder="e.g. 'Tell me about a time you failed...'"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-6 py-4 text-white placeholder:text-slate-600 focus:outline-none focus:border-mint/50 transition-all"
-              />
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 flex gap-2">
-                <kbd className="hidden sm:inline-block px-2 py-1 bg-white/5 border border-white/10 rounded text-[10px] font-mono text-slate-500">Enter</kbd>
-              </div>
-            </div>
-            <button 
-              onClick={generateHint}
-              disabled={isLoading}
-              className="bg-mint text-charcoal font-bold px-8 py-4 rounded-xl hover:scale-105 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:hover:scale-100"
-            >
-              {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Sparkles size={20} />}
-              Generate Hint
-            </button>
-          </div>
-
-          <AnimatePresence mode="wait">
-            {isLoading && (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex flex-col items-center justify-center py-12 text-mint/40"
-              >
-                <div className="flex gap-1 mb-4">
-                  {[0, 1, 2].map(i => (
-                    <motion.div 
-                      key={i}
-                      animate={{ scale: [1, 1.5, 1], opacity: [0.3, 1, 0.3] }}
-                      transition={{ repeat: Infinity, duration: 1, delay: i * 0.2 }}
-                      className="w-2 h-2 bg-mint rounded-full"
-                    />
-                  ))}
-                </div>
-                <span className="text-xs font-mono uppercase tracking-widest">Analyzing context...</span>
-              </motion.div>
-            )}
-
-            {hint && !isLoading && (
-              <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="relative"
-              >
-                <div className="absolute -left-4 top-0 bottom-0 w-1 bg-mint rounded-full shadow-[0_0_10px_#00FFA3]"></div>
-                <div className="pl-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="size-5 rounded bg-mint/10 flex items-center justify-center text-mint">
-                      <Zap size={12} />
-                    </div>
-                    <span className="text-[10px] font-mono text-mint uppercase tracking-widest">Live Hint Overlay</span>
-                  </div>
-                  <p className="text-xl md:text-2xl text-white font-light leading-relaxed italic">
-                    "{hint}"
-                  </p>
-                  <div className="mt-6 flex items-center gap-4 text-[10px] font-mono text-slate-500 uppercase">
-                    <span>Confidence: 98.4%</span>
-                    <span className="w-px h-3 bg-white/10"></span>
-                    <span>STAR Method Applied</span>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {error && !isLoading && (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-center py-8 text-red-400/80 text-sm font-mono"
-              >
-                {error}
-              </motion.div>
-            )}
-
-            {!hint && !isLoading && !error && (
-              <div className="text-center py-12 border-2 border-dashed border-white/5 rounded-xl">
-                <p className="text-slate-600 text-sm italic">Your real-time co-pilot output will appear here.</p>
-              </div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
-    </section>
-  );
-};
 
 const WaitlistModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
   const [email, setEmail] = useState("");
@@ -1125,9 +988,6 @@ export default function App() {
     <div className="bg-charcoal min-h-screen text-white selection:bg-mint selection:text-charcoal">
       <Navbar onDownloadClick={() => setIsWaitlistOpen(true)} />
       <Hero onDownloadClick={() => setIsWaitlistOpen(true)} />
-      
-      <DemoSection />
-
       <UseCases onDownloadClick={() => setIsWaitlistOpen(true)} />
       <HowItWorks onDownloadClick={() => setIsWaitlistOpen(true)} />
       <Pricing onDownloadClick={() => setIsWaitlistOpen(true)} />

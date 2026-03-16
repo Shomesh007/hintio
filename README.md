@@ -1,20 +1,36 @@
 <div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+  <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# Run and deploy your AI Studio app
+# Hintio Landing Page Website
 
-This contains everything you need to run your app locally.
+Welcome to the landing page repository for **Hintio**. This is the promotional and distribution website where users learn about Hintio's capabilities and download the desktop application.
 
-View your app in AI Studio: https://ai.studio/apps/5fd127ab-13c3-433b-a06b-8d7649330541
+Hintio is a real-time, invisible desktop copilot designed primarily for interviews, high-stakes meetings, and developer assistance. It "listens" to system audio (speaker output and microphone input) entirely locally, transcribes the conversation, and provides instant, context-aware suggestions (hints) and live coding assistance in a stealthy, configurable UI.
+
+*For comprehensive details about the product architecture, target users, and capabilities, refer to the `PRD.md` file located in the root of this repository.*
+
+## Tech Stack
+- React 19
+- Vite
+- Tailwind CSS v4
+- Framer Motion
 
 ## Run Locally
 
-**Prerequisites:**  Node.js
-
+**Prerequisites:** Node.js v18+
 
 1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+   ```bash
+   npm install
+   ```
+
+2. Run the development server:
+   ```bash
+   npm run dev
+   ```
+
+3. Open the browser to see the site running at `http://localhost:3000`.
+
+## Architecture Note
+This repository contains the marketing **web frontend** only. The actual Hintio product is a separate cross-platform desktop application built using Tauri, React, and Rust.
