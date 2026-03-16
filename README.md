@@ -127,3 +127,35 @@ Vercel settings are codified in `vercel.json`:
 - framework: `vite`
 - build command: `npm run build`
 - output directory: `dist`
+
+## Google Auth Gate for Downloads (Free Tier Compatible)
+
+Yes, this works on Supabase free tier.
+
+Download and pricing CTAs in the site now require a valid Google-authenticated Supabase session before opening the installer URL.
+
+### Supabase dashboard setup (required)
+
+1. Open `Authentication -> Providers -> Google` and enable Google provider.
+2. Add your Google OAuth `Client ID` and `Client Secret`.
+3. In `Authentication -> URL Configuration`, ensure site URL is:
+
+```txt
+https://www.hintio.tech
+```
+
+4. Add redirect URLs:
+
+```txt
+https://www.hintio.tech
+https://www.hintio.tech/
+https://www.hintio.tech/?download=1
+http://localhost:3000
+http://localhost:3000/
+http://localhost:3000/?download=1
+```
+
+### Notes
+
+- Free tier supports OAuth providers, including Google.
+- No paid Supabase plan is required for this authentication gate flow.

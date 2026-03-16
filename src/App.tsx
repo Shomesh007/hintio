@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { supabase } from './lib/supabase';
+import { supabase, missingSupabaseEnvVars } from './lib/supabase';
 
 import { 
   Monitor, 
@@ -879,45 +879,19 @@ const Footer = ({ onDownloadClick }: { onDownloadClick: () => void }) => {
 
 
 
-const WaitlistModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
-  const [licenseKey, setLicenseKey] = useState("");
-  const [isActivated, setIsActivated] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activationError, setActivationError] = useState<string | null>(null);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!licenseKey.trim()) return;
-
-    setIsSubmitting(true);
-    setActivationError(null);
-
-    if (!supabase) {
-      setActivationError('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
-      setIsSubmitting(false);
-      return;
-    }
-
-    const normalizedKey = licenseKey.trim().toUpperCase();
-
-    const { data, error } = await supabase
-      .from('licenses')
-      .select('*')
-      .eq('license_key', normalizedKey)
-      .eq('status', 'active')
-      .single();
-
-    if (error || !data) {
-      setActivationError('Invalid or inactive license key.');
-      setIsSubmitting(false);
-      return;
-    }
-
-    localStorage.setItem('hintio_license_key', normalizedKey);
-    localStorage.setItem('hintio_license_plan', data.plan ?? 'pro');
-    setIsSubmitting(false);
-    setIsActivated(true);
-  };
+const AuthGateModal = ({
+  isOpen,
+  onClose,
+  onSignIn,
+  isSigningIn,
+  error,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSignIn: () => void;
+  isSigningIn: boolean;
+  error: string | null;
+}) => {
 
   return (
     <AnimatePresence>
@@ -943,62 +917,31 @@ const WaitlistModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => vo
             </div>
 
             <div className="p-8 md:p-10">
-              {!isActivated ? (
-                <>
-                  <div className="mb-8">
-                    <div className="size-12 rounded-xl bg-mint/10 flex items-center justify-center text-mint mb-6">
-                      <Shield size={24} />
-                    </div>
-                    <h3 className="text-3xl font-black text-white mb-2 font-display">Activate hintio Pro.</h3>
-                    <p className="text-slate-400">Enter your license key to unlock Pro features instantly.</p>
-                  </div>
+              <div className="mb-8">
+                <div className="size-12 rounded-xl bg-mint/10 flex items-center justify-center text-mint mb-6">
+                  <Shield size={24} />
+                </div>
+                <h3 className="text-3xl font-black text-white mb-2 font-display">Sign in to continue.</h3>
+                <p className="text-slate-400">Authenticate with Google to access pricing downloads and install hintio.</p>
+              </div>
 
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="relative">
-                      <input 
-                        type="text" 
-                        required
-                        value={licenseKey}
-                        onChange={(e) => setLicenseKey(e.target.value)}
-                        placeholder="HINT-XXXX-XXXX-XXXX"
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-white placeholder:text-slate-600 focus:outline-none focus:border-mint/50 transition-all"
-                      />
-                    </div>
-                    {activationError && (
-                      <p className="text-sm text-red-400">{activationError}</p>
-                    )}
-                    <button 
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="w-full py-4 bg-mint text-charcoal font-bold rounded-xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                    >
-                      {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : <CheckCircle size={20} />}
-                      Activate Pro
-                    </button>
-                  </form>
-                  <p className="mt-6 text-[10px] text-slate-600 text-center uppercase tracking-widest">
-                    Purchased via Razorpay? Use the same license key sent by your checkout workflow.
-                  </p>
-                </>
-              ) : (
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="text-center py-10"
-                >
-                  <div className="size-20 rounded-full bg-mint/10 flex items-center justify-center text-mint mx-auto mb-8">
-                    <CheckCircle size={48} />
-                  </div>
-                  <h3 className="text-3xl font-black text-white mb-4 font-display">Pro unlocked.</h3>
-                  <p className="text-slate-400 mb-8">License <span className="text-white font-medium">{licenseKey.trim().toUpperCase()}</span> is active. Continue to download and sign in to your desktop app.</p>
-                  <button 
-                    onClick={onClose}
-                    className="px-8 py-3 bg-white/5 border border-white/10 text-white font-bold rounded-xl hover:bg-white/10 transition-all"
-                  >
-                    Continue
-                  </button>
-                </motion.div>
+              <button
+                type="button"
+                onClick={onSignIn}
+                disabled={isSigningIn}
+                className="w-full py-4 bg-mint text-charcoal font-bold rounded-xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isSigningIn ? <Loader2 className="animate-spin" size={20} /> : <CheckCircle size={20} />}
+                Continue with Google
+              </button>
+
+              {error && (
+                <p className="mt-4 text-sm text-red-400">{error}</p>
               )}
+
+              <p className="mt-6 text-[10px] text-slate-600 text-center uppercase tracking-widest">
+                You will be redirected to Google and returned automatically.
+              </p>
             </div>
           </motion.div>
         </div>
@@ -1009,9 +952,76 @@ const WaitlistModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => vo
 
 export default function App() {
   const windowsDownloadUrl = 'https://github.com/Shomesh007/hintio/releases/download/v1.0.0/Hintio-1.0.0.Setup.exe';
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isSigningIn, setIsSigningIn] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
-  const handleDownloadClick = () => {
+  const triggerDownload = () => {
     window.open(windowsDownloadUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  useEffect(() => {
+    const runPostAuthDownload = async () => {
+      if (!supabase) return;
+
+      const params = new URLSearchParams(window.location.search);
+      const shouldDownload = params.get('download') === '1';
+
+      if (!shouldDownload) return;
+
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) return;
+
+      triggerDownload();
+      params.delete('download');
+      const nextSearch = params.toString();
+      const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`;
+      window.history.replaceState({}, '', nextUrl);
+    };
+
+    runPostAuthDownload();
+  }, []);
+
+  const startGoogleSignIn = async () => {
+    setAuthError(null);
+
+    if (!supabase) {
+      setAuthError(`Supabase is not configured. Missing: ${missingSupabaseEnvVars.join(', ')}`);
+      return;
+    }
+
+    setIsSigningIn(true);
+
+    const redirectTo = `${window.location.origin}${window.location.pathname}?download=1`;
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo,
+      },
+    });
+
+    if (error) {
+      setAuthError(error.message);
+      setIsSigningIn(false);
+    }
+  };
+
+  const handleDownloadClick = async () => {
+    setAuthError(null);
+
+    if (!supabase) {
+      setAuthError(`Supabase is not configured. Missing: ${missingSupabaseEnvVars.join(', ')}`);
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    const { data } = await supabase.auth.getSession();
+    if (data.session) {
+      triggerDownload();
+      return;
+    }
+
+    setIsAuthModalOpen(true);
   };
 
   return (
@@ -1077,6 +1087,14 @@ export default function App() {
       </section>
 
       <Footer onDownloadClick={handleDownloadClick} />
+
+      <AuthGateModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onSignIn={startGoogleSignIn}
+        isSigningIn={isSigningIn}
+        error={authError}
+      />
     </div>
   );
 }
