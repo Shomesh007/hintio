@@ -1433,6 +1433,16 @@ export default function App() {
     window.open(windowsDownloadUrl, '_blank', 'noopener,noreferrer');
   };
 
+  const scrollToPricingSection = () => {
+    const pricingSection = document.getElementById('pricing');
+    if (pricingSection) {
+      pricingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+
+    window.location.hash = 'pricing';
+  };
+
   const fetchPaidLicenseKey = async (plan: 'monthly' | 'yearly') => {
     if (!supabase) throw new Error('Supabase is not configured');
 
@@ -2072,14 +2082,14 @@ export default function App() {
 
   return (
     <div className="bg-charcoal min-h-screen text-white selection:bg-mint selection:text-charcoal">
-      <Navbar onDownloadClick={handleDownloadClick} />
+      <Navbar onDownloadClick={scrollToPricingSection} />
       {isHelpRoute ? (
         <main className="pt-20">
           <ShortcutsHelp />
         </main>
       ) : (
         <>
-          <Hero onDownloadClick={handleDownloadClick} onMacDownloadClick={handleMacDownloadClick} />
+          <Hero onDownloadClick={scrollToPricingSection} onMacDownloadClick={handleMacDownloadClick} />
           <Pricing onDownloadClick={handleDownloadClick} onUpgradeClick={handleUpgradeClick} />
           <UseCases onDownloadClick={handleDownloadClick} />
           <HowItWorks onDownloadClick={handleDownloadClick} />
@@ -2126,7 +2136,7 @@ export default function App() {
                     </div>
                   </button>
                   <button
-                    onClick={handleDownloadClick}
+                    onClick={scrollToPricingSection}
                     className="flex-1 group relative px-8 py-4 bg-white/5 border border-white/10 text-white font-bold rounded-lg overflow-hidden transition-all hover:bg-white/10 hover:border-mint/40 active:scale-95"
                   >
                     <div className="flex items-center justify-center gap-3">
@@ -2141,7 +2151,7 @@ export default function App() {
         </>
       )}
 
-      <Footer onDownloadClick={handleDownloadClick} />
+      <Footer onDownloadClick={scrollToPricingSection} />
 
       <AuthGateModal
         isOpen={isAuthModalOpen}
