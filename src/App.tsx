@@ -77,6 +77,8 @@ const Navbar = ({ onDownloadClick }: { onDownloadClick: () => void }) => {
 
         {/* Mobile Menu Toggle */}
         <button
+          aria-label="Toggle navigation menu"
+          aria-expanded={isMobileMenuOpen}
           className="md:hidden text-gray-400 hover:text-mint transition-colors"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         >
@@ -130,7 +132,7 @@ const Hero = ({
 
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <div className="absolute w-full h-full flex items-center justify-center opacity-40">
-          <svg className="w-full max-w-4xl" fill="none" height="200" viewBox="0 0 1000 200" xmlns="http://www.w3.org/2000/svg">
+          <svg aria-hidden="true" className="w-full max-w-4xl" fill="none" height="200" viewBox="0 0 1000 200" xmlns="http://www.w3.org/2000/svg">
             <path d="M0 100C50 100 100 20 150 100C200 180 250 100 300 100C350 100 400 50 450 100C500 150 550 80 600 100C650 120 700 100 750 100C800 100 850 140 900 100C950 60 1000 100 1050 100" stroke="#00FFCC" strokeOpacity="0.2" strokeWidth="1"></path>
             <path d="M0 100C50 100 100 140 150 100C200 60 250 100 300 100C350 100 400 150 450 100C500 50 550 120 600 100C650 80 700 100 750 100C800 100 850 20 900 100C950 180 1000 100 1050 100" stroke="#00FFCC" strokeOpacity="0.1" strokeWidth="1"></path>
           </svg>
@@ -164,7 +166,7 @@ const Hero = ({
           transition={{ duration: 0.6, delay: 0.2 }}
           className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10 font-light leading-relaxed"
         >
-          hintio captures your screen and audio in real time — and whispers the perfect answer before you even pause.
+          hintio is your AI interview copilot — it captures your screen and audio in real time, acting as a real-time interview assistant that whispers the perfect answer before you even pause.
         </motion.p>
 
         <motion.div
@@ -261,7 +263,7 @@ const UseCases = ({ onDownloadClick }: { onDownloadClick: () => void }) => {
           Built for every <br />high-stakes moment.
         </h2>
         <p className="text-lg leading-relaxed text-slate-400">
-          Switch profiles in one click — hintio adapts its AI to your context. Invisible, real-time, and perfectly synced with your conversation flow.
+          Switch profiles in one click — hintio adapts its AI to your context. Use it as an invisible overlay for coding interviews, an AI sales call assistant on closing calls, or a live meeting assistant during standups. Undetectable AI, perfectly synced with your conversation flow.
         </p>
       </div>
 
@@ -410,7 +412,7 @@ const HowItWorks = ({ onDownloadClick }: { onDownloadClick: () => void }) => {
           How <span className="text-mint">hintio</span> works.
         </h2>
         <p className="mt-6 max-w-2xl text-lg text-slate-400">
-          A high-end, stealthy AI assistant that lives in your workflow, invisible to everyone but you.
+          A high-end, undetectable AI assistant that lives in your workflow as a live meeting assistant — invisible to everyone but you.
         </p>
       </div>
 
@@ -816,7 +818,7 @@ const FAQ = () => {
           <div className="flex items-center justify-center px-6 text-mint group-focus-within:scale-110 transition-transform">
             <Search size={32} />
           </div>
-          <input className="flex-1 bg-transparent border-none text-xl font-light placeholder:text-mint/20 focus:ring-0 text-white" placeholder="QUERY_SYSTEM_DATABASE..." type="text" />
+          <input aria-label="Search frequently asked questions" className="flex-1 bg-transparent border-none text-xl font-light placeholder:text-mint/20 focus:ring-0 text-white" placeholder="QUERY_SYSTEM_DATABASE..." type="text" />
           <div className="flex items-center px-6 font-mono text-[10px] text-mint/40 uppercase tracking-widest">
             Press_Enter_to_Execute
           </div>
@@ -2089,12 +2091,14 @@ export default function App() {
         </main>
       ) : (
         <>
+          <main>
           <Hero onDownloadClick={scrollToPricingSection} onMacDownloadClick={handleMacDownloadClick} />
           <Pricing onDownloadClick={handleDownloadClick} onUpgradeClick={handleUpgradeClick} />
           <UseCases onDownloadClick={handleDownloadClick} />
           <HowItWorks onDownloadClick={handleDownloadClick} />
           <ShortcutsHelp />
           <FAQ />
+          </main>
 
           {/* Final CTA Section */}
           <section className="relative w-full max-w-5xl mx-auto px-6 py-32 z-10">

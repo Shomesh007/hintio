@@ -5,6 +5,17 @@
   "display": "standalone",
   "background_color": "#0B0F14",
   "theme_color": "#0B0F14",
-  "description": "The invisible overlay that wins interviews.",
-  "icons": []
+  "description": "The invisible AI interview copilot and real-time assistant for Windows & Mac.",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
 }
