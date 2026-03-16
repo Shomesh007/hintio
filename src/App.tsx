@@ -1232,7 +1232,7 @@ const PaymentSupportModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
 };
 
 export default function App() {
-  const windowsDownloadUrl = 'https://github.com/Shomesh007/hintio/releases/download/v1.0.0/Hintio-1.0.0.Setup.exe';
+  const windowsDownloadUrl = 'https://github.com/Shomesh007/hintio/releases/download/v1.0.0/Hintio-1.0.1.Setup.exe';
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
