@@ -1066,8 +1066,12 @@ export default function App() {
         return;
       }
 
-      setTrialKey(String(keyData.access_key));
-      setIsTrialModalOpen(true);
+      if (keyData.is_new) {
+        setTrialKey(String(keyData.access_key));
+        setIsTrialModalOpen(true);
+      } else {
+        triggerDownload();
+      }
       params.delete('download');
       const nextSearch = params.toString();
       const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`;
