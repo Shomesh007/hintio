@@ -333,6 +333,17 @@
 .account-copy:hover {
     background: #e4e9f4;
 }
+.account-recovery-support {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 18px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
 .account-key-note {
     font-size: 12px;
     color: #697487;

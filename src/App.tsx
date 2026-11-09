@@ -23,7 +23,15 @@ declare global {
     }
 }
 
-import { AuthGateModal, TrialKeyModal, MacComingSoonModal, PaymentSupportModal, PaidLicenseModal, CheckoutStatus } from './marketing/AccountDialogs';
+import {
+    AuthGateModal,
+    TrialKeyModal,
+    MacComingSoonModal,
+    PaymentSupportModal,
+    PaidLicenseModal,
+    PendingLicenseModal,
+    CheckoutStatus,
+} from './marketing/AccountDialogs';
 
 export default function App() {
     const windowsDownloadUrl =
@@ -49,8 +57,20 @@ export default function App() {
     const [paidLicenseKey, setPaidLicenseKey] = useState('');
     const [paidLicensePlan, setPaidLicensePlan] = useState<'monthly' | 'yearly'>('monthly');
     const [isPaidLicenseCopied, setIsPaidLicenseCopied] = useState(false);
+    const [pendingLicense, setPendingLicense] = useState<{ plan: 'monthly' | 'yearly'; reference: string } | null>(() => {
+        try {
+            const saved = JSON.parse(window.sessionStorage.getItem('hintio_pending_license') || 'null');
+            return saved && ['monthly', 'yearly'].includes(saved.plan) && typeof saved.reference === 'string' ? saved : null;
+        } catch {
+            return null;
+        }
+    });
+    const [isPendingLicenseOpen, setIsPendingLicenseOpen] = useState(Boolean(pendingLicense));
+    const [isRecoveringLicense, setIsRecoveringLicense] = useState(false);
+    const licenseRecoveryInFlightRef = useRef(false);
 
-    const hasOpenDialog = isAuthModalOpen || isTrialModalOpen || isMacModalOpen || isPaymentModalOpen || isPaidLicenseModalOpen;
+    const hasOpenDialog =
+        isAuthModalOpen || isTrialModalOpen || isMacModalOpen || isPaymentModalOpen || isPaidLicenseModalOpen || isPendingLicenseOpen;
     useEffect(() => {
         if (!hasOpenDialog) return;
         const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -69,6 +89,7 @@ export default function App() {
                 setIsMacModalOpen(false);
                 setIsPaymentModalOpen(false);
                 setIsPaidLicenseModalOpen(false);
+                setIsPendingLicenseOpen(false);
             }
             if (event.key !== 'Tab') return;
             const controls = getControls();
@@ -208,7 +229,62 @@ export default function App() {
         setIsPaidLicenseCopied(true);
     };
 
+    // A paid customer can keep using the page while the existing issuer/webhook finishes.
+    // Retry only reads the authenticated license endpoint; it never creates another payment.
+    const deliverPaidLicense = async (plan: 'monthly' | 'yearly', paymentResponse?: Parameters<typeof issuePaidLicenseKey>[1]) => {
+        if (licenseRecoveryInFlightRef.current) return;
+        licenseRecoveryInFlightRef.current = true;
+        const pending = { plan, reference: paymentResponse?.razorpay_payment_id || pendingLicense?.reference || '' };
+        setPendingLicense(pending);
+        try {
+            window.sessionStorage.setItem('hintio_pending_license', JSON.stringify(pending));
+        } catch {
+            /* Storage may be unavailable. */
+        }
+        setIsPendingLicenseOpen(true);
+        setIsRecoveringLicense(true);
+        setIsCheckoutLoading(false);
+        try {
+            let key: string;
+            if (paymentResponse) {
+                try {
+                    key = await issuePaidLicenseKey(plan, paymentResponse);
+                } catch {
+                    key = await fetchPaidLicenseKey(plan);
+                }
+            } else {
+                key = await fetchPaidLicenseKey(plan);
+            }
+            setPaidLicensePlan(plan);
+            setPaidLicenseKey(key);
+            setIsPaidLicenseCopied(false);
+            setIsPendingLicenseOpen(false);
+            setIsPaidLicenseModalOpen(true);
+            setPendingLicense(null);
+            try {
+                window.sessionStorage.removeItem('hintio_pending_license');
+            } catch {
+                /* Keep the delivered key visible. */
+            }
+        } catch {
+            // Retain the reference and recovery action, including across a reload in this tab.
+        } finally {
+            licenseRecoveryInFlightRef.current = false;
+            setIsRecoveringLicense(false);
+        }
+    };
+
+    useEffect(() => {
+        if (pendingLicense) void deliverPaidLicense(pendingLicense.plan);
+        // Resume once after a reload; subsequent recovery is explicit or already in flight.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     const startRazorpayCheckout = async (plan: 'monthly' | 'yearly') => {
+        if (pendingLicense) {
+            setIsPendingLicenseOpen(true);
+            return;
+        }
         if (checkoutInFlightRef.current) return;
         checkoutInFlightRef.current = true;
         setIsCheckoutLoading(true);
@@ -467,35 +543,7 @@ export default function App() {
                         razorpay_subscription_id?: string;
                         razorpay_signature?: string;
                     }) => {
-                        setIsCheckoutLoading(true);
-                        try {
-                            let licenseKey: string | null = null;
-
-                            try {
-                                licenseKey = await issuePaidLicenseKey(plan, paymentResponse);
-                                debugLog('issuePaidLicenseKey succeeded', {
-                                    plan,
-                                    hasPaymentId: Boolean(paymentResponse?.razorpay_payment_id),
-                                    hasOrderId: Boolean(paymentResponse?.razorpay_order_id),
-                                    hasSubscriptionId: Boolean(paymentResponse?.razorpay_subscription_id),
-                                });
-                            } catch (issueError) {
-                                debugLog('issuePaidLicenseKey failed, falling back to polling', {
-                                    message: issueError instanceof Error ? issueError.message : String(issueError),
-                                });
-                                licenseKey = await fetchPaidLicenseKey(plan);
-                            }
-
-                            setPaidLicensePlan(plan);
-                            setPaidLicenseKey(licenseKey);
-                            setIsPaidLicenseCopied(false);
-                            setIsPaidLicenseModalOpen(true);
-                        } catch (error) {
-                            const message = error instanceof Error ? error.message : 'Payment was successful, but key retrieval failed.';
-                            alert(message);
-                        } finally {
-                            setIsCheckoutLoading(false);
-                        }
+                        await deliverPaidLicense(plan, paymentResponse);
                     },
                     modal: {
                         ondismiss: () => setIsCheckoutLoading(false),
@@ -818,6 +866,16 @@ export default function App() {
                 onClose={() => setIsPaidLicenseModalOpen(false)}
             />
 
+            <PendingLicenseModal
+                isOpen={isPendingLicenseOpen}
+                isRecovering={isRecoveringLicense}
+                reference={pendingLicense?.reference || ''}
+                onRetry={() => {
+                    if (pendingLicense) void deliverPaidLicense(pendingLicense.plan);
+                }}
+                onDownload={triggerDownload}
+                onClose={() => setIsPendingLicenseOpen(false)}
+            />
             {isCheckoutLoading && <CheckoutStatus />}
         </div>
     );

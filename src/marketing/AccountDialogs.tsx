@@ -345,6 +345,56 @@ export function PaymentSupportModal({ isOpen, onClose }: { isOpen: boolean; onCl
     );
 }
 
+export function PendingLicenseModal({
+    isOpen,
+    isRecovering,
+    reference,
+    onRetry,
+    onDownload,
+    onClose,
+}: {
+    isOpen: boolean;
+    isRecovering: boolean;
+    reference: string;
+    onRetry: () => void;
+    onDownload: () => void;
+    onClose: () => void;
+}) {
+    return (
+        <DialogFrame
+            open={isOpen}
+            onClose={onClose}
+            label="PAYMENT RECEIVED"
+            title="Your key is on its way."
+            description="Do not pay again. You can download Hintio while we retrieve your key. Keep this tab open; your key will appear here when it’s ready."
+            footer={<span>{reference ? `Payment reference: ${reference}` : 'Your key is linked to the account you paid with.'}</span>}
+        >
+            <div className="checkout-help" role="status" aria-live="polite">
+                {isRecovering ? <Loader2 className="account-spin" size={22} /> : <Check size={22} />}
+                <div>
+                    <strong>{isRecovering ? 'Checking for your access key' : 'Your key is still processing'}</strong>
+                    <p>
+                        {isRecovering
+                            ? 'You can continue below. We’ll keep checking in this tab.'
+                            : 'Check again without paying, or send your payment reference to support.'}
+                    </p>
+                </div>
+            </div>
+            <div className="account-actions">
+                <button className="account-primary" onClick={onDownload}>
+                    Download for Windows <Download size={18} />
+                </button>
+                <button className="account-secondary" onClick={onRetry} disabled={isRecovering}>
+                    {isRecovering ? 'Checking your key…' : 'Check for my key'}
+                </button>
+            </div>
+            <a className="account-recovery-support" href="https://wa.me/9174448865095" target="_blank" rel="noopener noreferrer">
+                Contact support <ArrowUpRight size={18} />
+            </a>
+        </DialogFrame>
+    );
+}
+
 export function CheckoutStatus() {
     return (
         <div className="checkout-status" role="status">

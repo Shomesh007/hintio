@@ -2,9 +2,29 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { AuthGateModal, PaidLicenseModal, TrialKeyModal } from '../src/marketing/AccountDialogs';
+import { AuthGateModal, PaidLicenseModal, PendingLicenseModal, TrialKeyModal } from '../src/marketing/AccountDialogs';
 
 const noop = () => {};
+for (const isRecovering of [true, false]) {
+    test(`pending payment panel keeps download and support available (recovering=${isRecovering})`, () => {
+        const markup = renderToStaticMarkup(
+            createElement(PendingLicenseModal, {
+                isOpen: true,
+                isRecovering,
+                reference: 'DEMO-PAYMENT',
+                onRetry: noop,
+                onDownload: noop,
+                onClose: noop,
+            })
+        );
+        assert.match(markup, /Do not pay again/);
+        assert.match(markup, /Download for Windows/);
+        assert.match(markup, /DEMO-PAYMENT/);
+        assert.match(markup, /Contact support/);
+        assert.equal(markup.includes('disabled=""'), isRecovering);
+        assert.equal(markup.includes('Check for my key'), !isRecovering);
+    });
+}
 test('closed key dialogs render no key or dialog content', () => {
     const markup = renderToStaticMarkup(
         createElement(PaidLicenseModal, {

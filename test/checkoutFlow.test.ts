@@ -18,9 +18,11 @@ const runnable = ts.transpileModule(`const checkout = ${declaration.initializer!
     compilerOptions: { target: ts.ScriptTarget.ES2022 },
 }).outputText;
 
-function setup(options: { stalledSession?: boolean; stalledScript?: boolean; delayedRequest?: boolean } = {}) {
+function setup(options: { stalledSession?: boolean; stalledScript?: boolean; delayedRequest?: boolean; pendingLicense?: boolean } = {}) {
     const loading: boolean[] = [];
     const plans: string[] = [];
+    const deliveries: unknown[][] = [];
+    let pendingOpen = false;
     let opened = 0;
     let support = false;
     let finishRequest: (() => void) | undefined;
@@ -29,6 +31,13 @@ function setup(options: { stalledSession?: boolean; stalledScript?: boolean; del
     const payload = { data: { keyId: 'DEMO-KEY', orderId: 'DEMO-ORDER', amount: 12345, currency: 'INR', mode: 'order' }, error: null };
     const context = {
         checkoutInFlightRef: lock,
+        pendingLicense: options.pendingLicense ? { plan: 'monthly', reference: 'DEMO-PAID' } : null,
+        setIsPendingLicenseOpen: (value: boolean) => {
+            pendingOpen = value;
+        },
+        deliverPaidLicense: async (...args: unknown[]) => {
+            deliveries.push(args);
+        },
         setIsCheckoutLoading: (value: boolean) => loading.push(value),
         setIsPaymentModalOpen: (value: boolean) => {
             support = value;
@@ -86,6 +95,10 @@ function setup(options: { stalledSession?: boolean; stalledScript?: boolean; del
         checkout,
         loading,
         plans,
+        deliveries,
+        get pendingOpen() {
+            return pendingOpen;
+        },
         lock,
         get opened() {
             return opened;
@@ -99,6 +112,22 @@ function setup(options: { stalledSession?: boolean; stalledScript?: boolean; del
         finish: () => finishRequest?.(),
     };
 }
+
+test('payment success forwards the unchanged plan and payment proof to key delivery', async () => {
+    const fake = setup();
+    await fake.checkout('yearly');
+    const proof = { razorpay_payment_id: 'DEMO-PAID', razorpay_signature: 'DEMO-SIGNATURE' };
+    await (fake.checkoutOptions.handler as (proof: object) => Promise<void>)(proof);
+    assert.deepEqual(fake.deliveries, [['yearly', proof]]);
+});
+
+test('a pending paid key reopens recovery instead of creating another payment', async () => {
+    const fake = setup({ pendingLicense: true });
+    await fake.checkout('monthly');
+    assert.equal(fake.pendingOpen, true);
+    assert.equal(fake.opened, 0);
+    assert.deepEqual(fake.plans, []);
+});
 
 for (const stalled of ['stalledSession', 'stalledScript'] as const) {
     test(`${stalled} clears the spinner and checkout lock instead of hanging`, async () => {

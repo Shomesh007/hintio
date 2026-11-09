@@ -9,6 +9,7 @@ import {
     MacComingSoonModal,
     PaymentSupportModal,
     CheckoutStatus,
+    PendingLicenseModal,
 } from '../src/marketing/AccountDialogs';
 import '../src/index.css';
 import '../src/marketing/account-dialogs.css';
@@ -26,18 +27,20 @@ function Review() {
             <h1>Local dialog review</h1>
             <p>Dummy data only. No backend calls.</p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-                {['sign-in', 'download', 'sign-in-error', 'trial', 'paid', 'mac', 'checkout-help', 'loading'].map(name => (
-                    <button
-                        key={name}
-                        onClick={() => {
-                            setState(name);
-                            setCopied(false);
-                        }}
-                        style={{ padding: 10, border: '1px solid #8792a8', borderRadius: 5 }}
-                    >
-                        {name}
-                    </button>
-                ))}
+                {['sign-in', 'download', 'sign-in-error', 'trial', 'paid', 'mac', 'checkout-help', 'pending', 'pending-retry', 'loading'].map(
+                    name => (
+                        <button
+                            key={name}
+                            onClick={() => {
+                                setState(name);
+                                setCopied(false);
+                            }}
+                            style={{ padding: 10, border: '1px solid #8792a8', borderRadius: 5 }}
+                        >
+                            {name}
+                        </button>
+                    )
+                )}
             </div>
             <p role="status">{action}</p>
             <AuthGateModal
@@ -72,6 +75,14 @@ function Review() {
             />
             <MacComingSoonModal isOpen={state === 'mac'} onClose={close} />
             <PaymentSupportModal isOpen={state === 'checkout-help'} onClose={close} />
+            <PendingLicenseModal
+                isOpen={state === 'pending' || state === 'pending-retry'}
+                isRecovering={state === 'pending'}
+                reference="DEMO-PAYMENT"
+                onRetry={() => setAction('Recovery callback invoked')}
+                onDownload={() => setAction('Download callback invoked')}
+                onClose={close}
+            />
             {state === 'loading' && <CheckoutStatus />}
         </div>
     );

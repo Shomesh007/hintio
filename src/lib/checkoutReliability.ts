@@ -1,5 +1,7 @@
-export const REQUEST_TIMEOUT_MS = 15_000;
-export const CHECKOUT_TIMEOUT_MS = 30_000;
+export const REQUEST_TIMEOUT_MS = 8_000;
+export const CHECKOUT_TIMEOUT_MS = 15_000;
+// Key recovery runs in its own visible panel, without blocking checkout or downloading.
+export const KEY_RECOVERY_TIMEOUT_MS = 30_000;
 
 export function abortable<T>(operation: PromiseLike<T>, signal: AbortSignal): Promise<T> {
     return new Promise((resolve, reject) => {
@@ -118,7 +120,7 @@ export async function recoverLicenseKey(
             if (attempt < attempts - 1) await abortable(new Promise(resolve => setTimeout(resolve, options.intervalMs ?? 2000)), signal);
         }
         throw new Error('Your payment completed, but the key is still processing. Contact support with your payment reference; do not pay again.');
-    }, options.timeoutMs ?? CHECKOUT_TIMEOUT_MS).catch(() => {
+    }, options.timeoutMs ?? KEY_RECOVERY_TIMEOUT_MS).catch(() => {
         throw new Error('Your payment completed, but the key is still processing. Contact support with your payment reference; do not pay again.');
     });
 }
