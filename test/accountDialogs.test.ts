@@ -5,6 +5,22 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { AuthGateModal, PaidLicenseModal, PendingLicenseModal, TrialKeyModal } from '../src/marketing/AccountDialogs';
 
 const noop = () => {};
+test('returning paid customers sign in for retrieval with no checkout steps', () => {
+    const markup = renderToStaticMarkup(
+        createElement(AuthGateModal, {
+            isOpen: true,
+            intent: 'recover_yearly',
+            onClose: noop,
+            onSignIn: noop,
+            isSigningIn: false,
+            error: null,
+        })
+    );
+    assert.match(markup, /Welcome back/);
+    assert.match(markup, /same Google account/);
+    assert.match(markup, /Yearly Pro/);
+    assert.doesNotMatch(markup, /Purchase steps/);
+});
 for (const isRecovering of [true, false]) {
     test(`pending payment panel keeps download and support available (recovering=${isRecovering})`, () => {
         const markup = renderToStaticMarkup(

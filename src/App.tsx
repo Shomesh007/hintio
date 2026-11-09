@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase, missingSupabaseEnvVars } from './lib/supabase';
+import { readPendingLicense, rememberPendingLicense, forgetPendingLicense, type PendingLicense } from './lib/pendingLicense';
 import {
     abortable,
     withDeadline,
@@ -39,7 +40,7 @@ export default function App() {
     const defaultSupabaseUrl = 'https://vsybqtunyuanxspxhzue.supabase.co';
     const supabaseFunctionsBaseUrl = import.meta.env.VITE_SUPABASE_URL || defaultSupabaseUrl;
     const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-    type AuthIntent = 'download' | 'upgrade_monthly' | 'upgrade_yearly';
+    type AuthIntent = 'download' | 'upgrade_monthly' | 'upgrade_yearly' | 'recover_monthly' | 'recover_yearly';
     const AUTH_INTENT_STORAGE_KEY = 'hintio_auth_intent';
     const checkoutInFlightRef = useRef(false);
     const checkoutScriptLoaderRef = useRef<(() => Promise<boolean>) | null>(null);
@@ -57,10 +58,9 @@ export default function App() {
     const [paidLicenseKey, setPaidLicenseKey] = useState('');
     const [paidLicensePlan, setPaidLicensePlan] = useState<'monthly' | 'yearly'>('monthly');
     const [isPaidLicenseCopied, setIsPaidLicenseCopied] = useState(false);
-    const [pendingLicense, setPendingLicense] = useState<{ plan: 'monthly' | 'yearly'; reference: string } | null>(() => {
+    const [pendingLicense, setPendingLicense] = useState<PendingLicense | null>(() => {
         try {
-            const saved = JSON.parse(window.sessionStorage.getItem('hintio_pending_license') || 'null');
-            return saved && ['monthly', 'yearly'].includes(saved.plan) && typeof saved.reference === 'string' ? saved : null;
+            return readPendingLicense(window.localStorage, window.sessionStorage);
         } catch {
             return null;
         }
@@ -236,14 +236,17 @@ export default function App() {
     // A paid customer can keep using the page while the existing issuer/webhook finishes.
     // Retry only reads the authenticated license endpoint; it never creates another payment.
     const deliverPaidLicense = async (plan: 'monthly' | 'yearly', paymentResponse?: Parameters<typeof issuePaidLicenseKey>[1]) => {
-        if (licenseRecoveryInFlightRef.current) return;
+        if (licenseRecoveryInFlightRef.current) {
+            setIsPendingLicenseOpen(true);
+            return;
+        }
         licenseRecoveryInFlightRef.current = true;
         const controller = new AbortController();
         licenseRecoveryControllerRef.current = controller;
         const pending = { plan, reference: paymentResponse?.razorpay_payment_id || pendingLicense?.reference || '' };
         setPendingLicense(pending);
         try {
-            window.sessionStorage.setItem('hintio_pending_license', JSON.stringify(pending));
+            rememberPendingLicense(pending, window.localStorage, window.sessionStorage);
         } catch {
             /* Storage may be unavailable. */
         }
@@ -270,7 +273,7 @@ export default function App() {
             setIsPaidLicenseModalOpen(true);
             setPendingLicense(null);
             try {
-                window.sessionStorage.removeItem('hintio_pending_license');
+                forgetPendingLicense(window.localStorage, window.sessionStorage);
             } catch {
                 /* Keep the delivered key visible. */
             }
@@ -286,8 +289,10 @@ export default function App() {
     };
 
     useEffect(() => {
-        if (pendingLicense) void deliverPaidLicense(pendingLicense.plan);
+        const resumeController = new AbortController();
+        if (pendingLicense) void handleRecoverLicense(pendingLicense.plan, resumeController.signal);
         return () => {
+            resumeController.abort();
             licenseRecoveryControllerRef.current?.abort();
             licenseRecoveryControllerRef.current = null;
             licenseRecoveryInFlightRef.current = false;
@@ -296,9 +301,32 @@ export default function App() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    const handleRecoverLicense = async (plan: 'monthly' | 'yearly', resumeSignal?: AbortSignal) => {
+        setAuthError(null);
+        setAuthIntent(plan === 'monthly' ? 'recover_monthly' : 'recover_yearly');
+        try {
+            if (!supabase) throw new Error('Key recovery is temporarily unavailable. Contact support; do not pay again.');
+            const { data, error } = await withDeadline(signal => abortable(supabase.auth.getSession(), signal), REQUEST_TIMEOUT_MS, resumeSignal);
+            resumeSignal?.throwIfAborted();
+            if (error) throw error;
+            if (!data.session) {
+                setIsPendingLicenseOpen(false);
+                setIsAuthModalOpen(true);
+                return;
+            }
+            setIsAuthModalOpen(false);
+            await deliverPaidLicense(plan);
+        } catch {
+            if (resumeSignal?.aborted) return;
+            setIsPendingLicenseOpen(false);
+            setAuthError('Could not restore your account. Sign in with the account you paid with; do not pay again.');
+            setIsAuthModalOpen(true);
+        }
+    };
+
     const startRazorpayCheckout = async (plan: 'monthly' | 'yearly') => {
         if (pendingLicense) {
-            setIsPendingLicenseOpen(true);
+            await handleRecoverLicense(pendingLicense.plan);
             return;
         }
         if (checkoutInFlightRef.current) return;
@@ -621,10 +649,11 @@ export default function App() {
                 hasAuthCallbackMarkers,
             });
 
+            const validIntents = ['download', 'upgrade_monthly', 'upgrade_yearly', 'recover_monthly', 'recover_yearly'];
             const intent =
-                intentParam === 'download' || intentParam === 'upgrade_monthly' || intentParam === 'upgrade_yearly'
+                intentParam && validIntents.includes(intentParam)
                     ? (intentParam as AuthIntent)
-                    : storedIntent === 'download' || storedIntent === 'upgrade_monthly' || storedIntent === 'upgrade_yearly'
+                    : storedIntent && validIntents.includes(storedIntent)
                       ? (storedIntent as AuthIntent)
                       : legacyDownloadParam
                         ? 'download'
@@ -648,6 +677,12 @@ export default function App() {
             const continueIntent = async (activeIntent: AuthIntent) => {
                 debugLog('continueIntent entered', { activeIntent });
                 clearIntentMarkers();
+
+                if (activeIntent === 'recover_monthly' || activeIntent === 'recover_yearly') {
+                    setIsAuthModalOpen(false);
+                    await deliverPaidLicense(activeIntent === 'recover_yearly' ? 'yearly' : 'monthly');
+                    return;
+                }
 
                 if (activeIntent === 'upgrade_monthly') {
                     debugLog('continueIntent -> upgrade_monthly');
@@ -846,6 +881,7 @@ export default function App() {
                 <MarketingSite
                     onDownload={handleDownloadClick}
                     onUpgrade={handleUpgradeClick}
+                    onRecover={handleRecoverLicense}
                     onMacDownload={handleMacDownloadClick}
                     checkoutLoading={isCheckoutLoading}
                 />

@@ -2570,3 +2570,17 @@
         transition: none !important;
     }
 }
+.access-recover {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    width: 100%;
+    margin-top: 16px;
+    padding: 8px 0;
+    font: inherit;
+    font-size: 13px;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    cursor: pointer;
+}

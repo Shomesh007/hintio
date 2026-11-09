@@ -120,17 +120,24 @@ export function AuthGateModal({
     onSignIn: () => void;
     isSigningIn: boolean;
     error: string | null;
-    intent?: 'download' | 'upgrade_monthly' | 'upgrade_yearly';
+    intent?: 'download' | 'upgrade_monthly' | 'upgrade_yearly' | 'recover_monthly' | 'recover_yearly';
 }) {
     const buying = intent !== 'download';
-    const plan = intent === 'upgrade_yearly' ? 'Yearly Pro' : 'Monthly Pro';
+    const recovering = intent === 'recover_monthly' || intent === 'recover_yearly';
+    const plan = intent === 'upgrade_yearly' || intent === 'recover_yearly' ? 'Yearly Pro' : 'Monthly Pro';
     return (
         <DialogFrame
             open={isOpen}
             onClose={onClose}
             label="YOUR ACCOUNT"
-            title={buying ? 'Sign in to get your key.' : 'Your desktop, with Hintio.'}
-            description={buying ? 'Continue with Google, then review your plan in checkout.' : 'Sign in with Google to download the Windows app.'}
+            title={recovering ? 'Welcome back. Get your key.' : buying ? 'Sign in to get your key.' : 'Your desktop, with Hintio.'}
+            description={
+                recovering
+                    ? 'Use the same Google account you paid with. We’ll retrieve your existing key without opening checkout.'
+                    : buying
+                      ? 'Continue with Google, then review your plan in checkout.'
+                      : 'Sign in with Google to download the Windows app.'
+            }
             footer={
                 <>
                     <span>You’ll return here after Google sign-in.</span>
@@ -159,7 +166,7 @@ export function AuthGateModal({
                     <p>{error}</p>
                 </div>
             )}
-            {buying && (
+            {buying && !recovering && (
                 <ol className="account-progress" aria-label="Purchase steps">
                     <li aria-current="step">
                         <b>1</b>Sign in

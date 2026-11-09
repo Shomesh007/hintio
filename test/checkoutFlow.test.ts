@@ -35,6 +35,9 @@ function setup(options: { stalledSession?: boolean; stalledScript?: boolean; del
         setIsPendingLicenseOpen: (value: boolean) => {
             pendingOpen = value;
         },
+        handleRecoverLicense: async () => {
+            pendingOpen = true;
+        },
         deliverPaidLicense: async (...args: unknown[]) => {
             deliveries.push(args);
         },

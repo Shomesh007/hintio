@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import ts from 'typescript';
+import { readPendingLicense, rememberPendingLicense, forgetPendingLicense } from '../src/lib/pendingLicense';
 import {
     REQUEST_TIMEOUT_MS,
     CHECKOUT_TIMEOUT_MS,
@@ -26,13 +27,24 @@ const runnable = ts.transpileModule(`const deliver = ${declaration.initializer!.
 function setup(issue: () => Promise<string>, recover: (plan: string, signal: AbortSignal) => Promise<string>, storage = new Map<string, string>()) {
     const values: Record<string, unknown> = {};
     const controllerRef: { current: AbortController | null } = { current: null };
+    const storageAccess = {
+        getItem: (k: string) => storage.get(k) ?? null,
+        setItem: (k: string, v: string) => {
+            storage.set(k, v);
+        },
+        removeItem: (k: string) => {
+            storage.delete(k);
+        },
+    };
     const context: Record<string, unknown> = {
-        pendingLicense: JSON.parse(storage.get('hintio_pending_license') || 'null') || { plan: 'yearly', reference: 'PAID-REFERENCE' },
+        pendingLicense: readPendingLicense(storageAccess) || { plan: 'yearly', reference: 'PAID-REFERENCE' },
         licenseRecoveryInFlightRef: { current: false },
         licenseRecoveryControllerRef: controllerRef,
         AbortController,
         abortable,
-        window: { sessionStorage: { setItem: (k: string, v: string) => storage.set(k, v), removeItem: (k: string) => storage.delete(k) } },
+        window: { localStorage: storageAccess, sessionStorage: storageAccess },
+        rememberPendingLicense,
+        forgetPendingLicense,
         issuePaidLicenseKey: issue,
         fetchPaidLicenseKey: recover,
     };

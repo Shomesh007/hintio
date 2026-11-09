@@ -8,7 +8,7 @@ Welcome to the landing page repository for **Hintio**. This is the promotional a
 
 Hintio is a real-time, invisible desktop copilot designed primarily for interviews, high-stakes meetings, and developer assistance. It "listens" to system audio (speaker output and microphone input) entirely locally, transcribes the conversation, and provides instant, context-aware suggestions (hints) and live coding assistance in a stealthy, configurable UI.
 
-*For comprehensive details about the product architecture, target users, and capabilities, refer to the `PRD.md` file located in the root of this repository.*
+_For comprehensive details about the product architecture, target users, and capabilities, refer to the `PRD.md` file located in the root of this repository._
 
 ## Desktop storefront redesign
 
@@ -23,6 +23,7 @@ The backend still accepts monthly and yearly checkout identifiers. Final price a
 OAuth redirects must be allowed in the Supabase Auth configuration for any new preview origin. A payment has not been executed as part of UI testing. Configure and verify the production plan amounts before a public rollout. Vercel deep-link rewrites are included for each page.
 
 ## Tech Stack
+
 - React 19
 - Vite
 - Tailwind CSS v4
@@ -33,18 +34,21 @@ OAuth redirects must be allowed in the Supabase Auth configuration for any new p
 **Prerequisites:** Node.js v18+
 
 1. Install dependencies:
-   ```bash
-   npm install
-   ```
+
+    ```bash
+    npm install
+    ```
 
 2. Run the development server:
-   ```bash
-   npm run dev
-   ```
+
+    ```bash
+    npm run dev
+    ```
 
 3. Open the browser to see the site running at `http://localhost:3000`.
 
 ## Architecture Note
+
 This repository contains the marketing **web frontend** only. The actual Hintio product is a separate Electron desktop application.
 
 ## Supabase + Razorpay License Flow
@@ -182,9 +186,9 @@ Behavior:
 
 - After successful Google auth with `?download=1`, frontend calls `public.claim_three_usage_trial_key()`.
 - Function selects an unassigned token from `public.access_tokens` where:
-   - `max_interviews = 3`
-   - active + not expired
-   - linked `public.provider_secrets.metadata.plan_type = 'three_usage'`
+    - `max_interviews = 3`
+    - active + not expired
+    - linked `public.provider_secrets.metadata.plan_type = 'three_usage'`
 - Token is atomically claimed (`FOR UPDATE SKIP LOCKED`) and reserved to that user (`sold_to`).
 - Claim mapping is stored in `public.trial_key_claims` to ensure a token is never assigned to another user.
 - UI shows popup with key, Copy, and Done. Download starts only after Done.
@@ -206,9 +210,13 @@ If issuance is slow or fails, it automatically polls the authenticated `get-my-l
 endpoint until the selected-plan key is available. Each lookup has an 8-second limit;
 retries back off from 2 seconds to a maximum of 30 seconds between checks. There is
 no overall recovery cutoff while the page remains open. The pending plan and payment
-reference are kept in tab session storage so reloading resumes lookup without starting
-another payment. Closing the dialog does not stop recovery; leaving the page cancels
-its requests and timers. The browser cannot check while the tab is closed.
+reference are kept in local storage so reopening the same browser restores lookup,
+with sign-in required if the session expired. Legacy tab-session reminders migrate
+automatically. No license keys, payment signatures, or login credentials are stored
+in the reminder. The access page also has an “Already paid?” retrieval action for
+the selected monthly/yearly plan, using the same Google account and existing endpoint.
+Recovery OAuth intents never open checkout. Closing the dialog does not stop recovery;
+leaving the page cancels requests and timers. The browser cannot check while closed.
 
 ### Deploy function
 

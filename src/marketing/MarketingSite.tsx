@@ -31,6 +31,7 @@ import './marketing.css';
 interface Props {
     onDownload: () => void;
     onUpgrade: (plan: 'monthly' | 'yearly') => void;
+    onRecover: (plan: 'monthly' | 'yearly') => void;
     onMacDownload: () => void;
     checkoutLoading: boolean;
 }
@@ -898,7 +899,7 @@ function GetStarted({ onDownload, go }: Pick<Props, 'onDownload'> & { go: (page:
         </>
     );
 }
-function Access({ onDownload, onUpgrade, onMacDownload, checkoutLoading }: Props) {
+function Access({ onDownload, onUpgrade, onRecover, onMacDownload, checkoutLoading }: Props) {
     const [plan, setPlan] = useState<'monthly' | 'yearly'>('monthly');
     return (
         <>
@@ -958,6 +959,9 @@ function Access({ onDownload, onUpgrade, onMacDownload, checkoutLoading }: Props
                         {checkoutLoading ? 'Opening checkout…' : 'Get your access key'}
                         <ArrowUpRight size={19} />
                     </Button>
+                    <button className="access-recover" onClick={() => onRecover(plan)}>
+                        Already paid? Retrieve my key <ArrowRight size={15} />
+                    </button>
                     <small>Sign in with Google to continue. Your key is shown after the payment flow completes.</small>
                 </div>
             </section>
