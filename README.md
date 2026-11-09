@@ -129,6 +129,8 @@ Optional:
 - `VITE_MAC_DOWNLOAD_URL=<public .dmg URL>`
 - `VITE_WINDOWS_DOWNLOAD_URL=<public .exe URL>`
 
+The default Windows download is [Hintio desktop 1.0.2](https://github.com/Shomesh007/hintio/releases/download/v1.0.2/Hintio-1.0.2.Setup.exe), published in this repository’s `v1.0.2` release. Its tag contains the desktop source; `main` remains the website.
+
 ### SEO/static files included
 
 - `index.html` includes canonical, Open Graph, Twitter metadata
