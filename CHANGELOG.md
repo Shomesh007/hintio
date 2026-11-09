@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.3 — 2026-11-10
+
+- Packaged the maintained desktop support and privacy updates as a distinct Windows release.
+- Updated the website Windows download to the versioned 1.0.3 installer.
+- Kept the previous installer available for rollback.
+
 ## 2026-11-10
 
 ### Desktop 1.0.2 installer refresh

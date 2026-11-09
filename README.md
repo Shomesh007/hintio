@@ -2,7 +2,7 @@
 
 A configurable Electron overlay that uses audio and screen context to assist with responses, technical questions, and meetings.
 
-[Website](https://www.hintio.tech) · [Windows installer](https://github.com/Shomesh007/hintio/releases/download/v1.0.2/Hintio-1.0.2.Setup.exe) · [Development](docs/DEVELOPMENT.md) · [Support](SUPPORT.md)
+[Website](https://www.hintio.tech) · [Windows installer](https://github.com/Shomesh007/hintio/releases/download/v1.0.3/Hintio-1.0.3.Setup.exe) · [Development](docs/DEVELOPMENT.md) · [Support](SUPPORT.md)
 
 ## What is included
 
