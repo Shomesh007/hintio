@@ -2,7 +2,7 @@
 
 A desktop AI assistant that uses conversation and screen context to help you prepare responses, work through technical questions, and follow meetings.
 
-[Website](https://www.hintio.tech) · [Download Windows](https://github.com/Shomesh007/hintio/releases/download/v1.0.2/Hintio-1.0.2.Setup.exe) · [Getting started](https://www.hintio.tech/get-started) · [Contact](https://www.hintio.tech/contact)
+[Website](https://www.hintio.tech) · [Download Windows](https://github.com/Shomesh007/hintio/releases/download/v1.0.3/Hintio-1.0.3.Setup.exe) · [Getting started](https://www.hintio.tech/get-started) · [Contact](https://www.hintio.tech/contact)
 
 ## The product
 
@@ -39,7 +39,7 @@ Windows is the currently linked downloadable build. macOS and Linux code paths e
 | [`v1.0.2`](https://github.com/Shomesh007/hintio/tree/v1.0.2) | Original desktop release source snapshot |
 | [Releases](https://github.com/Shomesh007/hintio/releases) | Distributed Windows installer |
 
-The existing `v1.0.2` installer was refreshed with the contact and privacy changes. Its original source tag is retained; the maintained desktop branch records the subsequent source changes.
+The current Windows installer is `v1.0.3`, built from the maintained desktop source. The original `v1.0.2` tag and installer remain available for rollback.
 
 ## Website development
 
