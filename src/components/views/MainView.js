@@ -1,4 +1,5 @@
 import { html, css, LitElement } from '../../assets/lit-core-2.7.4.min.js';
+import { SUPPORT_EMAIL, SUPPORT_PHONE, SUPPORT_EMAIL_URL, SUPPORT_WHATSAPP_URL } from '../../utils/supportDetails.js';
 
 export class MainView extends LitElement {
     static styles = css`
@@ -415,9 +416,27 @@ export class MainView extends LitElement {
                               <div class="modal-card">
                                   <h2 class="modal-title">Upgrade Required</h2>
                                   <p class="modal-text">
-                                      This key is no longer valid. Contact
-                                      <a class="contact-number" href="tel:+917448865095">+917448865095</a>
-                                      to upgrade to Pro/Lifetime plan.
+                                      This key is no longer valid. Email
+                                      <a
+                                          class="contact-number"
+                                          href=${SUPPORT_EMAIL_URL}
+                                          @click=${event => {
+                                          event.preventDefault();
+                                          this.onExternalLink(SUPPORT_EMAIL_URL);
+                                      }}
+                                          >${SUPPORT_EMAIL}</a
+                                      >
+                                      or message
+                                      <a
+                                          class="contact-number"
+                                          href=${SUPPORT_WHATSAPP_URL}
+                                          @click=${event => {
+                                          event.preventDefault();
+                                          this.onExternalLink(SUPPORT_WHATSAPP_URL);
+                                      }}
+                                          >${SUPPORT_PHONE}</a
+                                      >
+                                      on WhatsApp for help with desktop access.
                                   </p>
                                   <div class="modal-actions">
                                       <button

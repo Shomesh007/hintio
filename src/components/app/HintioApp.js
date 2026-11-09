@@ -998,6 +998,7 @@ export class HintioApp extends LitElement {
             case 'customize':
                 return html`
                     <customize-view
+                        .onContactSupport=${() => this.navigate('help')}
                         .selectedProfile=${this.selectedProfile}
                         .selectedLanguage=${this.selectedLanguage}
                         .selectedScreenshotInterval=${this.selectedScreenshotInterval}
@@ -1082,7 +1083,7 @@ export class HintioApp extends LitElement {
             },
             {
                 id: 'help',
-                label: 'Help',
+                label: 'Help & Contact',
                 icon: html`<span class="icon">help</span>`,
             },
         ];

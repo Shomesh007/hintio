@@ -205,6 +205,64 @@ export class CustomizeView extends LitElement {
                 font-family: var(--font-mono);
             }
 
+            .privacy-intro {
+                color: var(--text-secondary);
+                font-size: 12px;
+                line-height: 1.7;
+                margin: 0 0 14px;
+            }
+            .data-flow {
+                margin: 0;
+            }
+            .data-flow > div {
+                padding: 14px 0;
+                border-top: 1px solid var(--border);
+            }
+            .data-flow dt {
+                font-size: 12px;
+                font-weight: 600;
+                margin-bottom: 7px;
+                color: var(--text-primary);
+            }
+            .data-flow dd {
+                margin: 0;
+                color: var(--text-secondary);
+                font-size: 12px;
+                line-height: 1.7;
+            }
+            .data-flow code {
+                font-family: var(--font-mono);
+                color: var(--text-primary);
+            }
+            .privacy-support {
+                margin-top: 12px;
+                padding-top: 14px;
+                border-top: 1px solid var(--border);
+                font-size: 12px;
+            }
+            .privacy-support p,
+            .data-confirmation p {
+                color: var(--text-secondary);
+                line-height: 1.7;
+            }
+            .privacy-support .control,
+            .data-confirmation .control {
+                width: auto;
+                min-height: 36px;
+                cursor: pointer;
+            }
+            .data-actions {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            .data-confirmation {
+                padding: 14px;
+                border-left: 2px solid var(--danger);
+                margin: 12px 0;
+                background: var(--bg-elevated);
+                font-size: 12px;
+            }
             .status.success {
                 border-color: rgba(34, 197, 94, 0.4);
                 color: var(--success);
@@ -220,6 +278,8 @@ export class CustomizeView extends LitElement {
     ];
 
     static properties = {
+        onContactSupport: { type: Function },
+        pendingDataAction: { type: String },
         selectedProfile: { type: String },
         selectedLanguage: { type: String },
         selectedImageQuality: { type: String },
@@ -241,6 +301,8 @@ export class CustomizeView extends LitElement {
 
     constructor() {
         super();
+        this.pendingDataAction = '';
+        this.onContactSupport = () => {};
         this.selectedProfile = 'interview';
         this.selectedLanguage = 'en-US';
         this.selectedImageQuality = 'medium';
@@ -525,6 +587,11 @@ export class CustomizeView extends LitElement {
 
     async restoreAllSettings() {
         if (this.isRestoring) return;
+        if (this.pendingDataAction !== 'restore') {
+            this.pendingDataAction = 'restore';
+            return;
+        }
+        this.pendingDataAction = '';
         this.isRestoring = true;
         this.clearStatusMessage = '';
         this.clearStatusType = '';
@@ -593,6 +660,11 @@ export class CustomizeView extends LitElement {
 
     async clearLocalData() {
         if (this.isClearing) return;
+        if (this.pendingDataAction !== 'delete') {
+            this.pendingDataAction = 'delete';
+            return;
+        }
+        this.pendingDataAction = '';
         this.isClearing = true;
         this.clearStatusMessage = '';
         this.clearStatusType = '';
@@ -759,24 +831,84 @@ export class CustomizeView extends LitElement {
 
     renderPrivacySection() {
         return html`
+            <section class="surface privacy-surface" aria-labelledby="privacy-title">
+                <div class="surface-header">
+                    <span class="icon" style="color:var(--accent)">shield</span>
+                    <div class="surface-title" id="privacy-title">Privacy & Data</div>
+                </div>
+                <p class="privacy-intro">Know what enters a session, where it is processed, and what stays on this device.</p>
+                <dl class="data-flow">
+                    <div>
+                        <dt>01 · Capture</dt>
+                        <dd>
+                            Your selected audio mode and screen-capture controls determine the context available to Hintio. Choose
+                            <strong>No Audio</strong> above for screenshot-only sessions. Only capture content you have permission to use.
+                        </dd>
+                    </div>
+                    <div>
+                        <dt>02 · Processing</dt>
+                        <dd>
+                            Cloud providers receive the session context sent to them, which can include audio or transcripts, screenshots, your
+                            resume, and custom instructions. BYOK uses your selected provider; it does not mean processing stays local. Local mode
+                            uses Ollama and on-device transcription after setup. Access validation and model downloads can still need a connection.
+                        </dd>
+                    </div>
+                    <div>
+                        <dt>03 · Local records</dt>
+                        <dd>
+                            Hintio stores configuration, provider credentials, preferences, and session history in its local
+                            <code>hintio-config</code> folder. History can include responses, transcripts, and screen analyses. Treat this folder and
+                            any exports as private.
+                        </dd>
+                    </div>
+                </dl>
+                <div class="privacy-support">
+                    <strong>Questions or a data request?</strong>
+                    <p>
+                        Contact support for questions about provider processing, retention, or information associated with your access. Deleting local
+                        files does not delete data held by an AI or payment provider.
+                    </p>
+                    <button class="control" @click=${this.onContactSupport}>Contact Hintio support <span aria-hidden="true">↗</span></button>
+                </div>
+            </section>
             <section class="surface danger-surface">
-                <div class="surface-header" style="border-color: rgba(239, 68, 68, 0.2);">
-                    <span class="icon" style="font-size:16px;color:#EF4444">delete_forever</span>
-                    <div class="surface-title" style="color:#EF4444">Privacy and Data</div>
+                <div class="surface-header">
+                    <span class="icon" style="color:var(--danger)">delete_forever</span>
+                    <div class="surface-title">Local data controls</div>
                 </div>
-                <div style="display:flex;gap:var(--space-sm);flex-wrap:wrap;">
-                    <button class="danger-button" @click=${this.restoreAllSettings} ?disabled=${this.isRestoring}>
-                        ${this.isRestoring ? 'Restoring...' : 'Restore all settings'}
-                    </button>
-                    <button class="danger-button" @click=${this.clearLocalData} ?disabled=${this.isClearing}>
-                        ${this.isClearing ? 'Clearing...' : 'Delete all data'}
-                    </button>
-                </div>
+                <p class="privacy-intro">
+                    Restore settings resets preferences, shortcuts, saved resume text, and custom instructions. Delete local data resets the entire
+                    Hintio configuration folder, including saved credentials and history, then closes the app. Exported copies are separate.
+                </p>
                 ${
-                    this.clearStatusMessage
-                        ? html` <div class="status ${this.clearStatusType === 'success' ? 'success' : 'error'}">${this.clearStatusMessage}</div> `
+                    this.pendingDataAction
+                        ? html`<div class="data-confirmation" role="alert">
+                              <strong
+                                  >${this.pendingDataAction === 'delete' ? 'Delete the local Hintio configuration and history?' : 'Reset your preferences and saved AI context?'}</strong
+                              >
+                              <p>
+                                  ${this.pendingDataAction === 'delete' ? 'This cannot be undone in the app. Your saved provider keys and local session records will be removed.' : 'Your resume text, custom instructions, appearance, and shortcuts return to their defaults. Session history is retained.'}
+                              </p>
+                              <button
+                                  class="control"
+                                  @click=${() => {
+                                      this.pendingDataAction = '';
+                                  }}
+                              >
+                                  Cancel
+                              </button>
+                          </div>`
                         : ''
                 }
+                <div class="data-actions">
+                    <button class="danger-button" @click=${this.restoreAllSettings} ?disabled=${this.isRestoring || this.isClearing}>
+                        ${this.isRestoring ? 'Restoring…' : this.pendingDataAction === 'restore' ? 'Confirm reset settings' : 'Restore settings'}
+                    </button>
+                    <button class="danger-button" @click=${this.clearLocalData} ?disabled=${this.isClearing || this.isRestoring}>
+                        ${this.isClearing ? 'Deleting…' : this.pendingDataAction === 'delete' ? 'Confirm delete local data' : 'Delete local data'}
+                    </button>
+                </div>
+                ${this.clearStatusMessage ? html`<div class="status ${this.clearStatusType === 'success' ? 'success' : 'error'}" role="status">${this.clearStatusMessage}</div>` : ''}
             </section>
         `;
     }
