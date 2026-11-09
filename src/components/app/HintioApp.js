@@ -8,7 +8,6 @@ import { AssistantView } from '../views/AssistantView.js';
 import { OnboardingView } from '../views/OnboardingView.js';
 import { AICustomizeView } from '../views/AICustomizeView.js';
 import { FeedbackView } from '../views/FeedbackView.js';
-import { CalibrationView } from '../views/CalibrationView.js';
 
 export class HintioApp extends LitElement {
     static DEFAULT_SESSION_LIMIT_MS = 15 * 60 * 1000;
@@ -488,8 +487,6 @@ export class HintioApp extends LitElement {
         _awaitingScreenAnalysis: { state: true },
         _screenAnalysisMode: { state: true },
         _errorContent: { state: true },
-        _hasVoiceProfile: { state: true },
-        _calibrationSkipped: { state: true },
         sessionLimitMs: { state: true },
     };
 
@@ -520,8 +517,6 @@ export class HintioApp extends LitElement {
         this._awaitingScreenAnalysis = false;
         this._screenAnalysisMode = '';
         this._errorContent = '';
-        this._hasVoiceProfile = false;
-        this._calibrationSkipped = false;
         this._layoutRepositioned = false;
         this._sessionTimeoutHandled = false;
         this.sessionLimitMs = null;
@@ -535,10 +530,11 @@ export class HintioApp extends LitElement {
             this._localVersion = await hintio.getVersion();
             this.requestUpdate();
 
-            const res = await fetch('https://raw.githubusercontent.com/sohzm/hintio/refs/heads/master/package.json');
+            const res = await fetch('https://api.github.com/repos/Shomesh007/hintio/releases/latest');
             if (!res.ok) return;
             const remote = await res.json();
-            const remoteVersion = remote.version;
+            const remoteVersion = String(remote.tag_name || '').replace(/^v/, '');
+            if (!/^\d+\.\d+\.\d+$/.test(remoteVersion)) return;
 
             const toNum = v => v.split('.').map(Number);
             const [rMaj, rMin, rPatch] = toNum(remoteVersion);
@@ -555,11 +551,7 @@ export class HintioApp extends LitElement {
 
     async _loadFromStorage() {
         try {
-            const [config, prefs, voiceProfile] = await Promise.all([
-                hintio.storage.getConfig(),
-                hintio.storage.getPreferences(),
-                hintio.storage.getVoiceProfile(),
-            ]);
+            const [config, prefs] = await Promise.all([hintio.storage.getConfig(), hintio.storage.getPreferences()]);
 
             this.currentView = config.onboarded ? 'main' : 'onboarding';
             this.selectedProfile = prefs.selectedProfile || 'interview';
@@ -567,8 +559,6 @@ export class HintioApp extends LitElement {
             this.selectedScreenshotInterval = prefs.selectedScreenshotInterval || '5';
             this.selectedImageQuality = prefs.selectedImageQuality || 'medium';
             this.layoutMode = config.layout || 'normal';
-            this._hasVoiceProfile = !!voiceProfile;
-            this._calibrationSkipped = !!prefs.skipVoiceCalibration;
 
             this._storageLoaded = true;
             this.requestUpdate();
@@ -795,9 +785,6 @@ export class HintioApp extends LitElement {
     async handleClose() {
         if (this.currentView === 'assistant') {
             await this._endSessionToHome();
-        } else if (this.currentView === 'calibration') {
-            // Go back to main from calibration
-            this.currentView = 'main';
         } else {
             if (window.electronAPI) {
                 const ipcRenderer = window.electronAPI;
@@ -828,46 +815,7 @@ export class HintioApp extends LitElement {
             await hintio.storage.setAccessToken(normalizedToken);
         }
 
-        // If no voice profile, go to calibration first
-        if (!this._hasVoiceProfile && !this._calibrationSkipped) {
-            this.currentView = 'calibration';
-            this.requestUpdate();
-            return;
-        }
-
         await this._startSession();
-    }
-
-    async handleCalibrationComplete(voiceProfile) {
-        if (voiceProfile) {
-            await hintio.storage.saveVoiceProfile(voiceProfile);
-            this._hasVoiceProfile = true;
-        }
-        this._calibrationSkipped = false;
-        await hintio.storage.updatePreference('skipVoiceCalibration', false);
-        // Proceed to start session
-        await this._startSession();
-    }
-
-    async handleCalibrationSkip() {
-        this._calibrationSkipped = true;
-        hintio.storage.updatePreference('skipVoiceCalibration', true).catch(error => {
-            console.warn('Failed to persist skipVoiceCalibration preference:', error);
-        });
-        // Navigate to main first so main-view is in the DOM before _startSession()
-        // tries to show an API key error on it
-        this.currentView = 'main';
-        this.requestUpdate();
-        // Allow the main view to render before attempting to start the session
-        setTimeout(() => this._startSession(), 0);
-    }
-
-    async handleResetVoiceProfile() {
-        await hintio.storage.deleteVoiceProfile();
-        this._hasVoiceProfile = false;
-        this._calibrationSkipped = false;
-        await hintio.storage.updatePreference('skipVoiceCalibration', false);
-        this.requestUpdate();
     }
 
     _showMainViewTokenError(message) {
@@ -1036,22 +984,7 @@ export class HintioApp extends LitElement {
                         .onStart=${token => this.handleStart(token)}
                         .onExternalLink=${url => this.handleExternalLinkClick(url)}
                         .whisperDownloading=${this._whisperDownloading}
-                        .hasVoiceProfile=${this._hasVoiceProfile}
-                        .onResetVoiceProfile=${() => this.handleResetVoiceProfile()}
-                        .onRecalibrate=${() => {
-                            this.currentView = 'calibration';
-                            this.requestUpdate();
-                        }}
                     ></main-view>
-                `;
-
-            case 'calibration':
-                return html`
-                    <calibration-view
-                        .language=${this.selectedLanguage}
-                        .onComplete=${profile => this.handleCalibrationComplete(profile)}
-                        .onSkip=${() => this.handleCalibrationSkip()}
-                    ></calibration-view>
                 `;
 
             case 'ai-customize':

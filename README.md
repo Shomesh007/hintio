@@ -35,7 +35,7 @@ Seven pre-built prompt profiles, each tuned for the context:
 - **Continuous audio capture** — Speaker (interviewer), microphone (you), both, or none
 - **Automatic screenshot analysis** — Periodic screen captures feed visual context to the AI
 - **Manual screen analysis** — Analyse the current screen on demand to extract answers, code solutions, or context
-- **Voice calibration** — Optional pre-session voice profiling so the AI learns your speech patterns
+- **Direct session start** — Valid access tokens open the assistant without voice calibration or verification
 
 ### Context Engine
 
@@ -72,6 +72,7 @@ npm run make:win
 This command builds Windows artifacts and verifies bundled runtime files (`ffmpeg.dll`, VC++ runtime DLLs, and ONNX runtime binaries).
 
 Share one of these outputs:
+
 - `out/make/squirrel.windows/x64/*.exe` (installer)
 - `out/make/zip/win32/x64/*.zip` (portable bundle)
 
@@ -88,6 +89,7 @@ Optional: if you want to ship extra Windows prerequisites in-app (for support/tr
 5. If a dependency error appears, capture the exact message and filename (e.g. `VCRUNTIME140.dll`, `ffmpeg.dll`) for targeted fixes.
 
 For **BYOK** mode, you need **one** of the following — not all:
+
 - **Gemini** — get a free key at [Google AI Studio](https://aistudio.google.com/apikey). You can supply **several keys separated by commas**: each free-tier key allows ~10 requests/minute, so keys from separate Google accounts raise the ceiling. Requests are spread across them, and a rate-limited key fails over to the next one immediately.
 - **Groq** — get a key at [console.groq.com](https://console.groq.com)
 - **Groq (speech-to-text)** — a Groq key is still used for Whisper transcription during live sessions
@@ -110,17 +112,17 @@ For **Local AI** mode, install [Ollama](https://ollama.com) and pull any model (
 
 ## Keyboard Shortcuts
 
-| Action | macOS | Windows / Linux |
-|---|---|---|
-| Move window | `Opt + Arrow Keys` | `Ctrl + Arrow Keys` |
-| Toggle click-through | `Cmd + M` | `Ctrl + M` |
-| Toggle visibility | `Cmd + \` | `Ctrl + \` |
-| Previous response | `Cmd + [` | `Ctrl + [` |
-| Next response | `Cmd + ]` | `Ctrl + ]` |
-| Scroll response up | `Cmd + Shift + Up` | `Ctrl + Shift + Up` |
+| Action               | macOS                | Windows / Linux       |
+| -------------------- | -------------------- | --------------------- |
+| Move window          | `Opt + Arrow Keys`   | `Ctrl + Arrow Keys`   |
+| Toggle click-through | `Cmd + M`            | `Ctrl + M`            |
+| Toggle visibility    | `Cmd + \`            | `Ctrl + \`            |
+| Previous response    | `Cmd + [`            | `Ctrl + [`            |
+| Next response        | `Cmd + ]`            | `Ctrl + ]`            |
+| Scroll response up   | `Cmd + Shift + Up`   | `Ctrl + Shift + Up`   |
 | Scroll response down | `Cmd + Shift + Down` | `Ctrl + Shift + Down` |
-| Send text message | `Enter` | `Enter` |
-| Ask next step | `Cmd + Enter` | `Ctrl + Enter` |
+| Send text message    | `Enter`              | `Enter`               |
+| Ask next step        | `Cmd + Enter`        | `Ctrl + Enter`        |
 
 All shortcuts are fully rebindable in **Settings → Keyboard Shortcuts**.
 
@@ -128,11 +130,11 @@ All shortcuts are fully rebindable in **Settings → Keyboard Shortcuts**.
 
 ## Audio Capture
 
-| Platform | Method |
-|---|---|
-| macOS | [SystemAudioDump](https://github.com/Mohammed-Yasin-Mulla/Sound) for system audio |
-| Windows | Loopback audio capture |
-| Linux | Microphone input |
+| Platform | Method                                                                            |
+| -------- | --------------------------------------------------------------------------------- |
+| macOS    | [SystemAudioDump](https://github.com/Mohammed-Yasin-Mulla/Sound) for system audio |
+| Windows  | Loopback audio capture                                                            |
+| Linux    | Microphone input                                                                  |
 
 **Audio modes**: Speaker Only · Mic Only · Both · None (screenshots only)
 

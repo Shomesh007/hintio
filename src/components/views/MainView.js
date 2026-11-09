@@ -286,9 +286,6 @@ export class MainView extends LitElement {
         onProfileChange: { type: Function },
         isInitializing: { type: Boolean },
         whisperDownloading: { type: Boolean },
-        hasVoiceProfile: { type: Boolean },
-        onResetVoiceProfile: { type: Function },
-        onRecalibrate: { type: Function },
         _token: { state: true },
         _tokenErrorMessage: { state: true },
         _showUpgradeDialog: { state: true },
@@ -302,9 +299,6 @@ export class MainView extends LitElement {
         this.onProfileChange = () => {};
         this.isInitializing = false;
         this.whisperDownloading = false;
-        this.hasVoiceProfile = false;
-        this.onResetVoiceProfile = () => {};
-        this.onRecalibrate = () => {};
 
         this._token = '';
         this._tokenErrorMessage = '';
@@ -429,9 +423,9 @@ export class MainView extends LitElement {
                                       <button
                                           class="start-button"
                                           @click=${() => {
-                                    this._showUpgradeDialog = false;
-                                    this.requestUpdate();
-                                }}
+                                              this._showUpgradeDialog = false;
+                                              this.requestUpdate();
+                                          }}
                                       >
                                           Close
                                       </button>

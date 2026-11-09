@@ -14,18 +14,11 @@ if (fs.existsSync(optionalWindowsBundle)) {
     extraResource.push(optionalWindowsBundle);
 }
 
-const requiredVcRuntimeDlls = [
-    'vcruntime140.dll',
-    'vcruntime140_1.dll',
-    'msvcp140.dll',
-];
+const requiredVcRuntimeDlls = ['vcruntime140.dll', 'vcruntime140_1.dll', 'msvcp140.dll'];
 
 function resolveSystemDllPath(fileName) {
     const systemRoot = process.env.SystemRoot || 'C:\\Windows';
-    const searchDirs = [
-        path.join(systemRoot, 'System32'),
-        path.join(systemRoot, 'SysWOW64'),
-    ];
+    const searchDirs = [path.join(systemRoot, 'System32'), path.join(systemRoot, 'SysWOW64')];
 
     for (const dir of searchDirs) {
         const candidate = path.join(dir, fileName);
@@ -64,6 +57,12 @@ function resolvePackagedOutputPaths(options = {}) {
 
 module.exports = {
     packagerConfig: {
+        ignore: [
+            /^\/(?:hintio-website|design|supabase|test|scripts|out|logs|prep|\.git|\.codex|\.agents|\.cache|\.npm|\.specstory)(?:\/|$)/,
+            /^\/src\/(?:data|profiles\/[^/]+\.local\.js)(?:\/|$)/,
+            /(?:^|\/)\.env(?:[./]|$)/,
+            /^\/[^/]+\.(?:md|pfx|p12|pem|key|log)$/i,
+        ],
         asar: {
             unpack: '**/{onnxruntime-node,onnxruntime-common,@huggingface/transformers,sharp,@img}/**',
         },
@@ -79,12 +78,12 @@ module.exports = {
         icon: 'src/assets/logo',
         ...(windowsCertificateFile
             ? {
-                windowsSign: {
-                    certificateFile: windowsCertificateFile,
-                    certificatePassword: windowsCertificatePassword || undefined,
-                    timestampServer: process.env.WIN_TIMESTAMP_SERVER || 'http://timestamp.digicert.com',
-                },
-            }
+                  windowsSign: {
+                      certificateFile: windowsCertificateFile,
+                      certificatePassword: windowsCertificatePassword || undefined,
+                      timestampServer: process.env.WIN_TIMESTAMP_SERVER || 'http://timestamp.digicert.com',
+                  },
+              }
             : {}),
         // use `security find-identity -v -p codesigning` to find your identity
         // for macos signing
@@ -149,8 +148,8 @@ module.exports = {
                     genericName: 'AI Assistant',
                     description: 'AI assistant for interviews and learning',
                     categories: ['Development', 'Education'],
-                    icon: 'src/assets/logo.png'
-                }
+                    icon: 'src/assets/logo.png',
+                },
             },
         },
     ],
