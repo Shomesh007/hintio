@@ -6,3 +6,6 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Checkout-local preview host identity; production uses the existing Vercel project.
+.openai/

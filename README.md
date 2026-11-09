@@ -10,6 +10,18 @@ Hintio is a real-time, invisible desktop copilot designed primarily for intervie
 
 *For comprehensive details about the product architecture, target users, and capabilities, refer to the `PRD.md` file located in the root of this repository.*
 
+## Desktop storefront redesign
+
+The public UI follows the approved navy, cool-white, and electric-yellow Hintio mockups. The existing Google OAuth, Supabase Edge Function, Razorpay, download, and license-delivery handlers remain in src/App.tsx. Public pages and responsive product previews live in src/marketing/.
+
+Pages: /, /workflows, /shortcuts (with /help alias), /get-started, /access, /privacy, and /terms. The last two provide product information and support contact; they do not invent a binding privacy or purchase policy.
+
+Run npm test, npm run typecheck, and npm run build to check the implementation. Run npm run dev for the local preview. Set the public Supabase environment variables from .env.example. No backend secrets belong in VITE_ variables.
+
+The backend still accepts monthly and yearly checkout identifiers. Final price and currency come from Razorpay; the old hard-coded dollar prices are removed because they conflicted with server-side configuration. A custom 28-day key is not advertised as the duration of every monthly purchase.
+
+OAuth redirects must be allowed in the Supabase Auth configuration for any new preview origin. A payment has not been executed as part of UI testing. Configure and verify the production plan amounts before a public rollout. Vercel deep-link rewrites are included for each page.
+
 ## Tech Stack
 - React 19
 - Vite
@@ -33,7 +45,7 @@ Hintio is a real-time, invisible desktop copilot designed primarily for intervie
 3. Open the browser to see the site running at `http://localhost:3000`.
 
 ## Architecture Note
-This repository contains the marketing **web frontend** only. The actual Hintio product is a separate cross-platform desktop application built using Tauri, React, and Rust.
+This repository contains the marketing **web frontend** only. The actual Hintio product is a separate Electron desktop application.
 
 ## Supabase + Razorpay License Flow
 
