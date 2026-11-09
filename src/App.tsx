@@ -5,6 +5,15 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase, missingSupabaseEnvVars } from './lib/supabase';
+import {
+    abortable,
+    withDeadline,
+    createCheckoutScriptLoader,
+    continueAfterSignIn,
+    recoverLicenseKey,
+    REQUEST_TIMEOUT_MS,
+    CHECKOUT_TIMEOUT_MS,
+} from './lib/checkoutReliability';
 import MarketingSite from './marketing/MarketingSite';
 import './marketing/account-dialogs.css';
 
@@ -24,7 +33,8 @@ export default function App() {
     const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
     type AuthIntent = 'download' | 'upgrade_monthly' | 'upgrade_yearly';
     const AUTH_INTENT_STORAGE_KEY = 'hintio_auth_intent';
-    const postAuthRunGuardRef = useRef(false);
+    const checkoutInFlightRef = useRef(false);
+    const checkoutScriptLoaderRef = useRef<(() => Promise<boolean>) | null>(null);
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [isSigningIn, setIsSigningIn] = useState(false);
     const [authError, setAuthError] = useState<string | null>(null);
@@ -101,28 +111,13 @@ export default function App() {
         });
     }, []);
 
-    const loadRazorpayScript = async () => {
-        debugLog('loadRazorpayScript called', { hasRazorpay: Boolean(window.Razorpay) });
-        if (window.Razorpay) {
-            debugLog('Razorpay already loaded');
-            return true;
-        }
-
-        return await new Promise<boolean>(resolve => {
-            const script = document.createElement('script');
-            script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-            script.async = true;
-            script.onload = () => {
-                debugLog('Razorpay script loaded successfully');
-                resolve(true);
-            };
-            script.onerror = () => {
-                debugLog('Razorpay script failed to load');
-                resolve(false);
-            };
-            document.body.appendChild(script);
-            debugLog('Razorpay script tag appended');
+    const loadRazorpayScript = () => {
+        checkoutScriptLoaderRef.current ??= createCheckoutScriptLoader({
+            isReady: () => Boolean(window.Razorpay),
+            create: () => document.createElement('script'),
+            append: script => document.body.appendChild(script as HTMLScriptElement),
         });
+        return checkoutScriptLoaderRef.current();
     };
 
     useEffect(() => {
@@ -162,57 +157,15 @@ export default function App() {
     };
 
     const fetchPaidLicenseKey = async (plan: 'monthly' | 'yearly') => {
-        if (!supabase) throw new Error('Supabase is not configured');
-
-        const fetchFromLicensesTable = async (userEmail: string) => {
-            const { data, error } = await supabase
-                .from('licenses')
-                .select('license_key,plan,status,created_at')
-                .eq('email', userEmail)
-                .eq('status', 'active')
-                .order('created_at', { ascending: false })
-                .limit(10);
-
-            if (error || !data?.length) {
-                return null;
-            }
-
-            const matchedPlan = data.find(row => row.plan === plan && typeof row.license_key === 'string');
-            if (matchedPlan?.license_key) {
-                return String(matchedPlan.license_key);
-            }
-
-            const latest = data.find(row => typeof row.license_key === 'string');
-            return latest?.license_key ? String(latest.license_key) : null;
-        };
-
-        const attemptCount = 15;
-        for (let attempt = 1; attempt <= attemptCount; attempt++) {
-            const { data: sessionData } = await supabase.auth.getSession();
-            const fallbackEmail = sessionData.session?.user?.email ?? null;
-            if (fallbackEmail) {
-                const fallbackKey = await fetchFromLicensesTable(fallbackEmail);
-                if (fallbackKey) {
-                    debugLog('fetchPaidLicenseKey succeeded via licenses table fallback', {
-                        attempt,
-                        attemptCount,
-                        email: fallbackEmail,
-                    });
-                    return fallbackKey;
-                }
-            }
-
-            debugLog('fetchPaidLicenseKey attempt failed', {
-                attempt,
-                attemptCount,
-                error: 'licenses table fallback did not find key yet',
-                hasLicenseKey: false,
-            });
-
-            await new Promise(resolve => setTimeout(resolve, 2000));
-        }
-
-        throw new Error('Payment was successful, but your key is still processing. Please contact support if it does not appear in 1-2 minutes.');
+        const client = supabase;
+        if (!client) throw new Error('Supabase is not configured');
+        return recoverLicenseKey(plan, (requestedPlan, signal) =>
+            client.functions.invoke('get-my-license', {
+                body: { plan: requestedPlan },
+                signal,
+                timeout: REQUEST_TIMEOUT_MS,
+            })
+        );
     };
 
     const issuePaidLicenseKey = async (
@@ -228,15 +181,19 @@ export default function App() {
             throw new Error('Supabase is not configured');
         }
 
-        const { data, error } = await supabase.functions.invoke('issue-paid-license', {
-            body: {
-                plan,
-                paymentId: paymentResponse?.razorpay_payment_id ?? null,
-                orderId: paymentResponse?.razorpay_order_id ?? null,
-                subscriptionId: paymentResponse?.razorpay_subscription_id ?? null,
-                signature: paymentResponse?.razorpay_signature ?? null,
-            },
-        });
+        const { data, error } = await withDeadline(signal =>
+            supabase.functions.invoke('issue-paid-license', {
+                signal,
+                timeout: REQUEST_TIMEOUT_MS,
+                body: {
+                    plan,
+                    paymentId: paymentResponse?.razorpay_payment_id ?? null,
+                    orderId: paymentResponse?.razorpay_order_id ?? null,
+                    subscriptionId: paymentResponse?.razorpay_subscription_id ?? null,
+                    signature: paymentResponse?.razorpay_signature ?? null,
+                },
+            })
+        );
 
         if (error || !data?.licenseKey) {
             throw new Error(error?.message ?? 'Issue paid license function failed');
@@ -252,322 +209,336 @@ export default function App() {
     };
 
     const startRazorpayCheckout = async (plan: 'monthly' | 'yearly') => {
-        debugLog('startRazorpayCheckout invoked', { plan, href: window.location.href });
-        if (!supabase) {
-            debugLog('startRazorpayCheckout blocked: supabase not configured', { missingSupabaseEnvVars });
-            setAuthError(`Supabase is not configured. Missing: ${missingSupabaseEnvVars.join(', ')}`);
-            setIsAuthModalOpen(true);
-            return;
-        }
-
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-        debugLog('startRazorpayCheckout getSession result', {
-            hasSession: Boolean(sessionData.session),
-            sessionError: sessionError?.message ?? null,
-            userId: sessionData.session?.user?.id ?? null,
-            email: sessionData.session?.user?.email ?? null,
-        });
-
-        if (!sessionData.session) {
-            debugLog('startRazorpayCheckout no session, opening auth modal', { plan });
-            setAuthIntent(plan === 'monthly' ? 'upgrade_monthly' : 'upgrade_yearly');
-            setIsAuthModalOpen(true);
-            return;
-        }
-
-        const getJwtIat = (accessToken: string) => {
-            try {
-                const [, payloadBase64] = accessToken.split('.');
-                if (!payloadBase64) return null;
-                const normalized = payloadBase64.replace(/-/g, '+').replace(/_/g, '/');
-                const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=');
-                const decoded = JSON.parse(window.atob(padded)) as { iat?: number };
-                return typeof decoded.iat === 'number' ? decoded.iat : null;
-            } catch {
-                return null;
-            }
-        };
-
-        const waitForTokenNotInFuture = async (accessToken: string) => {
-            const iat = getJwtIat(accessToken);
-            const nowSec = Math.floor(Date.now() / 1000);
-            if (iat && iat > nowSec + 1) {
-                const waitMs = Math.max(0, (iat - nowSec + 1) * 1000);
-                debugLog('Access token iat too close/future; waiting before edge call', {
-                    iat,
-                    nowSec,
-                    waitMs,
-                });
-                await new Promise(resolve => setTimeout(resolve, waitMs));
-            }
-        };
-
+        if (checkoutInFlightRef.current) return;
+        checkoutInFlightRef.current = true;
         setIsCheckoutLoading(true);
-        debugLog('Checkout loading started');
-
-        const isScriptLoaded = await loadRazorpayScript();
-        debugLog('Razorpay script load result', { isScriptLoaded, hasRazorpay: Boolean(window.Razorpay) });
-        if (!isScriptLoaded || !window.Razorpay) {
-            debugLog('Checkout blocked: Razorpay script unavailable');
-            setIsCheckoutLoading(false);
-            setIsPaymentModalOpen(true);
-            return;
-        }
-
-        let activeAccessToken = sessionData.session.access_token;
-        await waitForTokenNotInFuture(activeAccessToken);
-
-        const invokeCheckout = async (accessToken: string) =>
-            await supabase.functions.invoke('create-razorpay-checkout', {
-                body: { plan },
-                headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                },
-            });
-
-        const invokeCheckoutViaFetch = async (accessToken: string) => {
-            if (!supabaseAnonKey) {
-                return {
-                    ok: false,
-                    status: null as number | null,
-                    data: null as Record<string, unknown> | null,
-                    body: 'Missing VITE_SUPABASE_ANON_KEY for fetch fallback.',
-                };
-            }
-
-            const response = await fetch(`${supabaseFunctionsBaseUrl}/functions/v1/create-razorpay-checkout`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    apikey: supabaseAnonKey,
-                    Authorization: `Bearer ${accessToken}`,
-                },
-                body: JSON.stringify({ plan }),
-            });
-
-            const bodyText = await response.text();
-            let parsedBody: Record<string, unknown> | null = null;
-            try {
-                parsedBody = bodyText ? (JSON.parse(bodyText) as Record<string, unknown>) : null;
-            } catch {
-                parsedBody = null;
-            }
-
-            return {
-                ok: response.ok,
-                status: response.status,
-                data: parsedBody,
-                body: bodyText,
-            };
-        };
-
-        let { data: checkoutData, error: checkoutError } = await invokeCheckout(activeAccessToken);
-
-        const getCheckoutErrorStatus = (error: unknown) => {
-            const directStatus = (error as { status?: unknown } | null)?.status;
-            if (typeof directStatus === 'number') return directStatus;
-
-            const contextStatus = (error as { context?: { status?: unknown } } | null)?.context?.status;
-            if (typeof contextStatus === 'number') return contextStatus;
-
-            const responseStatus = (error as { response?: { status?: unknown } } | null)?.response?.status;
-            if (typeof responseStatus === 'number') return responseStatus;
-
-            return null;
-        };
-
-        const readCheckoutErrorContext = async (error: unknown) => {
-            try {
-                const context = (error as { context?: Response } | null)?.context;
-                if (!context) {
-                    return {
-                        status: null,
-                        body: null,
-                    };
+        try {
+            await withDeadline(async signal => {
+                debugLog('startRazorpayCheckout invoked', { plan, href: window.location.href });
+                if (!supabase) {
+                    debugLog('startRazorpayCheckout blocked: supabase not configured', { missingSupabaseEnvVars });
+                    setAuthError(`Supabase is not configured. Missing: ${missingSupabaseEnvVars.join(', ')}`);
+                    setIsAuthModalOpen(true);
+                    return;
                 }
 
-                const body = await context.clone().text();
-                return {
-                    status: context.status,
-                    body,
+                const { data: sessionData, error: sessionError } = await abortable(supabase.auth.getSession(), signal);
+                debugLog('startRazorpayCheckout getSession result', {
+                    hasSession: Boolean(sessionData.session),
+                    sessionError: sessionError?.message ?? null,
+                    userId: sessionData.session?.user?.id ?? null,
+                    email: sessionData.session?.user?.email ?? null,
+                });
+
+                if (!sessionData.session) {
+                    debugLog('startRazorpayCheckout no session, opening auth modal', { plan });
+                    setAuthIntent(plan === 'monthly' ? 'upgrade_monthly' : 'upgrade_yearly');
+                    setIsAuthModalOpen(true);
+                    return;
+                }
+
+                const getJwtIat = (accessToken: string) => {
+                    try {
+                        const [, payloadBase64] = accessToken.split('.');
+                        if (!payloadBase64) return null;
+                        const normalized = payloadBase64.replace(/-/g, '+').replace(/_/g, '/');
+                        const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=');
+                        const decoded = JSON.parse(window.atob(padded)) as { iat?: number };
+                        return typeof decoded.iat === 'number' ? decoded.iat : null;
+                    } catch {
+                        return null;
+                    }
                 };
-            } catch {
-                return {
-                    status: null,
-                    body: null,
+
+                const waitForTokenNotInFuture = async (accessToken: string) => {
+                    const iat = getJwtIat(accessToken);
+                    const nowSec = Math.floor(Date.now() / 1000);
+                    if (iat && iat > nowSec + 1) {
+                        const waitMs = Math.max(0, (iat - nowSec + 1) * 1000);
+                        debugLog('Access token iat too close/future; waiting before edge call', {
+                            iat,
+                            nowSec,
+                            waitMs,
+                        });
+                        await abortable(new Promise(resolve => setTimeout(resolve, waitMs)), signal);
+                    }
                 };
-            }
-        };
 
-        const initialCheckoutStatus = getCheckoutErrorStatus(checkoutError);
-        const shouldRetryForAuth =
-            initialCheckoutStatus === 401 || ((checkoutError as { name?: string } | null)?.name === 'FunctionsHttpError' && !checkoutData);
+                setIsCheckoutLoading(true);
+                debugLog('Checkout loading started');
 
-        if (shouldRetryForAuth) {
-            debugLog('create-razorpay-checkout returned 401, attempting session refresh + retry');
-            const { data: refreshedSessionData, error: refreshError } = await supabase.auth.refreshSession();
-            debugLog('refreshSession result before checkout retry', {
-                refreshError: refreshError?.message ?? null,
-                hasSession: Boolean(refreshedSessionData.session),
-            });
+                const isScriptLoaded = await abortable(loadRazorpayScript(), signal);
+                debugLog('Razorpay script load result', { isScriptLoaded, hasRazorpay: Boolean(window.Razorpay) });
+                if (!isScriptLoaded || !window.Razorpay) {
+                    debugLog('Checkout blocked: Razorpay script unavailable');
+                    setIsCheckoutLoading(false);
+                    setIsPaymentModalOpen(true);
+                    return;
+                }
 
-            if (!refreshError && refreshedSessionData.session?.access_token) {
-                activeAccessToken = refreshedSessionData.session.access_token;
+                let activeAccessToken = sessionData.session.access_token;
                 await waitForTokenNotInFuture(activeAccessToken);
-                ({ data: checkoutData, error: checkoutError } = await invokeCheckout(activeAccessToken));
 
-                const postRetryStatus = getCheckoutErrorStatus(checkoutError);
-                if ((postRetryStatus === 401 || !checkoutData) && activeAccessToken) {
-                    debugLog('SDK invoke still failing after retry; trying direct fetch fallback');
-                    const fallbackResult = await invokeCheckoutViaFetch(activeAccessToken);
-                    debugLog('Direct fetch fallback result', {
-                        ok: fallbackResult.ok,
-                        status: fallbackResult.status,
-                        body: fallbackResult.body,
-                    });
-                    debugLog(
-                        'Direct fetch fallback result JSON',
-                        JSON.stringify({
-                            ok: fallbackResult.ok,
-                            status: fallbackResult.status,
-                            body: fallbackResult.body,
-                        })
+                const invokeCheckout = async (accessToken: string) =>
+                    await abortable(
+                        supabase.functions.invoke('create-razorpay-checkout', {
+                            signal,
+                            timeout: REQUEST_TIMEOUT_MS,
+                            body: { plan },
+                            headers: {
+                                Authorization: `Bearer ${accessToken}`,
+                            },
+                        }),
+                        signal
                     );
 
-                    if (fallbackResult.ok && fallbackResult.data) {
-                        checkoutData = fallbackResult.data as typeof checkoutData;
-                        checkoutError = null;
+                const invokeCheckoutViaFetch = async (accessToken: string) => {
+                    if (!supabaseAnonKey) {
+                        return {
+                            ok: false,
+                            status: null as number | null,
+                            data: null as Record<string, unknown> | null,
+                            body: 'Missing VITE_SUPABASE_ANON_KEY for fetch fallback.',
+                        };
                     }
-                }
-            }
-        }
 
-        const finalCheckoutStatus = getCheckoutErrorStatus(checkoutError);
+                    const response = await fetch(`${supabaseFunctionsBaseUrl}/functions/v1/create-razorpay-checkout`, {
+                        method: 'POST',
+                        signal,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            apikey: supabaseAnonKey,
+                            Authorization: `Bearer ${accessToken}`,
+                        },
+                        body: JSON.stringify({ plan }),
+                    });
 
-        const checkoutErrorContext = await readCheckoutErrorContext(checkoutError);
-
-        debugLog('create-razorpay-checkout response', {
-            hasData: Boolean(checkoutData),
-            checkoutError: checkoutError?.message ?? null,
-            checkoutErrorName: (checkoutError as { name?: string } | null)?.name ?? null,
-            initialCheckoutStatus,
-            finalCheckoutStatus,
-            contextStatus: checkoutErrorContext.status,
-            contextBody: checkoutErrorContext.body,
-            mode: checkoutData?.mode ?? null,
-            hasKeyId: Boolean(checkoutData?.keyId),
-            orderId: checkoutData?.orderId ?? null,
-            subscriptionId: checkoutData?.subscriptionId ?? null,
-        });
-        debugLog(
-            'create-razorpay-checkout response JSON',
-            JSON.stringify({
-                hasData: Boolean(checkoutData),
-                checkoutError: checkoutError?.message ?? null,
-                checkoutErrorName: (checkoutError as { name?: string } | null)?.name ?? null,
-                initialCheckoutStatus,
-                finalCheckoutStatus,
-                contextStatus: checkoutErrorContext.status,
-                contextBody: checkoutErrorContext.body,
-                mode: checkoutData?.mode ?? null,
-                hasKeyId: Boolean(checkoutData?.keyId),
-                orderId: checkoutData?.orderId ?? null,
-                subscriptionId: checkoutData?.subscriptionId ?? null,
-            })
-        );
-
-        if (checkoutError || !checkoutData?.keyId) {
-            debugLog('Checkout blocked: function returned error or missing keyId');
-            setIsCheckoutLoading(false);
-            setIsPaymentModalOpen(true);
-            return;
-        }
-
-        const options: Record<string, unknown> = {
-            key: checkoutData.keyId,
-            name: checkoutData.name ?? 'hintio',
-            description: checkoutData.description ?? 'hintio payment',
-            prefill: checkoutData.prefill ?? {},
-            readonly: {
-                email: true,
-            },
-            notes: {
-                plan_type: plan,
-            },
-            handler: async (paymentResponse?: {
-                razorpay_payment_id?: string;
-                razorpay_order_id?: string;
-                razorpay_subscription_id?: string;
-                razorpay_signature?: string;
-            }) => {
-                setIsCheckoutLoading(true);
-                try {
-                    let licenseKey: string | null = null;
-
+                    const bodyText = await abortable(response.text(), signal);
+                    let parsedBody: Record<string, unknown> | null = null;
                     try {
-                        licenseKey = await issuePaidLicenseKey(plan, paymentResponse);
-                        debugLog('issuePaidLicenseKey succeeded', {
-                            plan,
-                            hasPaymentId: Boolean(paymentResponse?.razorpay_payment_id),
-                            hasOrderId: Boolean(paymentResponse?.razorpay_order_id),
-                            hasSubscriptionId: Boolean(paymentResponse?.razorpay_subscription_id),
-                        });
-                    } catch (issueError) {
-                        debugLog('issuePaidLicenseKey failed, falling back to polling', {
-                            message: issueError instanceof Error ? issueError.message : String(issueError),
-                        });
-                        licenseKey = await fetchPaidLicenseKey(plan);
+                        parsedBody = bodyText ? (JSON.parse(bodyText) as Record<string, unknown>) : null;
+                    } catch {
+                        parsedBody = null;
                     }
 
-                    setPaidLicensePlan(plan);
-                    setPaidLicenseKey(licenseKey);
-                    setIsPaidLicenseCopied(false);
-                    setIsPaidLicenseModalOpen(true);
-                } catch (error) {
-                    const message = error instanceof Error ? error.message : 'Payment was successful, but key retrieval failed.';
-                    alert(message);
-                } finally {
-                    setIsCheckoutLoading(false);
+                    return {
+                        ok: response.ok,
+                        status: response.status,
+                        data: parsedBody,
+                        body: bodyText,
+                    };
+                };
+
+                let { data: checkoutData, error: checkoutError } = await invokeCheckout(activeAccessToken);
+
+                const getCheckoutErrorStatus = (error: unknown) => {
+                    const directStatus = (error as { status?: unknown } | null)?.status;
+                    if (typeof directStatus === 'number') return directStatus;
+
+                    const contextStatus = (error as { context?: { status?: unknown } } | null)?.context?.status;
+                    if (typeof contextStatus === 'number') return contextStatus;
+
+                    const responseStatus = (error as { response?: { status?: unknown } } | null)?.response?.status;
+                    if (typeof responseStatus === 'number') return responseStatus;
+
+                    return null;
+                };
+
+                const readCheckoutErrorContext = async (error: unknown) => {
+                    try {
+                        const context = (error as { context?: Response } | null)?.context;
+                        if (!context) {
+                            return {
+                                status: null,
+                                body: null,
+                            };
+                        }
+
+                        const body = await abortable(context.clone().text(), signal);
+                        return {
+                            status: context.status,
+                            body,
+                        };
+                    } catch {
+                        return {
+                            status: null,
+                            body: null,
+                        };
+                    }
+                };
+
+                const initialCheckoutStatus = getCheckoutErrorStatus(checkoutError);
+                const shouldRetryForAuth = initialCheckoutStatus === 401;
+
+                if (shouldRetryForAuth) {
+                    debugLog('create-razorpay-checkout returned 401, attempting session refresh + retry');
+                    const { data: refreshedSessionData, error: refreshError } = await abortable(supabase.auth.refreshSession(), signal);
+                    debugLog('refreshSession result before checkout retry', {
+                        refreshError: refreshError?.message ?? null,
+                        hasSession: Boolean(refreshedSessionData.session),
+                    });
+
+                    if (!refreshError && refreshedSessionData.session?.access_token) {
+                        activeAccessToken = refreshedSessionData.session.access_token;
+                        await waitForTokenNotInFuture(activeAccessToken);
+                        ({ data: checkoutData, error: checkoutError } = await invokeCheckout(activeAccessToken));
+
+                        const postRetryStatus = getCheckoutErrorStatus(checkoutError);
+                        if ((postRetryStatus === 401 || !checkoutData) && activeAccessToken) {
+                            debugLog('SDK invoke still failing after retry; trying direct fetch fallback');
+                            const fallbackResult = await invokeCheckoutViaFetch(activeAccessToken);
+                            debugLog('Direct fetch fallback result', {
+                                ok: fallbackResult.ok,
+                                status: fallbackResult.status,
+                                body: fallbackResult.body,
+                            });
+                            debugLog(
+                                'Direct fetch fallback result JSON',
+                                JSON.stringify({
+                                    ok: fallbackResult.ok,
+                                    status: fallbackResult.status,
+                                    body: fallbackResult.body,
+                                })
+                            );
+
+                            if (fallbackResult.ok && fallbackResult.data) {
+                                checkoutData = fallbackResult.data as typeof checkoutData;
+                                checkoutError = null;
+                            }
+                        }
+                    }
                 }
-            },
-            modal: {
-                ondismiss: () => setIsCheckoutLoading(false),
-            },
-            theme: {
-                color: '#dcff00',
-            },
-        };
 
-        if (checkoutData.mode === 'subscription') {
-            options.subscription_id = checkoutData.subscriptionId;
-        } else {
-            options.order_id = checkoutData.orderId;
-            options.amount = checkoutData.amount;
-            options.currency = checkoutData.currency;
+                const finalCheckoutStatus = getCheckoutErrorStatus(checkoutError);
+
+                const checkoutErrorContext = await readCheckoutErrorContext(checkoutError);
+
+                debugLog('create-razorpay-checkout response', {
+                    hasData: Boolean(checkoutData),
+                    checkoutError: checkoutError?.message ?? null,
+                    checkoutErrorName: (checkoutError as { name?: string } | null)?.name ?? null,
+                    initialCheckoutStatus,
+                    finalCheckoutStatus,
+                    contextStatus: checkoutErrorContext.status,
+                    contextBody: checkoutErrorContext.body,
+                    mode: checkoutData?.mode ?? null,
+                    hasKeyId: Boolean(checkoutData?.keyId),
+                    orderId: checkoutData?.orderId ?? null,
+                    subscriptionId: checkoutData?.subscriptionId ?? null,
+                });
+                debugLog(
+                    'create-razorpay-checkout response JSON',
+                    JSON.stringify({
+                        hasData: Boolean(checkoutData),
+                        checkoutError: checkoutError?.message ?? null,
+                        checkoutErrorName: (checkoutError as { name?: string } | null)?.name ?? null,
+                        initialCheckoutStatus,
+                        finalCheckoutStatus,
+                        contextStatus: checkoutErrorContext.status,
+                        contextBody: checkoutErrorContext.body,
+                        mode: checkoutData?.mode ?? null,
+                        hasKeyId: Boolean(checkoutData?.keyId),
+                        orderId: checkoutData?.orderId ?? null,
+                        subscriptionId: checkoutData?.subscriptionId ?? null,
+                    })
+                );
+
+                if (checkoutError || !checkoutData?.keyId) {
+                    debugLog('Checkout blocked: function returned error or missing keyId');
+                    setIsCheckoutLoading(false);
+                    setIsPaymentModalOpen(true);
+                    return;
+                }
+
+                const options: Record<string, unknown> = {
+                    key: checkoutData.keyId,
+                    name: checkoutData.name ?? 'hintio',
+                    description: checkoutData.description ?? 'hintio payment',
+                    prefill: checkoutData.prefill ?? {},
+                    readonly: {
+                        email: true,
+                    },
+                    notes: {
+                        plan_type: plan,
+                    },
+                    handler: async (paymentResponse?: {
+                        razorpay_payment_id?: string;
+                        razorpay_order_id?: string;
+                        razorpay_subscription_id?: string;
+                        razorpay_signature?: string;
+                    }) => {
+                        setIsCheckoutLoading(true);
+                        try {
+                            let licenseKey: string | null = null;
+
+                            try {
+                                licenseKey = await issuePaidLicenseKey(plan, paymentResponse);
+                                debugLog('issuePaidLicenseKey succeeded', {
+                                    plan,
+                                    hasPaymentId: Boolean(paymentResponse?.razorpay_payment_id),
+                                    hasOrderId: Boolean(paymentResponse?.razorpay_order_id),
+                                    hasSubscriptionId: Boolean(paymentResponse?.razorpay_subscription_id),
+                                });
+                            } catch (issueError) {
+                                debugLog('issuePaidLicenseKey failed, falling back to polling', {
+                                    message: issueError instanceof Error ? issueError.message : String(issueError),
+                                });
+                                licenseKey = await fetchPaidLicenseKey(plan);
+                            }
+
+                            setPaidLicensePlan(plan);
+                            setPaidLicenseKey(licenseKey);
+                            setIsPaidLicenseCopied(false);
+                            setIsPaidLicenseModalOpen(true);
+                        } catch (error) {
+                            const message = error instanceof Error ? error.message : 'Payment was successful, but key retrieval failed.';
+                            alert(message);
+                        } finally {
+                            setIsCheckoutLoading(false);
+                        }
+                    },
+                    modal: {
+                        ondismiss: () => setIsCheckoutLoading(false),
+                    },
+                    theme: {
+                        color: '#dcff00',
+                    },
+                };
+
+                if (checkoutData.mode === 'subscription') {
+                    options.subscription_id = checkoutData.subscriptionId;
+                } else {
+                    options.order_id = checkoutData.orderId;
+                    options.amount = checkoutData.amount;
+                    options.currency = checkoutData.currency;
+                }
+
+                debugLog('Opening Razorpay checkout', {
+                    mode: checkoutData.mode,
+                    plan,
+                    orderId: checkoutData.orderId ?? null,
+                    subscriptionId: checkoutData.subscriptionId ?? null,
+                    amount: checkoutData.amount ?? null,
+                    currency: checkoutData.currency ?? null,
+                });
+                signal.throwIfAborted();
+                const razorpay = new window.Razorpay(options);
+                razorpay.open();
+                setIsCheckoutLoading(false);
+                debugLog('Checkout loading ended after razorpay.open()');
+            }, CHECKOUT_TIMEOUT_MS);
+        } catch {
+            setIsPaymentModalOpen(true);
+        } finally {
+            checkoutInFlightRef.current = false;
+            setIsCheckoutLoading(false);
         }
-
-        debugLog('Opening Razorpay checkout', {
-            mode: checkoutData.mode,
-            plan,
-            orderId: checkoutData.orderId ?? null,
-            subscriptionId: checkoutData.subscriptionId ?? null,
-            amount: checkoutData.amount ?? null,
-            currency: checkoutData.currency ?? null,
-        });
-        const razorpay = new window.Razorpay(options);
-        razorpay.open();
-        setIsCheckoutLoading(false);
-        debugLog('Checkout loading ended after razorpay.open()');
     };
 
     useEffect(() => {
+        let cancelled = false;
+        let stopWaiting: (() => void) | undefined;
         const runPostAuthAction = async () => {
-            if (postAuthRunGuardRef.current) {
-                debugLog('runPostAuthAction skipped by guard (StrictMode double-invoke)');
-                return;
-            }
-            postAuthRunGuardRef.current = true;
-
             if (!supabase) return;
 
             const params = new URLSearchParams(window.location.search);
@@ -649,7 +620,8 @@ export default function App() {
                 }
             };
 
-            const { data, error: postAuthSessionError } = await supabase.auth.getSession();
+            const { data, error: postAuthSessionError } = await withDeadline(signal => abortable(supabase.auth.getSession(), signal));
+            if (cancelled) return;
             debugLog('runPostAuthAction getSession result', {
                 hasSession: Boolean(data.session),
                 postAuthSessionError: postAuthSessionError?.message ?? null,
@@ -669,29 +641,37 @@ export default function App() {
                 return;
             }
 
-            const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-                debugLog('onAuthStateChange event', {
-                    event,
-                    hasSession: Boolean(session),
-                    userId: session?.user?.id ?? null,
-                    email: session?.user?.email ?? null,
-                });
-                if (event === 'SIGNED_IN' && session) {
-                    authListener.subscription.unsubscribe();
-                    debugLog('SIGNED_IN received, continuing intent');
-                    void continueIntent(intent);
-                }
+            stopWaiting = continueAfterSignIn({
+                subscribe: onSession => {
+                    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+                        if (event === 'SIGNED_IN' && session) onSession(session);
+                    });
+                    return () => data.subscription.unsubscribe();
+                },
+                onSuccess: () => {
+                    if (!cancelled)
+                        void continueIntent(intent).catch(() => {
+                            setAuthError('Unable to finish signing in. Please try again.');
+                            setIsAuthModalOpen(true);
+                        });
+                },
+                onTimeout: () => {
+                    if (cancelled) return;
+                    setAuthError('Google login did not finish. Please try signing in again.');
+                    setIsAuthModalOpen(true);
+                },
             });
-
-            setTimeout(() => {
-                debugLog('Auth listener timeout reached, unsubscribing');
-                authListener.subscription.unsubscribe();
-                setAuthError('Google login callback did not produce a session. Check device clock and Supabase redirect URL settings.');
-                setIsAuthModalOpen(true);
-            }, 20000);
         };
 
-        runPostAuthAction();
+        void runPostAuthAction().catch(() => {
+            if (cancelled) return;
+            setAuthError('Unable to finish signing in. Please try again.');
+            setIsAuthModalOpen(true);
+        });
+        return () => {
+            cancelled = true;
+            stopWaiting?.();
+        };
     }, []);
 
     const startGoogleSignIn = async () => {
