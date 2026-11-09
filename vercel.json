@@ -72,6 +72,14 @@
         {
             "source": "/help/",
             "destination": "/"
+        },
+        {
+            "source": "/contact",
+            "destination": "/"
+        },
+        {
+            "source": "/contact/",
+            "destination": "/"
         }
     ],
     "headers": [

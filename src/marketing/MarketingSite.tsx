@@ -35,14 +35,16 @@ interface Props {
     onMacDownload: () => void;
     checkoutLoading: boolean;
 }
-type Page = '/' | '/workflows' | '/shortcuts' | '/get-started' | '/access' | '/privacy' | '/terms';
-const support = 'https://wa.me/9174448865095';
+type Page = '/' | '/workflows' | '/shortcuts' | '/get-started' | '/access' | '/privacy' | '/terms' | '/contact';
+const support = 'https://wa.me/918438365095';
+const supportEmail = 'admin@builtbygsv.in';
 const titles: Record<Page, string> = {
     '/': 'Good answers. Right on cue.',
     '/workflows': 'Workflows',
     '/shortcuts': 'Keyboard shortcuts',
     '/get-started': 'Getting started',
     '/access': 'Desktop access',
+    '/contact': 'Contact Hintio',
     '/privacy': 'Privacy & data',
     '/terms': 'Access information',
 };
@@ -1004,6 +1006,18 @@ function Closing({ title, action, onClick, secondary }: { title: string; action:
         </section>
     );
 }
+function Contact() {
+    return <section className="wrap contact-page page-hero">
+        <span className="eyebrow">HINTIO / CONTACT</span>
+        <h1>A direct line.<br /><mark>A clearer next step.</mark></h1>
+        <p className="contact-intro">Get help with setup, desktop access, a bug, or a question about your data.</p>
+        <address className="contact-directory">
+            <div><span>Email</span><a href={`mailto:${supportEmail}`}>{supportEmail}<ArrowUpRight size={24} /></a><p>For product support and privacy or data requests.</p></div>
+            <div><span>Phone / WhatsApp</span><a href="tel:+918438365095">8438365095<ArrowUpRight size={24} /></a><p>Call us, or <a href={support} target="_blank" rel="noreferrer">open a WhatsApp conversation</a>.</p></div>
+        </address>
+        <div className="contact-guide"><h2>Help us find the issue.</h2><p>Include your app version, operating system, what you expected, and the steps that caused the problem. For an access issue, describe the error shown in Hintio.</p><p>Keep API keys, access tokens, payment details, and private conversations out of your message. Redact screenshots before sharing them.</p></div>
+    </section>;
+}
 function Info({ type }: { type: 'privacy' | 'terms' }) {
     return (
         <section className="wrap info-page page-hero">
@@ -1011,17 +1025,26 @@ function Info({ type }: { type: 'privacy' | 'terms' }) {
             <h1>{type === 'privacy' ? 'Your context.\nKnow the flow.' : 'Before you\nget access.'}</h1>
             {type === 'privacy' ? (
                 <>
-                    <p>
-                        The website uses Supabase for Google sign-in and access-key services, and Razorpay for checkout. The desktop app uses cloud AI
-                        services to process the audio and screen context you choose to capture.
-                    </p>
-                    <h2>Desktop data</h2>
-                    <p>
-                        The app stores preferences and session history locally. History can include conversation responses and screen analyses.
-                        Capture permissions and your selected audio source determine what the app can capture.
-                    </p>
-                    <h2>Questions about your data?</h2>
-                    <p>Contact Hintio support for the applicable privacy policy and questions about retention or deletion.</p>
+                    <p className="info-lead">Understand what Hintio captures, where your context is processed, and which controls are available in the desktop app.</p>
+                    <div className="information-note">This page describes the product's data flow. Provider retention and processing terms depend on the service and mode you use.</div>
+                    <h2>01 / What enters a session</h2>
+                    <p>Your audio mode can use speaker output, microphone input, both, or no audio. Screen analysis uses the screen content you choose to capture. Resume text, your domain, and custom instructions can also become session context.</p>
+                    <p>Review the selected audio source and screen controls before starting. Only capture conversations and content you have permission to use.</p>
+                    <h2>02 / Where processing happens</h2>
+                    <dl className="processing-list">
+                        <div><dt>Cloud AI</dt><dd>Session context sent to a cloud provider can include audio or transcripts, screenshots, resume text, and custom instructions. The selected provider's terms apply to its processing.</dd></div>
+                        <div><dt>Bring your own key</dt><dd>BYOK connects your selected provider using your key. It does not mean the context stays on your computer.</dd></div>
+                        <div><dt>Local mode</dt><dd>Ollama and on-device transcription support local inference after setup. Access validation, model downloads, and other connected services can still need an internet connection.</dd></div>
+                    </dl>
+                    <h2>03 / What stays on your device</h2>
+                    <p>Hintio stores configuration, provider credentials, preferences, and session history in its local <code>hintio-config</code> folder. History can include responses, transcripts, and screen analyses. Treat this folder and any exported copies as private.</p>
+                    <h2>04 / Your desktop controls</h2>
+                    <p>Settings → Privacy &amp; Data explains the data flow and provides separate controls for restoring settings and deleting local data. Each asks for confirmation. Restoring settings resets preferences, shortcuts, resume text, and custom instructions; session history is retained.</p>
+                    <p>Deleting local data resets the Hintio configuration folder, including saved credentials and local history, then closes the app. It does not remove exported copies or data held by an AI, sign-in, or payment provider.</p>
+                    <h2>Website sign-in and checkout</h2>
+                    <p>The website uses Supabase for Google sign-in and access-key services, and Razorpay for checkout. Those services process information needed for their respective flows. Check the details shown by the service before signing in or confirming a payment.</p>
+                    <h2>Questions or a data request?</h2>
+                    <p>Email <a href={`mailto:${supportEmail}`}>{supportEmail}</a> or contact us on <a href="tel:+918438365095">8438365095</a>. Describe the request without sending API keys, access keys, payment credentials, or private session content. We can help identify whether the request concerns local Hintio records or a connected provider.</p>
                 </>
             ) : (
                 <>
@@ -1079,6 +1102,7 @@ export default function MarketingSite(props: Props) {
         ['/shortcuts', 'Shortcuts'],
         ['/get-started', 'Get started'],
         ['/access', 'Access'],
+        ['/contact', 'Contact'],
     ];
     return (
         <div className="hintio-site">
@@ -1119,6 +1143,8 @@ export default function MarketingSite(props: Props) {
                     <ShortcutsPage />
                 ) : page === '/get-started' ? (
                     <GetStarted onDownload={props.onDownload} go={go} />
+                ) : page === '/contact' ? (
+                    <Contact />
                 ) : page === '/access' ? (
                     <Access {...props} />
                 ) : (
@@ -1132,9 +1158,7 @@ export default function MarketingSite(props: Props) {
                     </a>
                     <p>A little clarity. Right on cue.</p>
                     <div>
-                        <a href={support} target="_blank" rel="noreferrer">
-                            Support <ArrowUpRight size={13} />
-                        </a>
+                        <a href="/contact" onClick={e => clickLink(e, '/contact')}>Contact</a>
                         <a href="/privacy" onClick={e => clickLink(e, '/privacy')}>
                             Privacy & data
                         </a>
