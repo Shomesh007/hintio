@@ -10,7 +10,7 @@ import {
     withDeadline,
     createCheckoutScriptLoader,
     continueAfterSignIn,
-    recoverLicenseKey,
+    recoverLicenseKeyAutomatically,
     REQUEST_TIMEOUT_MS,
     CHECKOUT_TIMEOUT_MS,
 } from './lib/checkoutReliability';
@@ -68,6 +68,7 @@ export default function App() {
     const [isPendingLicenseOpen, setIsPendingLicenseOpen] = useState(Boolean(pendingLicense));
     const [isRecoveringLicense, setIsRecoveringLicense] = useState(false);
     const licenseRecoveryInFlightRef = useRef(false);
+    const licenseRecoveryControllerRef = useRef<AbortController | null>(null);
 
     const hasOpenDialog =
         isAuthModalOpen || isTrialModalOpen || isMacModalOpen || isPaymentModalOpen || isPaidLicenseModalOpen || isPendingLicenseOpen;
@@ -177,15 +178,18 @@ export default function App() {
         window.open(windowsDownloadUrl, '_blank', 'noopener,noreferrer');
     };
 
-    const fetchPaidLicenseKey = async (plan: 'monthly' | 'yearly') => {
+    const fetchPaidLicenseKey = async (plan: 'monthly' | 'yearly', signal: AbortSignal) => {
         const client = supabase;
         if (!client) throw new Error('Supabase is not configured');
-        return recoverLicenseKey(plan, (requestedPlan, signal) =>
-            client.functions.invoke('get-my-license', {
-                body: { plan: requestedPlan },
-                signal,
-                timeout: REQUEST_TIMEOUT_MS,
-            })
+        return recoverLicenseKeyAutomatically(
+            plan,
+            (requestedPlan, signal) =>
+                client.functions.invoke('get-my-license', {
+                    body: { plan: requestedPlan },
+                    signal,
+                    timeout: REQUEST_TIMEOUT_MS,
+                }),
+            signal
         );
     };
 
@@ -234,6 +238,8 @@ export default function App() {
     const deliverPaidLicense = async (plan: 'monthly' | 'yearly', paymentResponse?: Parameters<typeof issuePaidLicenseKey>[1]) => {
         if (licenseRecoveryInFlightRef.current) return;
         licenseRecoveryInFlightRef.current = true;
+        const controller = new AbortController();
+        licenseRecoveryControllerRef.current = controller;
         const pending = { plan, reference: paymentResponse?.razorpay_payment_id || pendingLicense?.reference || '' };
         setPendingLicense(pending);
         try {
@@ -248,13 +254,15 @@ export default function App() {
             let key: string;
             if (paymentResponse) {
                 try {
-                    key = await issuePaidLicenseKey(plan, paymentResponse);
+                    key = await abortable(issuePaidLicenseKey(plan, paymentResponse), controller.signal);
                 } catch {
-                    key = await fetchPaidLicenseKey(plan);
+                    controller.signal.throwIfAborted();
+                    key = await fetchPaidLicenseKey(plan, controller.signal);
                 }
             } else {
-                key = await fetchPaidLicenseKey(plan);
+                key = await fetchPaidLicenseKey(plan, controller.signal);
             }
+            controller.signal.throwIfAborted();
             setPaidLicensePlan(plan);
             setPaidLicenseKey(key);
             setIsPaidLicenseCopied(false);
@@ -267,16 +275,24 @@ export default function App() {
                 /* Keep the delivered key visible. */
             }
         } catch {
-            // Retain the reference and recovery action, including across a reload in this tab.
+            // Keep the pending reference on navigation; mounting again resumes automatic lookup.
         } finally {
-            licenseRecoveryInFlightRef.current = false;
-            setIsRecoveringLicense(false);
+            if (licenseRecoveryControllerRef.current === controller) {
+                licenseRecoveryControllerRef.current = null;
+                licenseRecoveryInFlightRef.current = false;
+                setIsRecoveringLicense(false);
+            }
         }
     };
 
     useEffect(() => {
         if (pendingLicense) void deliverPaidLicense(pendingLicense.plan);
-        // Resume once after a reload; subsequent recovery is explicit or already in flight.
+        return () => {
+            licenseRecoveryControllerRef.current?.abort();
+            licenseRecoveryControllerRef.current = null;
+            licenseRecoveryInFlightRef.current = false;
+        };
+        // Resume once after a reload; the lookup continues until delivery or unmount.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -870,9 +886,6 @@ export default function App() {
                 isOpen={isPendingLicenseOpen}
                 isRecovering={isRecoveringLicense}
                 reference={pendingLicense?.reference || ''}
-                onRetry={() => {
-                    if (pendingLicense) void deliverPaidLicense(pendingLicense.plan);
-                }}
                 onDownload={triggerDownload}
                 onClose={() => setIsPendingLicenseOpen(false)}
             />

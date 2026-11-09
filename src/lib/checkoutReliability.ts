@@ -14,13 +14,22 @@ export function abortable<T>(operation: PromiseLike<T>, signal: AbortSignal): Pr
     });
 }
 
-export async function withDeadline<T>(operation: (signal: AbortSignal) => PromiseLike<T>, timeoutMs = REQUEST_TIMEOUT_MS): Promise<T> {
+export async function withDeadline<T>(
+    operation: (signal: AbortSignal) => PromiseLike<T>,
+    timeoutMs = REQUEST_TIMEOUT_MS,
+    parentSignal?: AbortSignal
+): Promise<T> {
     const controller = new AbortController();
+    const cancel = () => controller.abort(parentSignal?.reason);
+    if (parentSignal?.aborted) cancel();
+    else parentSignal?.addEventListener('abort', cancel, { once: true });
     const timer = setTimeout(() => controller.abort(new Error('The request took too long. Please try again.')), timeoutMs);
     try {
+        controller.signal.throwIfAborted();
         return await abortable(operation(controller.signal), controller.signal);
     } finally {
         clearTimeout(timer);
+        parentSignal?.removeEventListener('abort', cancel);
     }
 }
 
@@ -106,6 +115,44 @@ export function continueAfterSignIn<T>(options: {
 interface LicenseResponse {
     data: { licenseKey?: unknown; plan?: unknown } | null;
     error: unknown;
+}
+
+function recoveryDelay(milliseconds: number, signal: AbortSignal): Promise<void> {
+    return new Promise((resolve, reject) => {
+        const cancel = () => {
+            clearTimeout(timer);
+            signal.removeEventListener('abort', cancel);
+            reject(signal.reason ?? new Error('Recovery stopped'));
+        };
+        const timer = setTimeout(() => {
+            signal.removeEventListener('abort', cancel);
+            resolve();
+        }, milliseconds);
+        if (signal.aborted) cancel();
+        else signal.addEventListener('abort', cancel, { once: true });
+    });
+}
+
+// Read only: keep looking for the paid key until it exists or the page unmounts.
+// Bound each request, back off on slow webhooks/offline connections, and never initiate payment.
+export async function recoverLicenseKeyAutomatically(
+    plan: 'monthly' | 'yearly',
+    invoke: (plan: 'monthly' | 'yearly', signal: AbortSignal) => PromiseLike<LicenseResponse>,
+    signal: AbortSignal
+): Promise<string> {
+    let attempt = 0;
+    while (!signal.aborted) {
+        try {
+            const { data, error } = await withDeadline(requestSignal => invoke(plan, requestSignal), REQUEST_TIMEOUT_MS, signal);
+            if (!error && typeof data?.licenseKey === 'string' && data.licenseKey && data.plan === plan) return data.licenseKey;
+        } catch {
+            signal.throwIfAborted();
+        }
+        const delay = Math.min(2000 * 2 ** Math.min(4, Math.floor(attempt++ / 3)), 30_000);
+        await recoveryDelay(delay, signal);
+    }
+    signal.throwIfAborted();
+    throw new Error('Recovery stopped');
 }
 export async function recoverLicenseKey(
     plan: 'monthly' | 'yearly',

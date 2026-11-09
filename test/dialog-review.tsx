@@ -79,7 +79,6 @@ function Review() {
                 isOpen={state === 'pending' || state === 'pending-retry'}
                 isRecovering={state === 'pending'}
                 reference="DEMO-PAYMENT"
-                onRetry={() => setAction('Recovery callback invoked')}
                 onDownload={() => setAction('Download callback invoked')}
                 onClose={close}
             />

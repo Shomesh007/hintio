@@ -349,14 +349,12 @@ export function PendingLicenseModal({
     isOpen,
     isRecovering,
     reference,
-    onRetry,
     onDownload,
     onClose,
 }: {
     isOpen: boolean;
     isRecovering: boolean;
     reference: string;
-    onRetry: () => void;
     onDownload: () => void;
     onClose: () => void;
 }) {
@@ -376,16 +374,13 @@ export function PendingLicenseModal({
                     <p>
                         {isRecovering
                             ? 'You can continue below. We’ll keep checking in this tab.'
-                            : 'Check again without paying, or send your payment reference to support.'}
+                            : 'Automatic checks will resume shortly. There’s no need to pay again.'}
                     </p>
                 </div>
             </div>
             <div className="account-actions">
                 <button className="account-primary" onClick={onDownload}>
                     Download for Windows <Download size={18} />
-                </button>
-                <button className="account-secondary" onClick={onRetry} disabled={isRecovering}>
-                    {isRecovering ? 'Checking your key…' : 'Check for my key'}
                 </button>
             </div>
             <a className="account-recovery-support" href="https://wa.me/9174448865095" target="_blank" rel="noopener noreferrer">

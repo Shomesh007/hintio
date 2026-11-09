@@ -12,7 +12,6 @@ for (const isRecovering of [true, false]) {
                 isOpen: true,
                 isRecovering,
                 reference: 'DEMO-PAYMENT',
-                onRetry: noop,
                 onDownload: noop,
                 onClose: noop,
             })
@@ -21,8 +20,8 @@ for (const isRecovering of [true, false]) {
         assert.match(markup, /Download for Windows/);
         assert.match(markup, /DEMO-PAYMENT/);
         assert.match(markup, /Contact support/);
-        assert.equal(markup.includes('disabled=""'), isRecovering);
-        assert.equal(markup.includes('Check for my key'), !isRecovering);
+        assert.doesNotMatch(markup, /Check for my key|Check again without paying/);
+        assert.match(markup, isRecovering ? /keep checking/ : /Automatic checks will resume/);
     });
 }
 test('closed key dialogs render no key or dialog content', () => {

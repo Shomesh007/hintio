@@ -201,6 +201,15 @@ Frontend wiring:
 - `Get Yearly` triggers `yearly`
 - Frontend invokes Edge Function, then opens Razorpay Checkout (`checkout.js`)
 
+After Razorpay reports success, the frontend tries the existing license issuer once.
+If issuance is slow or fails, it automatically polls the authenticated `get-my-license`
+endpoint until the selected-plan key is available. Each lookup has an 8-second limit;
+retries back off from 2 seconds to a maximum of 30 seconds between checks. There is
+no overall recovery cutoff while the page remains open. The pending plan and payment
+reference are kept in tab session storage so reloading resumes lookup without starting
+another payment. Closing the dialog does not stop recovery; leaving the page cancels
+its requests and timers. The browser cannot check while the tab is closed.
+
 ### Deploy function
 
 ```bash
