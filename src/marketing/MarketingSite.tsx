@@ -28,6 +28,8 @@ import {
 import { shortcuts, profiles, platformKeys, type ShortcutGroup } from './shortcutData';
 import './marketing.css';
 import BillingManager from './BillingManager';
+import { supabase } from '../lib/supabase';
+import { completeBillingReturn } from '../lib/billingAccount';
 
 interface Props {
     onDownload: () => void;
@@ -1197,17 +1199,22 @@ function Info({ type }: { type: 'privacy' | 'terms' }) {
 export default function MarketingSite(props: Props) {
     const [page, setPage] = useState<Page>(currentPage);
     useEffect(() => {
-        let returning = false;
-        try {
-            returning = sessionStorage.getItem('hintio_billing_return') === '1';
-            if (returning) sessionStorage.removeItem('hintio_billing_return');
-        } catch {}
-        if (returning) {
-            window.history.replaceState({}, '', '/access#billing');
-            setPage('/access');
-        }
-        if (returning || window.location.hash === '#billing')
-            requestAnimationFrame(() => document.getElementById('billing')?.scrollIntoView({ block: 'start' }));
+        let active = true;
+        // Let Supabase finish reading the OAuth code/hash before changing the URL.
+        void completeBillingReturn(
+            sessionStorage,
+            () => supabase?.auth.getSession() ?? Promise.resolve(),
+            () => {
+                if (!active) return;
+                window.history.replaceState({}, '', '/access#billing');
+                setPage('/access');
+                requestAnimationFrame(() => document.getElementById('billing')?.scrollIntoView({ block: 'start' }));
+            }
+        ).catch(() => {});
+        if (window.location.hash === '#billing') requestAnimationFrame(() => document.getElementById('billing')?.scrollIntoView({ block: 'start' }));
+        return () => {
+            active = false;
+        };
     }, []);
 
     const [menuOpen, setMenuOpen] = useState(false);

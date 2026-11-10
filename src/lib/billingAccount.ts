@@ -4,3 +4,18 @@ export function prepareBillingSignIn(sessionStore: Pick<Storage, 'setItem'>, loc
     sessionStore.setItem('hintio_billing_return', '1');
     return origin + '/';
 }
+
+export async function completeBillingReturn(
+    store: Pick<Storage, 'getItem' | 'removeItem'>,
+    waitForSession: () => Promise<unknown>,
+    onComplete: () => void
+) {
+    if (store.getItem('hintio_billing_return') !== '1') return false;
+    try {
+        await waitForSession();
+    } finally {
+        store.removeItem('hintio_billing_return');
+        onComplete();
+    }
+    return true;
+}
