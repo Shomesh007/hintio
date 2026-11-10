@@ -29,6 +29,6 @@ Owner: admin@builtbygsv.in. Confirm a monitored inbox, review reports for potent
 
 ## Billing remediation update
 
-Deployed price policy and atomic entitlement fixes verified. Account/cancellation UI and 83 website tests pass; live monthly plan verified. Finish deferred live webhook setup, real Test-mode payment delivery, final public deployment verification and Store-signed runtime checks. Pre-existing backend advisor findings and build-tool audit findings remain documented; this is not an all-security-controls pass.
+Deployed price policy and atomic entitlement fixes verified. Account/cancellation UI and 87 website tests pass; live monthly plan verified. Finish deferred live webhook setup, real Test-mode payment delivery, final public deployment verification and Store-signed runtime checks. Pre-existing backend advisor findings and build-tool audit findings remain documented; this is not an all-security-controls pass.
 
 Live GPT and synthetic speech checks passed. Provider setup is validated before consuming a session credit. Two temporary QA tokens are retired; no customer credit was consumed.
