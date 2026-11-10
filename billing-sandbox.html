@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="en"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hintio — Razorpay sandbox verification</title>
+<style>body{margin:0;background:#101114;color:#e9e5dc;font:16px system-ui;padding:32px;max-width:850px}h1{font-size:28px}button{padding:12px 18px;margin:6px;border:1px solid #716b58;background:#25241f;color:#fff;cursor:pointer;border-radius:6px}button:disabled{opacity:.4}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#191b20;padding:20px;border:1px solid #383a40}p{line-height:1.7}.badge{color:#e8c57a}input{padding:10px;width:90%;margin:8px;background:#222;color:white;border:1px solid #666}</style>
+<h1>Hintio payment verification</h1><p class="badge">RAZORPAY TEST MODE • NO REAL MONEY • ISOLATED TEST ACCESS</p>
+<p>This local page calls the real sandbox checkout, fulfillment, recovery and cancellation handlers. Its test keys cannot unlock the production app.</p>
+<button id="signin">Sign in with Google</button><button id="refresh">Refresh sandbox billing</button>
+<p id="account">Checking sign-in…</p>
+<button id="yearly">Test yearly payment — ₹14,000</button><button id="monthly">Test monthly subscription — ₹2,049</button>
+<button id="recoverMonthly">Recover monthly test key</button><button id="recoverYearly">Recover yearly test key</button><p id="state" role="status"></p><div id="licenses"></div><pre id="result">Ready</pre>
+<script type="module" src="/src/billingSandboxQA.ts"></script>
+</html>
