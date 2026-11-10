@@ -55,3 +55,7 @@ Email **admin@builtbygsv.in** · Phone / WhatsApp **+91 8438365095**
 `desktop` maintains the application source. `main` hosts the website. `v1.0.2` preserves the original desktop release snapshot; later contact and privacy changes are recorded on this branch.
 
 The desktop is distributed under GPL-3.0. See [LICENSE](LICENSE).
+
+## Paid access lifecycle
+
+Paid checkout now provisions licenses and hashed app access tokens atomically. Renewals retain keys and paid time; account management supports end-of-cycle monthly cancellation and captured-payment proof recovery. Live policy: INR 2,049 monthly or INR 14,000 per 365 prepaid days. See [billing audit](packaging/store/BILLING-AUDIT.md). Live webhook creation is deferred by the owner; Store certification and signed installed-runtime checks remain pending.

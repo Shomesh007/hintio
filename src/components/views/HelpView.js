@@ -344,6 +344,9 @@ export class HelpView extends LitElement {
                                 Open WhatsApp <span aria-hidden="true">↗</span>
                             </button>
                             <button class="contact-button secondary" @click=${this.copyPhone}>Copy phone number</button>
+                            <button class="contact-button secondary" @click=${() => this.openSupport('https://www.hintio.tech/access#billing')}>
+                                Manage billing
+                            </button>
                         </div>
                         <p class="contact-note">
                             Include your app version, operating system, and steps to reproduce a problem. Keep API keys, access keys, payment details,

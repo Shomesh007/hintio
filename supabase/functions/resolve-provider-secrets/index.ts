@@ -1,6 +1,6 @@
 // @ts-nocheck
 // @ts-ignore -- Deno npm specifier is resolved in Supabase Edge runtime
-import { createClient } from 'npm:@supabase/supabase-js@2';
+import { createClient } from 'npm:@supabase/supabase-js@2.99.1';
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -34,6 +34,7 @@ const MANAGED_OPENAI_KEYS =
     ['HINTIO_MANAGED_OPENAI_API_KEYS', 'HINTIO_MANAGED_OPENAI_API_KEY', 'OPENAI_API_KEYS', 'OPENAI_API_KEY']
         .map(name => (Deno.env.get(name) ?? '').trim())
         .find(Boolean) || '';
+const MANAGED_GROQ_KEY = (Deno.env.get('HINTIO_MANAGED_GROQ_API_KEY') ?? Deno.env.get('GROQ_API_KEY') ?? '').trim();
 const MANAGED_OPENAI_MODEL = (Deno.env.get('HINTIO_MANAGED_OPENAI_MODEL') ?? '').trim() || 'gpt-5.6-luna';
 
 function splitKeys(raw: string): string[] {
@@ -233,7 +234,7 @@ Deno.serve(async (req: Request) => {
         });
     }
 
-    const rpcName = consume ? 'consume_interview_credit' : 'resolve_provider_secrets';
+    const rpcName = 'resolve_provider_secrets';
     const { data, error } = await client.rpc(rpcName, {
         access_token: accessToken,
     });
@@ -245,7 +246,7 @@ Deno.serve(async (req: Request) => {
         });
     }
 
-    const row = (Array.isArray(data) ? data[0] : data) as ResolveRow | undefined;
+    let row = (Array.isArray(data) ? data[0] : data) as ResolveRow | undefined;
     if (!row) {
         return new Response(JSON.stringify({ error: 'Invalid or expired access token' }), {
             status: 403,
@@ -253,6 +254,61 @@ Deno.serve(async (req: Request) => {
         });
     }
 
+    let speechKey = (row.groq_api_key ?? '').trim();
+    if (row.provider_mode === 'managed') {
+        speechKey = MANAGED_GROQ_KEY || speechKey;
+        if (!speechKey && String(row.metadata?.plan_type ?? '').startsWith('paid_')) {
+            // Only company-issued managed trial configuration is an eligible service fallback.
+            // Never select BYOK, customer or manual records to fund another customer's usage.
+            const fallback = await client
+                .from('provider_secrets')
+                .select('groq_api_key')
+                .eq('provider_mode', 'managed')
+                .eq('metadata->>issued_for', 'free_download')
+                .not('groq_api_key', 'is', null)
+                .neq('groq_api_key', '')
+                .order('updated_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+            if (fallback.error)
+                return new Response(JSON.stringify({ error: 'Managed speech configuration unavailable' }), {
+                    status: 503,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                });
+            speechKey = (fallback.data?.groq_api_key ?? '').trim();
+        }
+    }
+    if (consume) {
+        if (!splitKeys(MANAGED_OPENAI_KEYS).length || !speechKey) {
+            return new Response(JSON.stringify({ error: 'Managed GPT or speech service is not configured. No session credit was consumed.' }), {
+                status: 503,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+        }
+        const consumed = await client.rpc('consume_interview_credit', { access_token: accessToken });
+        if (consumed.error)
+            return new Response(JSON.stringify({ error: 'Session credit service unavailable' }), {
+                status: 503,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+        const activeRow = (Array.isArray(consumed.data) ? consumed.data[0] : consumed.data) as ResolveRow | undefined;
+        if (!activeRow)
+            return new Response(JSON.stringify({ error: 'Invalid, expired or exhausted access token' }), {
+                status: 403,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+        row = activeRow;
+    }
+    const effectiveMetadata = { ...(row.metadata ?? {}) };
+    // Existing desktop timers understand this field. Bound a paid session by
+    // the remaining paid period without imposing an arbitrary session cap.
+    if (String(effectiveMetadata.plan_type ?? '').startsWith('paid_') && row.expires_at) {
+        const remainingMs = Date.parse(row.expires_at) - Date.now();
+        if (Number.isFinite(remainingMs) && remainingMs > 0) {
+            effectiveMetadata.sessionTimeoutMs = Math.max(1, Math.floor(remainingMs));
+            effectiveMetadata.paidAccessExpiresAt = row.expires_at;
+        }
+    }
     const includeSecrets = consume || isInternalRuntimeRequest;
 
     return new Response(
@@ -264,18 +320,19 @@ Deno.serve(async (req: Request) => {
                 llmProvider: 'openai',
                 providerConfiguration: {
                     openaiConfigured: splitKeys(MANAGED_OPENAI_KEYS).length > 0,
+                    groqConfigured: Boolean(speechKey),
                     geminiConfigured: Boolean((row.gemini_api_key ?? '').trim()),
                 },
                 geminiApiKey: includeSecrets ? (row.gemini_api_key ?? '') : '',
                 openaiApiKeys: includeSecrets ? splitKeys(MANAGED_OPENAI_KEYS) : [],
                 openaiModel: MANAGED_OPENAI_MODEL,
-                groqApiKey: includeSecrets ? (row.groq_api_key ?? '') : '',
+                groqApiKey: includeSecrets ? speechKey : '',
                 azureApiKey: includeSecrets ? (row.azure_api_key ?? '') : '',
                 azureEndpoint: includeSecrets ? (row.azure_endpoint ?? '') : '',
                 azureDeployment: includeSecrets ? (row.azure_deployment ?? '') : '',
                 cloudToken: includeSecrets ? (row.cloud_token ?? '') : '',
                 expiresAt: row.expires_at,
-                metadata: row.metadata ?? {},
+                metadata: effectiveMetadata,
                 maxInterviews: row.max_interviews ?? 0,
                 interviewsUsed: row.interviews_used ?? 0,
                 interviewsRemaining: Math.max(0, (row.max_interviews ?? 0) - (row.interviews_used ?? 0)),

@@ -21,7 +21,8 @@
         "make:store:validation": "node scripts/build-store.js --validation",
         "verify:store": "node scripts/verify-store-package.js",
         "test:store-ui": "node scripts/store-ui-qa.js",
-        "prepare:store-listing": "node scripts/prepare-store-listing.js"
+        "prepare:store-listing": "node scripts/prepare-store-listing.js",
+        "test:billing-ui": "node scripts/billing-ui-qa.js"
     },
     "keywords": [
         "Hintio",

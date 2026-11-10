@@ -1,4 +1,14 @@
-# Read-only billing audit — 2026-11-10
+# Billing audit and remediation — 2026-11-10
+
+## Current remediation status
+
+The findings below describe the original baseline. The deployed lifecycle fix now provisions the license, access token and provider metadata atomically from captured payments. Real SQL rollback tests verified resolver acceptance, key-preserving renewals, refund recomputation, ownership, service-role execution and blocked-token preservation. Live public pricing reports monthly INR 2,049 and yearly INR 14,000, with the monthly plan verified against Razorpay. Old amount environment variables no longer control new orders; verified historical purchase prices remain recoverable.
+
+Account-management and payment-reference repair UI is tested. End-of-cycle cancellation requires an explicit confirmation and retains paid access. No customer was charged or cancelled during testing. Two older unlinked records contain no payment references; they require captured-payment proof, not automatic activation.
+
+Razorpay had no live webhook configured. Its URL and 11 lifecycle events are prepared, but the owner explicitly deferred secret entry and creation. Automatic delivery and a real Razorpay Test-mode captured payment remain release gates. Read-time reconciliation supplements webhooks without replacing them.
+
+## Historical baseline (before remediation)
 
 ## Verified
 
@@ -11,7 +21,7 @@
 - App resolver v7 calls resolve_provider_secrets / consume_interview_credit. The live SQL functions validate hashes in public.access_tokens, not public.licenses.
 - Read-only aggregate: 3 license rows, 1 with matching app access-token hash. No customer details or actual keys are retained in this report. No license-insert trigger was found linking these tables.
 
-## Required before Store submission
+## Original remediation checklist (historical)
 
 1. Reconcile license issuance with app access-token creation, expiry and paid plan entitlement. Preserve existing customer access; use idempotent payment identifiers and transactional provisioning. Test authorized test-mode payment through actual app acceptance.
 2. Verify the actual yearly checkout amount and exact validity. Align fallback/environment configuration and public disclosure. Do not deploy the older local checkout over live v10 hardening.
@@ -21,3 +31,7 @@
 6. Replace draft purchase disclosure with the verified price, renewal, cancellation, taxes and usage terms before submission. No billing changes were deployed by this audit.
 
 This report is a release blocker list, not a successful payment end-to-end test.
+
+## Provider integration
+
+New paid keys now obtain company managed speech configuration without borrowing BYOK/customer records. Configuration is checked before credit consumption. Live QA returned GPT and synthetic transcription HTTP 200; temporary QA access was disabled after one QA session and zero customer sessions. Paid session metadata is bounded by remaining paid validity. No provider keys were printed or saved. Provider response checks do not replace native capture, checkout or webhook delivery tests.

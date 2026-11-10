@@ -29,6 +29,7 @@ async function main() {
     assert.equal(JSON.parse(asar.extractFile(archive, 'distribution.json').toString()).channel, 'microsoft-store');
     for (const file of [
         'src/index.js',
+        'src/components/views/HelpView.js',
         'src/storage.js',
         'src/utils/distribution.js',
         'src/utils/protectedStorage.js',

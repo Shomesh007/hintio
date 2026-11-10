@@ -1,0 +1,52 @@
+begin;
+do $$
+declare u uuid:=gen_random_uuid(); u2 uuid:=gen_random_uuid(); v jsonb; v2 jsonb; payload jsonb; lid uuid; token uuid; expiry timestamptz; key_value text; n integer;
+begin
+ insert into auth.users(id,email,aud,role,created_at,updated_at) values(u,'billing-test-'||u::text||'@example.invalid','authenticated','authenticated',now(),now()),(u2,'billing-test-'||u2::text||'@example.invalid','authenticated','authenticated',now(),now());
+ payload:=jsonb_build_object('user_id',u,'email','billing-test@example.invalid','plan','monthly','subscription_id','sub_test'||replace(u::text,'-',''),'payment_id','pay_test'||replace(u::text,'-',''),'amount',204900,'currency','INR','paid_at',now(),'period_start',now(),'period_end',now()+interval '1 month');
+ v:=public.record_billing_payment(payload);lid:=(v->>'licenseId')::uuid;key_value:=v->>'licenseKey';
+ select access_token_id,valid_until into token,expiry from public.licenses where id=lid;
+ if token is null or expiry<now()+interval '27 days' then raise exception 'Token/expiry provisioning failed';end if;
+ select count(*) into n from public.resolve_provider_secrets(key_value);
+ if n<>1 then raise exception 'Delivered license is not accepted by app resolver';end if;
+ perform public.consume_interview_credit(key_value);
+ if (select interviews_used from public.access_tokens where id=token)<>1 then raise exception 'Credit consumption failed';end if;
+ v2:=public.record_billing_payment(payload);
+ if v2->>'licenseKey'<>key_value or (select count(*) from public.billing_payments where license_id=lid)<>1 or (select valid_until from public.licenses where id=lid)<>expiry then raise exception 'Duplicate extended or duplicated entitlement';end if;
+ begin
+  perform public.record_billing_payment(payload||jsonb_build_object('user_id',u2));
+  raise exception 'Cross-account replay accepted';
+ exception when others then if sqlerrm='Cross-account replay accepted' then raise;end if;end;
+ v2:=public.record_billing_payment(payload||jsonb_build_object('payment_id','pay_renew'||replace(u::text,'-',''),'paid_at',now(),'period_start',now()+interval '1 month','period_end',now()+interval '2 months'));
+ if v2->>'licenseKey'<>key_value or (select valid_until from public.licenses where id=lid)<now()+interval '55 days' then raise exception 'Renewal failed to retain key and extend paid period';end if;
+ update public.licenses set billing_status='cancelled',cancel_at_period_end=true where id=lid;
+ if (select count(*) from public.resolve_provider_secrets(key_value))<>1 then raise exception 'Cancellation removed paid access early';end if;
+ perform public.record_billing_refund('pay_renew'||replace(u::text,'-',''),10000);
+ if (select valid_until from public.licenses where id=lid)<now()+interval '55 days' then raise exception 'Partial refund revoked access';end if;
+ perform public.record_billing_refund('pay_renew'||replace(u::text,'-',''),204900);
+ if (select valid_until from public.licenses where id=lid)<>expiry then raise exception 'Full refund failed to remove only refunded renewal';end if;
+ perform public.record_billing_refund(payload->>'payment_id',204900);
+ if (select count(*) from public.resolve_provider_secrets(key_value))<>0 then raise exception 'Fully refunded token still accepted';end if;
+ perform public.record_billing_payment(payload);
+ if (select count(*) from public.resolve_provider_secrets(key_value))<>0 then raise exception 'Payment replay reactivated refunded entitlement';end if;
+ -- Repair an existing unlinked key only after verified payment, and retain that key.
+ insert into public.licenses(user_id,email,license_key,plan,status) values(u2,'billing-test@example.invalid','HINT-'||replace(u2::text,'-',''),'yearly','active') returning id into lid;
+ payload:=jsonb_build_object('user_id',u2,'email','billing-test@example.invalid','plan','yearly','payment_id','pay_year'||replace(u2::text,'-',''),'amount',1400000,'currency','INR','paid_at',now(),'period_start',now(),'period_end',now()+interval '365 days');
+ v:=public.record_billing_payment(payload);key_value:=v->>'licenseKey';
+ if key_value<>'HINT-'||replace(u2::text,'-','') then raise exception 'Legacy key was unnecessarily replaced';end if;
+ select access_token_id,valid_until into token,expiry from public.licenses where id=lid;
+ if expiry<>now()+interval '365 days' then raise exception 'Yearly validity is not 365 days';end if;
+ v2:=public.record_billing_payment(payload||jsonb_build_object('payment_id','pay_yearrenew'||replace(u2::text,'-','')));
+ if v2->>'licenseKey'<>key_value or (select valid_until from public.licenses where id=lid)<>now()+interval '730 days' then raise exception 'Prepaid renewal lost remaining paid time';end if;
+ perform public.record_billing_refund(payload->>'payment_id',1400000);
+ if (select valid_until from public.licenses where id=lid)<>now()+interval '365 days' then raise exception 'Yearly refund did not recompute remaining purchased time';end if;
+ update public.access_tokens set status='blocked',is_active=false where id=token;
+ perform public.record_billing_payment(payload||jsonb_build_object('payment_id','pay_blocked'||replace(u2::text,'-','')));
+ if (select is_active from public.access_tokens where id=token) then raise exception 'Payment bypassed a manual block';end if;
+ update public.access_tokens set status='active',is_active=true,expires_at=now()-interval '1 day' where id=token;
+ perform public.cleanup_expired_access_tokens();
+ if not exists(select 1 from public.access_tokens where id=token and status='expired') then raise exception 'Expiry cleanup deleted renewal identity';end if;
+ if has_function_privilege('anon','public.record_billing_payment(jsonb)','EXECUTE') or has_function_privilege('authenticated','public.record_billing_payment(jsonb)','EXECUTE') or has_function_privilege('anon','public.cleanup_expired_access_tokens()','EXECUTE') then raise exception 'Privileged billing function exposed';end if;
+end; $$;
+rollback;
+select 'passed: provisioning, real resolver/credit use, duplicate, owner replay, monthly renewal/cancel, partial/full refund, refund replay, legacy repair, yearly stacking/refund, manual block, expiry retention and role boundaries; all synthetic changes rolled back' as result;

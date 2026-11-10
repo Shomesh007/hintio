@@ -46,9 +46,8 @@ async function main() {
         files: hashes,
         releaseGates: [
             'Business verification and real Store identity',
-            'Yearly billing, paid access provisioning and renewal/cancellation/usage disclosure',
+            'Deferred live webhook setup, real Test-mode captured checkout and legacy proof review',
             'Working private reviewer token and backend',
-            'Public privacy update deployment',
             'IARC and generative AI declarations',
             'WACK and signed installed runtime tests',
         ],

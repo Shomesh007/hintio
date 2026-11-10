@@ -22,10 +22,16 @@ The Store profile encrypts configuration, credentials and history with AES-256-G
 
 ## Paid access and declarations
 
-Installation is free; service use is paid. Owner-intended prices: INR 2,049/month and INR 14,000/year. Live Razorpay plan observed on 2026-11-10: Hintio Pro, INR 2,049 once a month. Owner confirmed keeping INR 2,049/month. Verify yearly charge, cancellation route, expiry/session/time limits before submitting. Do not promise unlimited use or a self-service cancellation flow without verification.
+Installation is free; service use is paid. Deployed prices: INR 2,049/month and INR 14,000 per 365 prepaid days. Live Razorpay plan observed on 2026-11-10: Hintio Pro, INR 2,049 once a month. Owner confirmed keeping INR 2,049/month. Live backend pricing and account/cancellation UI are verified. Finish the deferred live webhook setup and an actual Razorpay Test-mode captured checkout before submission.
 
 Declare live generative AI in Partner Center and listing metadata. Complete the official IARC questionnaire yourself from verified facts; no age rating is assigned here. This is an English UI, not a game, not targeted at children, with no public community feed. AI can produce variable content: assess the actual output and report handling rather than treating instructions as a guarantee.
 
 ## Remaining evidence
 
 Browser screenshots show actual components with test-only native bridges and synthetic data. They do not prove native capture, real GPT success, payment, email delivery or installed updates. WACK is not installed/running here. Validation MSIX is unsigned with a validation identity: do not distribute it to users. Real identity, certification, signed installation and end-to-end checks remain mandatory.
+
+## Billing verification update
+
+Atomic provisioning and real resolver/credit, renewal, cancellation-retention, refund, expiry and service-role tests passed with synthetic database changes rolled back. The account UI passed browser interaction checks with a test transport. Owner deferred live webhook creation; automatic event delivery is not verified. Two legacy records need payment proof. A real captured Test-mode checkout remains pending. Do not present these simulated tests as a real customer payment or cancellation.
+
+Live provider smoke checks returned HTTP 200 from the configured GPT model and from synthetic speech transcription. QA access was disabled afterward. These checks do not replace native installed capture or a captured payment test.

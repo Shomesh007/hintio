@@ -63,4 +63,8 @@ No self-signed certificate, developer-mode change, application-control bypass, o
 
 Run `npm run test:store-ui` with `HINTIO_TEST_CHROMIUM` pointing to an existing Chrome executable, then `npm run prepare:store-listing`. Output includes actual-component screenshots, captions, listing text, reviewer notes, policy matrix and a 300px tile. Native bridges are test doubles; screenshots do not establish installed runtime behavior.
 
-The owner confirmed INR 2,049/month and INR 14,000/year. Verify live Razorpay prices, renewal, cancellation and usage limits before submission. Deployed checkout code is newer than the local checkout source; do not overwrite its hardening. No billing changes were deployed. Publish matching privacy information before submission. Policy review is evidence, not a guarantee of Microsoft approval.
+Live billing policy is INR 2,049 monthly and INR 14,000 per 365 prepaid days. Atomic provisioning, renewal/refund SQL and account/cancellation UI checks passed. The website privacy and purchase disclosures are published. Owner deferred live webhook setup; signed event delivery and a real captured Test-mode checkout remain gates. Policy review is evidence, not a guarantee of Microsoft approval.
+
+## Paid lifecycle remediation
+
+See packaging/store/BILLING-AUDIT.md and website docs/WEBSITE_OPERATIONS.md. Captured payments now create/link app tokens atomically; renewals retain keys; processed refunds update corresponding paid time. Price policy is INR 2,049 recurring monthly and INR 14,000 per 365 prepaid days. Account management includes explicit end-of-cycle cancellation and verified payment-reference repair. Owner deferred Razorpay webhook creation; automatic delivery and real Test-mode capture remain unverified. Keep these release gates visible in Partner Center notes.

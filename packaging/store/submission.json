@@ -2,7 +2,7 @@
     "status": "draft-not-submitted",
     "displayName": "Hintio",
     "suggestedCategory": "Productivity",
-    "description": "Hintio is a desktop AI assistant for authorized questions, meetings and learning. Choose screen and audio context, add resume text or custom instructions, and review contextual AI-generated responses in an adjustable overlay.\n\nImport PDF or DOCX context, review session history and export records. Choose speaker, microphone, combined or no-audio modes. Stop capture and withdraw cloud consent from the live session or privacy controls. Only capture and share material you are authorized to use.\n\nAI responses may be inaccurate. Review important answers before relying on them. Report response by email prepares a draft: review and redact it before sending.\n\nFree installation; paid service access and a valid access token are required. Internet is required for cloud sessions. Intended India pricing is INR 2,049/month or INR 14,000/year. Live prices, renewal, cancellation and usage terms are pending verification; replace this draft wording before submission.\n\nThe Store build encrypts local records using AES-256-GCM with a Windows-protected key. Exports may be unencrypted. Cloud processing is subject to provider terms. Updates are managed by Microsoft Store. Screen-sharing behavior depends on the capture tool; invisibility is not guaranteed.",
+    "description": "Hintio is a desktop AI assistant for authorized questions, meetings and learning. Choose screen and audio context, add resume text or custom instructions, and review contextual AI-generated responses in an adjustable overlay.\n\nImport PDF or DOCX context, review session history and export records. Choose speaker, microphone, combined or no-audio modes. Stop capture and withdraw cloud consent from the live session or privacy controls. Only capture and share material you are authorized to use.\n\nAI responses may be inaccurate. Review important answers before relying on them. Report response by email prepares a draft: review and redact it before sending.\n\nFree installation; paid service access and a valid access token are required. Internet is required for cloud sessions. India pricing: INR 2,049 per recurring monthly cycle (up to 120 cycles), or INR 14,000 prepaid for 365 days without automatic renewal. Cancel monthly renewal through Manage my billing on the Access page; the current paid period remains available. Paid access has no fixed session time, daily or session-count limit; network and provider availability apply. Review the final INR charge before authorizing payment.\n\nThe Store build encrypts local records using AES-256-GCM with a Windows-protected key. Exports may be unencrypted. Cloud processing is subject to provider terms. Updates are managed by Microsoft Store. Screen-sharing behavior depends on the capture tool; invisibility is not guaranteed.",
     "features": [
         "Selectable speaker, microphone, combined and no-audio session modes",
         "Screen analysis and document context",
@@ -24,9 +24,10 @@
         "Keep backend reachable and provide adequate test credits",
         "Explain screen/audio consent and each capture mode",
         "Complete service pricing disclosure, age ratings and availability before submission",
-        "Verify live prices, renewal/cancellation and usage limits.",
         "Publish matching privacy information.",
-        "Complete live generative AI declaration and IARC questionnaire."
+        "Complete live generative AI declaration and IARC questionnaire.",
+        "Finish deferred live webhook setup and verify signed delivered events.",
+        "Complete an authorized Razorpay Test-mode captured-payment end-to-end check; no customer charge or cancellation was used for testing."
     ],
     "identity": "pending actual Partner Center reservation",
     "screenshotStatus": "Five actual-component 1600x1000 PNG captures using test-only native bridges and synthetic content. Installed Store runtime unverified.",
@@ -42,16 +43,19 @@
         "currency": "INR",
         "monthlyPriceOwnerConfirmed": 2049,
         "yearlyPriceOwnerConfirmed": 14000,
-        "livePriceVerified": false,
-        "renewal": "Razorpay monthly recurring plan verified at INR 2,049 once a month. Yearly checkout uses a prepaid order in deployed code; actual charge and access period remain to be verified.",
-        "cancellation": "Pending verification of actual customer cancellation route.",
-        "usageLimits": "Pending entitlement verification. No unlimited claim.",
+        "livePriceVerified": true,
+        "renewal": "Monthly recurring, up to 120 cycles. Yearly prepaid for 365 days with manual renewal that retains remaining paid time.",
+        "cancellation": "Authenticated Access page -> Manage my billing -> Cancel monthly renewal -> explicit end-of-cycle confirmation. Uninstalling does not cancel billing.",
+        "usageLimits": "No fixed paid-session time, session-count or daily cap. Provider/network availability and abuse controls apply.",
         "submissionBlockedUntilVerified": true,
         "monthlyLivePlanVerified": true,
         "monthlyPlanId": "plan_SRiBHkkKQcRnBV",
         "monthlyBillingCycle": "Once a month",
-        "yearlyLivePriceVerified": false,
-        "entitlementIssue": "Live license and app access-token tables are separate. Aggregate check found 3 licenses and only 1 matching access-token hash. Reconcile paid delivery and lifecycle before submission."
+        "yearlyLivePriceVerified": true,
+        "entitlementIssue": "Fixed with atomic license/token provisioning and an idempotent payment ledger. Two older records have no payment proof and are not automatically activated.",
+        "yearlyPriceSource": "Live checkout policy and tested order request: 1400000 paise; no real charge performed",
+        "webhookStatus": "No live webhook existed. Setup prepared but explicitly deferred by owner; automatic delivery unverified.",
+        "realCapturedPaymentEndToEndTested": false
     },
     "systemRequirements": {
         "architecture": "x64",
