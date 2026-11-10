@@ -1,209 +1,43 @@
-# Website operations
+# Hintio website and billing operations
 
-Developer reference for the website on `main`. These instructions describe the existing integration; they do not confirm production configuration or authorize a deployment. Use the current dashboard configuration for pricing.
+Production: https://www.hintio.tech . Website source is published from the main branch through the existing Vercel Git integration. Backend project: vsybqtunyuanxspxhzue.
 
-## Supabase + Razorpay License Flow
+## Current price and renewal policy
 
-This repo is wired for the flow:
+- Monthly: INR 2,049, Razorpay recurring subscription, up to 120 cycles. End-of-cycle cancellation retains the verified paid period.
+- Yearly: INR 14,000 prepaid for 365 days. No automatic renewal. Manual renewal retains remaining verified paid time.
+- Paid access has no fixed session/count/daily limit; provider/network availability and normal abuse controls apply.
+- Cancellation is not a refund. Support handles refund requests and applicable statutory rights. Full processed refunds remove their corresponding access periods; partial refunds retain access.
 
-`Razorpay webhook -> Supabase Edge Function -> Save to DB -> Activate in app`
+Prices are fixed in supabase/functions/\_shared/billing.ts. Legacy amount environment variables are ignored. Monthly checkout checks the actual configured plan amount/currency/frequency before creating a subscription. A prepaid monthly fallback is no longer created; verified historical orders remain recoverable.
 
-### 1) Database
+## Server-side fulfillment
 
-Migration file is included at:
+Every payment must be captured (not merely authorized), match the server-owned order or paid invoice, and belong to the verified user. The atomic record_billing_payment RPC creates/links the license, hashed access token and managed-provider metadata together. Payment IDs are idempotent. Renewals preserve the existing key. Manual blocks remain blocked. Expiry cleanup retains records for renewal rather than deleting them.
 
-- `supabase/migrations/20260316_create_licenses_table.sql`
+All privileged billing RPCs and ledger tables are service-only. Edge Functions perform auth.getUser for account routes or HMAC validation for webhooks. Never put service-role, Razorpay or provider secrets in VITE variables. No provider secret is stored in billing reports.
 
-### 2) Edge Function
+Functions: create-razorpay-checkout, issue-paid-license, get-my-license, manage-billing, razorpay-webhook. Include \_shared/billing.ts and the pinned deno.json import map when deploying. verify_jwt=false is intentional because the bodies perform JWT verification themselves; the webhook verifies its signing secret.
 
-Function source is included at:
+## Live webhook setup — deferred by owner
 
-- `supabase/functions/razorpay-webhook/index.ts`
-
-It verifies `x-razorpay-signature`, then inserts an active license into `licenses`.
-
-> Note: Email sending is intentionally not used (free-tier friendly).
-
-### 3) Deploy webhook function
-
-Deploy to Supabase:
-
-```bash
-supabase functions deploy razorpay-webhook --no-verify-jwt
-```
-
-Webhook URL for this project:
-
-```txt
+Create one live webhook pointing to:
 https://vsybqtunyuanxspxhzue.supabase.co/functions/v1/razorpay-webhook
-```
 
-Add function secret in Supabase:
+Use the same private signing secret as Supabase RAZORPAY_WEBHOOK_SECRET. Enter it directly in both dashboards; never commit or chat it. Subscribe to payment.captured, refund.processed, subscription.activated, subscription.charged, subscription.completed, subscription.paused, subscription.updated, subscription.resumed, subscription.halted, subscription.pending, subscription.cancelled. Alert email: admin@builtbygsv.in.
 
-```bash
-supabase secrets set RAZORPAY_WEBHOOK_SECRET=your_webhook_secret
-```
+No live webhook was configured when inspected. The form is prepared, but creation was explicitly deferred. Automatic delivery is not verified and remains a release gate. Read-time API reconciliation in recovery/account management supplements delivery but is not a replacement for background events.
 
-### 4) Frontend license validation
+## Customer account management
 
-The modal in `src/App.tsx` validates the entered key against `public.licenses` where:
+Access page -> Manage my billing -> sign in with the Google account used at checkout. View paid expiry, cancel monthly renewal through an explicit confirmation, or verify a captured pay\_ reference to repair older access. Ownership is checked server-side. Uninstalling does not cancel recurring billing.
 
-- `license_key = user input`
-- `status = active`
+Old records without a matching token and without payment references require verified receipt recovery or support review. Do not activate them based only on their status text. No existing key, customer record, or valid access was deleted by this migration.
 
-Set local env vars before running:
+## Verification and release gates
 
-```bash
-VITE_SUPABASE_URL=https://vsybqtunyuanxspxhzue.supabase.co
-VITE_SUPABASE_ANON_KEY=your_anon_key
-```
+Run npm test, npm run typecheck and npm run build. Desktop scripts/billing-ui-qa.js tests the built UI with a synthetic transport; it does not cancel actual subscriptions. packaging/store/test-paid-license-lifecycle.sql runs actual provisioning/resolver/renewal/refund/role tests inside a transaction that rolls back all synthetic changes.
 
-## Vercel Production (www.hintio.tech)
+GET create-razorpay-checkout?verify=1 exposes only public pricing and checks the actual monthly plan. It creates no order. A real captured checkout, delivered live webhook and installed signed app still require end-to-end verification. Use Razorpay Test mode for payment testing; never charge or cancel a customer to simulate a test.
 
-This repo is ready for Vercel production deploy.
-
-### Domain + redirects
-
-- Canonical domain is configured as `https://www.hintio.tech`.
-- `vercel.json` includes a permanent redirect from apex `hintio.tech` to `www.hintio.tech`.
-
-### Required Vercel environment variables
-
-Set these in Vercel Project Settings -> Environment Variables:
-
-- `VITE_SUPABASE_URL=https://vsybqtunyuanxspxhzue.supabase.co`
-- `VITE_SUPABASE_ANON_KEY=<your_anon_key>`
-- `VITE_SITE_URL=https://www.hintio.tech`
-
-Optional:
-
-- `VITE_MAC_DOWNLOAD_URL=<public .dmg URL>`
-- `VITE_WINDOWS_DOWNLOAD_URL=<public .exe URL>`
-
-The default Windows download is [Hintio desktop 1.0.2](https://github.com/Shomesh007/hintio/releases/download/v1.0.2/Hintio-1.0.2.Setup.exe), published in this repository’s `v1.0.2` release. Its tag contains the desktop source; `main` remains the website.
-
-### SEO/static files included
-
-- `index.html` includes canonical, Open Graph, Twitter metadata
-- `public/robots.txt`
-- `public/sitemap.xml`
-- `public/site.webmanifest`
-
-### Build settings
-
-Vercel settings are codified in `vercel.json`:
-
-- framework: `vite`
-- build command: `npm run build`
-- output directory: `dist`
-
-## Google Auth Gate for Downloads (Free Tier Compatible)
-
-Yes, this works on Supabase free tier.
-
-Download and pricing CTAs in the site now require a valid Google-authenticated Supabase session before opening the installer URL.
-
-### Supabase dashboard setup (required)
-
-1. Open `Authentication -> Providers -> Google` and enable Google provider.
-2. Add your Google OAuth `Client ID` and `Client Secret`.
-3. In `Authentication -> URL Configuration`, ensure site URL is:
-
-```txt
-https://www.hintio.tech
-```
-
-4. Add redirect URLs:
-
-```txt
-https://www.hintio.tech
-https://www.hintio.tech/
-https://www.hintio.tech/?download=1
-http://localhost:3000
-http://localhost:3000/
-http://localhost:3000/?download=1
-```
-
-### Notes
-
-- Free tier supports OAuth providers, including Google.
-- No paid Supabase plan is required for this authentication gate flow.
-
-## Unique Free-Trial Key Assignment (Per Authenticated User)
-
-Implemented via Supabase migration:
-
-- `supabase/migrations/20260316_add_unique_trial_key_claim_function.sql`
-
-Behavior:
-
-- After successful Google auth with `?download=1`, frontend calls `public.claim_three_usage_trial_key()`.
-- Function selects an unassigned token from `public.access_tokens` where:
-    - `max_interviews = 3`
-    - active + not expired
-    - linked `public.provider_secrets.metadata.plan_type = 'three_usage'`
-- Token is atomically claimed (`FOR UPDATE SKIP LOCKED`) and reserved to that user (`sold_to`).
-- Claim mapping is stored in `public.trial_key_claims` to ensure a token is never assigned to another user.
-- UI shows popup with key, Copy, and Done. Download starts only after Done.
-
-## Razorpay Payment Gateway (Monthly + Yearly)
-
-Implemented with secure server-side checkout creation using Supabase Edge Function:
-
-- `supabase/functions/create-razorpay-checkout/index.ts`
-
-Frontend wiring:
-
-- `Get Pro` triggers `monthly`
-- `Get Yearly` triggers `yearly`
-- Frontend invokes Edge Function, then opens Razorpay Checkout (`checkout.js`)
-
-After Razorpay reports success, the frontend tries the existing license issuer once.
-If issuance is slow or fails, it automatically polls the authenticated `get-my-license`
-endpoint until the selected-plan key is available. Each lookup has an 8-second limit;
-retries back off from 2 seconds to a maximum of 30 seconds between checks. There is
-no overall recovery cutoff while the page remains open. The pending plan and payment
-reference are kept in local storage so reopening the same browser restores lookup,
-with sign-in required if the session expired. Legacy tab-session reminders migrate
-automatically. No license keys, payment signatures, or login credentials are stored
-in the reminder. The access page also has an “Already paid?” retrieval action for
-the selected monthly/yearly plan, using the same Google account and existing endpoint.
-Recovery OAuth intents never open checkout. Closing the dialog does not stop recovery;
-leaving the page cancels requests and timers. The browser cannot check while closed.
-
-### Deploy function
-
-```bash
-supabase functions deploy create-razorpay-checkout
-```
-
-If local OAuth sessions intermittently fail at the edge gateway with `401 Invalid JWT`, deploy with gateway JWT verification disabled and rely on the function's internal token validation (`admin.auth.getUser(jwt)`):
-
-```bash
-supabase functions deploy create-razorpay-checkout --no-verify-jwt
-```
-
-This repository also includes `supabase/functions/create-razorpay-checkout/config.toml` with:
-
-```toml
-verify_jwt = false
-```
-
-### Required Supabase function secrets
-
-```bash
-supabase secrets set RAZORPAY_KEY_ID=...
-supabase secrets set RAZORPAY_KEY_SECRET=...
-supabase secrets set RAZORPAY_CURRENCY=INR
-supabase secrets set RAZORPAY_MONTHLY_AMOUNT_PAISE=1900
-supabase secrets set RAZORPAY_YEARLY_AMOUNT_PAISE=9900
-```
-
-Optional for true recurring monthly subscriptions (recommended):
-
-```bash
-supabase secrets set RAZORPAY_MONTHLY_PLAN_ID=plan_xxxxx
-```
-
-If `RAZORPAY_MONTHLY_PLAN_ID` is set, monthly checkout uses Subscriptions API.
-If not set, it falls back to a one-time monthly order amount.
+Final Store identity, certification, WACK and Store-delivered runtime checks remain separate gates. Keep the current website EXE link until a real Store product exists.

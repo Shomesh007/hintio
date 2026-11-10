@@ -2604,3 +2604,19 @@
 .processing-list dt { font-weight: 800; }
 .processing-list dd { margin: 0; line-height: 1.7; color: var(--muted); }
 @media(max-width:600px) { .processing-list > div { grid-template-columns: 1fr; gap: 10px; } .contact-guide { padding-left: 18px; } }
+
+.billing-manager { display:grid;grid-template-columns:1fr 1.3fr;gap:64px;padding-top:84px;padding-bottom:84px;border-top:1px solid #cbd0dc;scroll-margin-top:100px; }
+.billing-manager h2 { font-size:clamp(30px,4vw,48px);line-height:1.1;letter-spacing:-.04em;margin:16px 0 22px; }
+.billing-manager p { line-height:1.65;margin:12px 0; }
+.billing-manager button { border:1px solid var(--ink);padding:12px 18px;background:transparent;color:var(--ink);font-weight:700;cursor:pointer; }
+.billing-manager button:disabled { opacity:.5;cursor:wait; }
+.billing-records article { padding:26px 0;border-bottom:1px solid #cbd0dc; }
+.billing-records h3 { font-size:22px; }
+.billing-records small { color:var(--muted); }
+.billing-confirm { border-left:3px solid var(--ink);padding-left:18px;margin-top:18px; }
+.billing-confirm button { margin:8px 10px 0 0; }
+.billing-manager [role=alert] { color:#9f2525; }
+.billing-manager a { text-decoration:underline;text-underline-offset:4px; }
+@media(max-width:760px){.billing-manager{grid-template-columns:1fr;gap:24px;padding-top:48px;padding-bottom:48px;}.billing-confirm button{width:100%;}}
+
+.billing-proof {margin:28px 0;padding-top:24px;border-top:1px solid #cbd0dc}.billing-proof label{display:block;font-weight:700;margin-bottom:12px}.billing-proof input{display:block;max-width:100%;width:100%;padding:12px 14px;border:1px solid #cbd0dc;background:transparent;color:var(--ink);margin-bottom:12px}

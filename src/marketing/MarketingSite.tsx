@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { shortcuts, profiles, platformKeys, type ShortcutGroup } from './shortcutData';
 import './marketing.css';
+import BillingManager from './BillingManager';
 
 interface Props {
     onDownload: () => void;
@@ -921,7 +922,10 @@ function Access({ onDownload, onUpgrade, onRecover, onMacDownload, checkoutLoadi
                             </button>
                         ))}
                     </div>
-                    <p className="small-copy">Review your final price, currency, and plan details in Razorpay before paying.</p>
+                    <p className="small-copy">
+                        Monthly: ₹2,049, recurring monthly until cancelled (up to 120 cycles). Yearly: ₹14,000 once for 365 days, without automatic
+                        renewal. Charges are in INR; review the final checkout before authorizing payment.
+                    </p>
                     <div className="access-download">
                         <Monitor />
                         <div>
@@ -941,7 +945,14 @@ function Access({ onDownload, onUpgrade, onRecover, onMacDownload, checkoutLoadi
                         <span>{plan === 'monthly' ? 'MONTHLY' : 'YEARLY'} DESKTOP ACCESS</span>
                     </div>
                     <h2>{plan === 'monthly' ? 'Monthly Pro.' : 'Yearly Pro.'}</h2>
-                    <p>A little clarity goes a long way.</p>
+                    <p>
+                        <strong>{plan === 'monthly' ? '₹2,049 / month' : '₹14,000 / 365 days'}</strong>
+                    </p>
+                    <p>
+                        {plan === 'monthly'
+                            ? 'Renews monthly. Cancel future renewal below; retain the current paid period.'
+                            : 'Prepaid access. Renew manually; remaining paid time is retained.'}
+                    </p>
                     <ul>
                         {[
                             'Live voice context',
@@ -964,7 +975,10 @@ function Access({ onDownload, onUpgrade, onRecover, onMacDownload, checkoutLoadi
                     <button className="access-recover" onClick={() => onRecover(plan)}>
                         Already paid? Retrieve my key <ArrowRight size={15} />
                     </button>
-                    <small>Sign in with Google to continue. Your key is shown after the payment flow completes.</small>
+                    <small>
+                        Sign in with Google. Access is issued after a full captured payment. No daily or session-count cap and no fixed paid-session
+                        time limit; network and provider availability apply.
+                    </small>
                 </div>
             </section>
             <section className="dark-section">
@@ -986,6 +1000,7 @@ function Access({ onDownload, onUpgrade, onRecover, onMacDownload, checkoutLoadi
                     </div>
                 </div>
             </section>
+            <BillingManager />
             <FAQ />
         </>
     );
@@ -1007,16 +1022,52 @@ function Closing({ title, action, onClick, secondary }: { title: string; action:
     );
 }
 function Contact() {
-    return <section className="wrap contact-page page-hero">
-        <span className="eyebrow">HINTIO / CONTACT</span>
-        <h1>A direct line.<br /><mark>A clearer next step.</mark></h1>
-        <p className="contact-intro">Get help with setup, desktop access, a bug, or a question about your data.</p>
-        <address className="contact-directory">
-            <div><span>Email</span><a href={`mailto:${supportEmail}`}>{supportEmail}<ArrowUpRight size={24} /></a><p>For product support and privacy or data requests.</p></div>
-            <div><span>Phone / WhatsApp</span><a href="tel:+918438365095">8438365095<ArrowUpRight size={24} /></a><p>Call us, or <a href={support} target="_blank" rel="noreferrer">open a WhatsApp conversation</a>.</p></div>
-        </address>
-        <div className="contact-guide"><h2>Help us find the issue.</h2><p>Include your app version, operating system, what you expected, and the steps that caused the problem. For an access issue, describe the error shown in Hintio.</p><p>Keep API keys, access tokens, payment details, and private conversations out of your message. Redact screenshots before sharing them.</p></div>
-    </section>;
+    return (
+        <section className="wrap contact-page page-hero">
+            <span className="eyebrow">HINTIO / CONTACT</span>
+            <h1>
+                A direct line.
+                <br />
+                <mark>A clearer next step.</mark>
+            </h1>
+            <p className="contact-intro">Get help with setup, desktop access, a bug, or a question about your data.</p>
+            <address className="contact-directory">
+                <div>
+                    <span>Email</span>
+                    <a href={`mailto:${supportEmail}`}>
+                        {supportEmail}
+                        <ArrowUpRight size={24} />
+                    </a>
+                    <p>For product support and privacy or data requests.</p>
+                </div>
+                <div>
+                    <span>Phone / WhatsApp</span>
+                    <a href="tel:+918438365095">
+                        8438365095
+                        <ArrowUpRight size={24} />
+                    </a>
+                    <p>
+                        Call us, or{' '}
+                        <a href={support} target="_blank" rel="noreferrer">
+                            open a WhatsApp conversation
+                        </a>
+                        .
+                    </p>
+                </div>
+            </address>
+            <div className="contact-guide">
+                <h2>Help us find the issue.</h2>
+                <p>
+                    Include your app version, operating system, what you expected, and the steps that caused the problem. For an access issue,
+                    describe the error shown in Hintio.
+                </p>
+                <p>
+                    Keep API keys, access tokens, payment details, and private conversations out of your message. Redact screenshots before sharing
+                    them.
+                </p>
+            </div>
+        </section>
+    );
 }
 function Info({ type }: { type: 'privacy' | 'terms' }) {
     return (
@@ -1025,29 +1076,85 @@ function Info({ type }: { type: 'privacy' | 'terms' }) {
             <h1>{type === 'privacy' ? 'Your context.\nKnow the flow.' : 'Before you\nget access.'}</h1>
             {type === 'privacy' ? (
                 <>
-                    <p className="info-lead">Understand what Hintio captures, where your context is processed, and which controls are available in the desktop app.</p>
-                    <div className="information-note">This page describes the product's data flow. Provider retention and processing terms depend on the service and mode you use.</div>
+                    <p className="info-lead">
+                        Understand what Hintio captures, where your context is processed, and which controls are available in the desktop app.
+                    </p>
+                    <div className="information-note">
+                        This page describes the product's data flow. Provider retention and processing terms depend on the service and mode you use.
+                    </div>
                     <h2>01 / What enters a session</h2>
-                    <p>Your audio mode can use speaker output, microphone input, both, or no audio. Screen analysis uses the screen content you choose to capture. Resume text, your domain, and custom instructions can also become session context.</p>
-                    <p>Review the selected audio source and screen controls before starting. Only capture conversations and content you have permission to use.</p>
+                    <p>
+                        Your audio mode can use speaker output, microphone input, both, or no audio. Screen analysis uses the screen content you
+                        choose to capture. Resume text, your domain, and custom instructions can also become session context.
+                    </p>
+                    <p>
+                        Review the selected audio source and screen controls before starting. Only capture conversations and content you have
+                        permission to use.
+                    </p>
                     <h2>02 / Where processing happens</h2>
                     <dl className="processing-list">
-                        <div><dt>Cloud AI</dt><dd>Session context sent to a cloud provider can include audio or transcripts, screenshots, resume text, and custom instructions. The selected provider's terms apply to its processing.</dd></div>
-                        <div><dt>Bring your own key</dt><dd>BYOK connects your selected provider using your key. It does not mean the context stays on your computer.</dd></div>
-                        <div><dt>Local mode</dt><dd>Ollama and on-device transcription support local inference after setup. Access validation, model downloads, and other connected services can still need an internet connection.</dd></div>
+                        <div>
+                            <dt>Cloud AI</dt>
+                            <dd>
+                                Session context sent to a cloud provider can include audio or transcripts, screenshots, resume text, and custom
+                                instructions. The selected provider's terms apply to its processing.
+                            </dd>
+                        </div>
+                        <div>
+                            <dt>Bring your own key</dt>
+                            <dd>BYOK connects your selected provider using your key. It does not mean the context stays on your computer.</dd>
+                        </div>
+                        <div>
+                            <dt>Local mode</dt>
+                            <dd>
+                                Ollama and on-device transcription support local inference after setup. Access validation, model downloads, and other
+                                connected services can still need an internet connection.
+                            </dd>
+                        </div>
                     </dl>
                     <h2>03 / What stays on your device</h2>
-                    <p>Hintio stores configuration, provider credentials, preferences, and session history in its local <code>hintio-config</code> folder. History can include responses, transcripts, and screen analyses. Treat this folder and any exported copies as private.</p>
-                    <p>Microsoft Store builds protect local records with AES-256-GCM encryption and a key protected by Windows data protection. This protects stored files from other Windows accounts; it does not isolate them from every program running as the same user. Exported files are separate and may be unencrypted. EXE builds use local JSON files without application encryption.</p>
+                    <p>
+                        Hintio stores configuration, provider credentials, preferences, and session history in its local <code>hintio-config</code>{' '}
+                        folder. History can include responses, transcripts, and screen analyses. Treat this folder and any exported copies as private.
+                    </p>
+                    <p>
+                        Microsoft Store builds protect local records with AES-256-GCM encryption and a key protected by Windows data protection. This
+                        protects stored files from other Windows accounts; it does not isolate them from every program running as the same user.
+                        Exported files are separate and may be unencrypted. EXE builds use local JSON files without application encryption.
+                    </p>
                     <h2>04 / Your desktop controls</h2>
-                    <p>Settings → Privacy &amp; Data explains the data flow and provides separate controls for restoring settings and deleting local data. Each asks for confirmation. Restoring settings resets preferences, shortcuts, resume text, and custom instructions; session history is retained.</p>
-                    <p>Deleting local data resets the Hintio configuration folder, including saved credentials and local history, then closes the app. It does not remove exported copies or data held by an AI, sign-in, or payment provider.</p>
-                    <p>Cloud processing requires opt-in consent in the desktop app. Withdraw it in Settings to stop a session and return to the privacy step; saved records are retained. Only share third-party content with the required permission.</p>
-                    <h2>AI responses and reports</h2><p>Hintio uses live generative AI, which can produce inaccurate or inappropriate content. Review responses before relying on them. Report response by email opens a draft to admin@builtbygsv.in with an excerpt for review and redaction. Nothing is sent until you send the email. Feedback and reports can include information you choose to provide and are used for support, safety review and response. Contact support about retention or deletion; provider records are subject to the provider's policies.</p>
+                    <p>
+                        Settings → Privacy &amp; Data explains the data flow and provides separate controls for restoring settings and deleting local
+                        data. Each asks for confirmation. Restoring settings resets preferences, shortcuts, resume text, and custom instructions;
+                        session history is retained.
+                    </p>
+                    <p>
+                        Deleting local data resets the Hintio configuration folder, including saved credentials and local history, then closes the
+                        app. It does not remove exported copies or data held by an AI, sign-in, or payment provider.
+                    </p>
+                    <p>
+                        Cloud processing requires opt-in consent in the desktop app. Withdraw it in Settings to stop a session and return to the
+                        privacy step; saved records are retained. Only share third-party content with the required permission.
+                    </p>
+                    <h2>AI responses and reports</h2>
+                    <p>
+                        Hintio uses live generative AI, which can produce inaccurate or inappropriate content. Review responses before relying on
+                        them. Report response by email opens a draft to admin@builtbygsv.in with an excerpt for review and redaction. Nothing is sent
+                        until you send the email. Feedback and reports can include information you choose to provide and are used for support, safety
+                        review and response. Contact support about retention or deletion; provider records are subject to the provider's policies.
+                    </p>
                     <h2>Website sign-in and checkout</h2>
-                    <p>The website uses Supabase for Google sign-in and access-key services, and Razorpay for checkout. Those services process information needed for their respective flows. Check the details shown by the service before signing in or confirming a payment.</p>
+                    <p>
+                        The website uses Supabase for Google sign-in and access-key services, and Razorpay for checkout. Those services process
+                        information needed for their respective flows. Check the details shown by the service before signing in or confirming a
+                        payment.
+                    </p>
                     <h2>Questions or a data request?</h2>
-                    <p>Email <a href={`mailto:${supportEmail}`}>{supportEmail}</a> or contact us on <a href="tel:+918438365095">8438365095</a>. Describe the request without sending API keys, access keys, payment credentials, or private session content. We can help identify whether the request concerns local Hintio records or a connected provider.</p>
+                    <p>
+                        Email <a href={`mailto:${supportEmail}`}>{supportEmail}</a> or contact us on <a href="tel:+918438365095">8438365095</a>.
+                        Describe the request without sending API keys, access keys, payment credentials, or private session content. We can help
+                        identify whether the request concerns local Hintio records or a connected provider.
+                    </p>
                 </>
             ) : (
                 <>
@@ -1061,7 +1168,21 @@ function Info({ type }: { type: 'privacy' | 'terms' }) {
                         key is distinct from the website’s monthly and yearly checkout options.
                     </p>
                     <h2>Purchase questions</h2>
-                    <p>Contact Hintio support for the applicable purchase terms, renewal, cancellation, and refund details before paying.</p>
+                    <p>
+                        Monthly access is ₹2,049 per billing cycle and renews through Razorpay until cancelled, for up to 120 cycles. Cancel future
+                        renewal through Manage my billing on the Access page. Access continues until the end of the verified paid period. Uninstalling
+                        does not cancel billing.
+                    </p>
+                    <p>
+                        Yearly access is ₹14,000 prepaid for 365 days, without automatic renewal. Manual yearly renewal retains remaining verified
+                        paid time. Paid access has no daily or session-count cap or fixed session time limit; connectivity and provider availability
+                        apply.
+                    </p>
+                    <p>
+                        Cancellation stops future billing and does not itself request a refund. Contact admin@builtbygsv.in for refund requests and
+                        applicable statutory rights. A full processed refund removes the corresponding access period; partial refunds retain access.
+                        Review the final INR charge before authorization.
+                    </p>
                 </>
             )}
             <a className="hi-btn hi-btn-ink" href={support} target="_blank" rel="noreferrer">
@@ -1073,6 +1194,20 @@ function Info({ type }: { type: 'privacy' | 'terms' }) {
 
 export default function MarketingSite(props: Props) {
     const [page, setPage] = useState<Page>(currentPage);
+    useEffect(() => {
+        let returning = false;
+        try {
+            returning = sessionStorage.getItem('hintio_billing_return') === '1';
+            if (returning) sessionStorage.removeItem('hintio_billing_return');
+        } catch {}
+        if (returning) {
+            window.history.replaceState({}, '', '/access#billing');
+            setPage('/access');
+        }
+        if (returning || window.location.hash === '#billing')
+            requestAnimationFrame(() => document.getElementById('billing')?.scrollIntoView({ block: 'start' }));
+    }, []);
+
     const [menuOpen, setMenuOpen] = useState(false);
     const mainRef = useRef<HTMLElement>(null);
     const go = (next: Page) => {
@@ -1161,7 +1296,9 @@ export default function MarketingSite(props: Props) {
                     </a>
                     <p>A little clarity. Right on cue.</p>
                     <div>
-                        <a href="/contact" onClick={e => clickLink(e, '/contact')}>Contact</a>
+                        <a href="/contact" onClick={e => clickLink(e, '/contact')}>
+                            Contact
+                        </a>
                         <a href="/privacy" onClick={e => clickLink(e, '/privacy')}>
                             Privacy & data
                         </a>

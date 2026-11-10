@@ -1,5 +1,15 @@
 # Changelog
 
+## Paid access lifecycle — 2026-11-10
+
+- Deploy atomic captured-payment provisioning for licenses, hashed app tokens and provider metadata.
+- Add idempotent renewal/refund handling, preserve keys and paid periods, and retain expired token identity.
+- Fix yearly checkout at INR 14,000 for 365 prepaid days; retain monthly INR 2,049 recurring pricing.
+- Add authenticated billing management, end-of-cycle cancellation confirmation and payment-proof recovery.
+- Prevent stale purchase intents during billing sign-in and duplicate active monthly purchases.
+- Live webhook setup is prepared but deferred by the owner; automatic event delivery remains unverified.
+
+
 ## 1.0.4 — provider routing fix
 
 - Keep GPT sessions on OpenAI instead of silently falling back to Gemini.
