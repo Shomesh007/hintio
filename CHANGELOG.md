@@ -4,9 +4,10 @@
 
 - Add an Updates screen with optional and required version states.
 - Replace network-dependent icon labels throughout the UI with shared offline SVG icons.
-- Download Squirrel packages inside Hintio and restart to install after a session ends.
+- Open the official installer in the browser; remove native in-app download, installation, and automatic restart actions.
 - Gate unsupported versions before session credit consumption.
-- Prepare and verify RELEASES/full-package artifacts for future update feeds.
+- Prepare the manual Windows installer with SHA-256 checksums.
+- Share fail-fast signing configuration between app packaging and the installer.
 - Cache required-version policy, support retries, and keep update controls visible in small windows.
 
 ## 1.0.4 — provider routing fix

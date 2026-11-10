@@ -10,13 +10,13 @@
         "package:win": "electron-forge package --platform=win32 --arch=x64",
         "verify:win-package": "node scripts/verify-windows-package.js",
         "make": "electron-forge make",
-        "make:win": "electron-forge make --platform=win32 --arch=x64 && npm run verify:win-package && npm run prepare:win-update",
+        "make:win": "electron-forge make --platform=win32 --arch=x64 && npm run verify:win-package && npm run prepare:win-release",
         "publish": "electron-forge publish",
         "lint": "echo \"No linting configured\"",
         "test": "node --test test/*.test.js",
         "typecheck": "node scripts/check-syntax.js",
-        "prepare:win-update": "node scripts/prepare-windows-update.js",
-        "make:win:signed": "node scripts/make-signed-windows.js"
+        "make:win:signed": "node scripts/make-signed-windows.js",
+        "prepare:win-release": "node scripts/prepare-windows-release.js"
     },
     "keywords": [
         "Hintio",
@@ -35,7 +35,6 @@
         "@vertfrag/rs-capture": "^1.3.0",
         "dotenv": "^17.3.1",
         "electron-squirrel-startup": "^1.0.1",
-        "electron-updater": "^6.6.2",
         "mammoth": "^1.11.0",
         "microsoft-cognitiveservices-speech-sdk": "^1.48.0",
         "ollama": "^0.6.3",

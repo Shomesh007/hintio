@@ -3,10 +3,7 @@ import { html, css, LitElement } from '../../assets/lit-core-2.7.4.min.js';
 export class UpdatesView extends LitElement {
     static properties = {
         state: { type: Object },
-        sessionActive: { type: Boolean },
         onCheck: {},
-        onDownload: {},
-        onInstall: {},
         onOpenInstaller: {},
         onBack: {},
         onQuit: {},
@@ -114,31 +111,6 @@ export class UpdatesView extends LitElement {
             font-size: 12px;
             line-height: 1.6;
         }
-        .progress {
-            height: 2px;
-            background: #32323b;
-            overflow: hidden;
-            margin-top: 13px;
-        }
-        .progress::after {
-            content: '';
-            display: block;
-            height: 100%;
-            width: 35%;
-            background: var(--accent, #a5b4fc);
-            animation: travel 1.5s ease-in-out infinite alternate;
-        }
-        @keyframes travel {
-            to {
-                transform: translateX(185%);
-            }
-        }
-        @media (prefers-reduced-motion: reduce) {
-            .progress::after {
-                animation: none;
-                width: 100%;
-            }
-        }
         .error {
             border-left: 2px solid #e0ad77;
             padding-left: 12px;
@@ -149,13 +121,6 @@ export class UpdatesView extends LitElement {
             font-size: 11px;
             line-height: 1.7;
             margin: 17px 0 0;
-        }
-        .text-button {
-            border: 0;
-            padding: 4px 0;
-            color: #b5b5c1;
-            text-decoration: underline;
-            text-underline-offset: 4px;
         }
         details {
             margin-top: 28px;
@@ -188,24 +153,15 @@ export class UpdatesView extends LitElement {
     constructor() {
         super();
         this.state = {};
-        this.sessionActive = false;
     }
     render() {
         const s = this.state || {};
-        const busy = ['checking', 'downloading', 'installing'].includes(s.phase);
-        const available = Boolean(s.available);
-        const title =
-            s.phase === 'ready'
-                ? 'Ready when you are.'
-                : s.required
-                  ? 'An update is required.'
-                  : available
-                    ? 'A newer Hintio is ready.'
-                    : 'Keep Hintio up to date.';
+        const busy = s.phase === 'checking';
+        const available = Boolean(s.available || s.required);
+        const title = s.required ? 'An update is required.' : available ? 'A newer Hintio is ready.' : 'Keep Hintio up to date.';
         const intro = s.required
-            ? 'This version is no longer supported for new sessions. Install the latest version to continue. Your saved settings and history stay on this device.'
-            : 'Get the latest improvements here, without opening a browser or running an installer yourself.';
-        const nativeReady = s.supported && s.feedReady;
+            ? 'This version is no longer supported for new sessions. Download the latest installer to continue.'
+            : 'Check what’s new and download the latest Windows installer from the official Hintio release.';
         return html`<section class="page" aria-labelledby="updates-title">
             <div class="eyebrow">Hintio / Updates</div>
             <h1 id="updates-title">${title}</h1>
@@ -222,43 +178,21 @@ export class UpdatesView extends LitElement {
                   </p>`
                 : ''}
             <div class="actions">
-                ${s.phase === 'ready'
-                    ? html`<button class="primary" ?disabled=${this.sessionActive} @click=${() => this.onInstall?.()}>Restart & install</button>`
-                    : available && nativeReady
-                      ? html`<button class="primary" ?disabled=${busy} @click=${() => this.onDownload?.()}>
-                            ${s.phase === 'downloading' ? 'Downloading update…' : 'Update in Hintio'}
-                        </button>`
-                      : ''}
-                <button ?disabled=${busy || s.phase === 'ready'} @click=${() => this.onCheck?.()}>
-                    ${s.phase === 'checking' ? 'Checking…' : 'Check for updates'}
-                </button>
+                ${available && s.installerUrl
+                    ? html`<button class="primary" ?disabled=${busy} @click=${() => this.onOpenInstaller?.()}>Download latest version ↗</button>`
+                    : ''}
+                <button ?disabled=${busy} @click=${() => this.onCheck?.()}>${busy ? 'Checking…' : 'Check for updates'}</button>
                 ${!s.required
                     ? html`<button @click=${() => this.onBack?.()}>Back to Hintio</button>`
                     : html`<button @click=${() => this.onQuit?.()}>Quit Hintio</button>`}
             </div>
-            ${s.phase === 'downloading'
-                ? html`<div class="status" role="status">
-                      Downloading and preparing the update. Keep Hintio open.
-                      <div class="progress" role="progressbar" aria-label="Downloading Hintio update" aria-valuetext="Download in progress"></div>
-                  </div>`
-                : ''}
-            ${s.phase === 'ready'
-                ? html`<p class="status" role="status">
-                      The update is downloaded. ${this.sessionActive ? 'End your session before restarting.' : 'Restart to finish installation.'}
-                  </p>`
-                : ''}
-            ${s.phase === 'installing' ? html`<p class="status" role="status">Closing Hintio and installing the update…</p>` : ''}
             ${s.phase === 'current' ? html`<p class="status" role="status">You’re up to date.</p>` : ''}
             ${s.error ? html`<p class="status error" role="alert">${s.error}</p>` : ''}
-            ${available && !nativeReady && s.installerUrl
-                ? html`<p class="note">
-                          ${!s.supported
-                              ? 'This copy is not running from a Windows installation. Install it once to enable future in-app updates.'
-                              : 'This release was published without an in-app update package.'}
-                      </p>
-                      <button class="text-button" @click=${() => this.onOpenInstaller?.(s.installerUrl)}>Open the Windows installer link ↗</button>`
-                : ''}
-            <p class="note">Hintio never restarts an active session automatically. Updates come from the official Hintio release repository.</p>
+            ${s.notice ? html`<p class="status" role="status">${s.notice}</p>` : ''}
+            <p class="note">
+                The download opens in your browser. Finish your session, close Hintio, run the downloaded installer, then reopen the app. Settings and
+                history are kept. Hintio does not download, install, or restart itself.
+            </p>
             ${s.releaseNotes
                 ? html`<details>
                       <summary>What’s changed</summary>

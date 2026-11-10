@@ -519,7 +519,7 @@ export class HintioApp extends LitElement {
     _applyUpdateState(state) {
         this._updateState = { ...this._updateState, ...state };
         this._localVersion = state.currentVersion || this._localVersion;
-        this._updateAvailable = Boolean(state.required || ['available', 'downloading', 'ready'].includes(state.phase));
+        this._updateAvailable = Boolean(state.required || state.available || state.phase === 'available');
         this.requestUpdate();
     }
 
@@ -532,30 +532,19 @@ export class HintioApp extends LitElement {
         }
     }
 
-    async _downloadUpdate() {
+    async _openUpdateInstaller() {
         try {
-            this._applyUpdateState(await hintio.updates.download());
+            this._applyUpdateState(await hintio.updates.openInstaller());
         } catch {
-            this._applyUpdateState({ phase: 'error', error: 'The update could not start. Please retry.' });
-        }
-    }
-
-    async _installUpdate() {
-        try {
-            this._applyUpdateState(await hintio.updates.install());
-        } catch {
-            this._applyUpdateState({ error: 'Installation could not start. Please retry.' });
+            this._applyUpdateState({ error: 'The download link could not be opened. Please retry.' });
         }
     }
 
     renderUpdates() {
         return html`<updates-view
             .state=${this._updateState}
-            .sessionActive=${this.sessionActive}
             .onCheck=${() => this._checkForUpdates()}
-            .onDownload=${() => this._downloadUpdate()}
-            .onInstall=${() => this._installUpdate()}
-            .onOpenInstaller=${url => this.handleExternalLinkClick(url)}
+            .onOpenInstaller=${() => this._openUpdateInstaller()}
             .onBack=${() => this.navigate('main')}
             .onQuit=${() => this.handleClose()}
         ></updates-view>`;

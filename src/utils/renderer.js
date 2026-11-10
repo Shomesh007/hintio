@@ -1957,8 +1957,7 @@ const hintio = {
     updates: {
         getState: () => ipcRenderer.invoke('updates:get-state'),
         check: () => ipcRenderer.invoke('updates:check'),
-        download: () => ipcRenderer.invoke('updates:download'),
-        install: () => ipcRenderer.invoke('updates:install'),
+        openInstaller: () => ipcRenderer.invoke('updates:open-installer'),
     },
 
     // Element access

@@ -17,8 +17,7 @@ function compareVersions(a, b) {
 }
 function downloadUrl(version, name) {
     versionParts(version);
-    if (!['RELEASES', 'Hintio-' + version + '-full.nupkg', 'Hintio-' + version + '.Setup.exe'].includes(name))
-        throw new Error('Untrusted update asset');
+    if (name !== 'Hintio-' + version + '.Setup.exe') throw new Error('Untrusted update asset');
     return DOWNLOAD_ROOT + 'v' + version + '/' + encodeURIComponent(name);
 }
 function releaseInfo(release) {
@@ -32,50 +31,21 @@ function releaseInfo(release) {
         latestVersion: version,
         installerUrl: downloadUrl(version, installer),
         releaseNotes: String(release.body || '').slice(0, 8000),
-        feedReady: assets.has('RELEASES') && assets.has('Hintio-' + version + '-full.nupkg'),
     };
 }
-function releaseManifestValid(text, version) {
-    const filename = 'Hintio-' + version + '-full.nupkg';
-    return String(text)
-        .trim()
-        .split(/\r?\n/)
-        .some(line => {
-            const parts = line.trim().split(/\s+/);
-            return parts.length === 3 && /^[a-f\d]{40}$/i.test(parts[0]) && parts[1] === filename && /^\d+$/.test(parts[2]) && Number(parts[2]) > 0;
-        });
-}
 class UpdateService {
-    constructor({
-        app,
-        autoUpdater,
-        notify = () => {},
-        fetchImpl = global.fetch,
-        cachePath,
-        minimumVersion = '1.0.4',
-        platform = process.platform,
-        installed,
-        isSessionActive = async () => false,
-        now = Date.now,
-        firstRun = process.argv.includes('--squirrel-firstrun'),
-    }) {
+    constructor({ app, notify = () => {}, fetchImpl = global.fetch, cachePath, minimumVersion = '1.0.4', now = Date.now, openExternal }) {
         versionParts(app.getVersion());
         versionParts(minimumVersion);
         this.app = app;
-        this.updater = autoUpdater;
+        this.openExternal = openExternal;
         this.notify = notify;
         this.fetch = fetchImpl;
         this.cachePath = cachePath;
-        this.isSessionActive = isSessionActive;
         this.now = now;
         this.minimumBaseline = minimumVersion;
-        this.nativeReadyAt = firstRun ? now() + 10_000 : 0;
         this.checkPromise = null;
-        this.downloadPromise = null;
-        this.downloadBusy = false;
-        const nativeInstalled =
-            installed ??
-            (platform === 'win32' && app.isPackaged && fs.existsSync(path.resolve(path.dirname(app.getPath('exe')), '..', 'Update.exe')));
+        this.openPromise = null;
         this.state = {
             currentVersion: app.getVersion(),
             latestVersion: '',
@@ -85,32 +55,10 @@ class UpdateService {
             phase: 'idle',
             installerUrl: '',
             releaseNotes: '',
-            feedReady: false,
-            supported: Boolean(nativeInstalled && autoUpdater),
             checkedAt: null,
             error: '',
         };
         this.loadCache();
-        if (this.updater) {
-            this.updater.on('update-available', () => {
-                if (this.downloadBusy) this.set({ phase: 'downloading', error: '' });
-            });
-            this.updater.on('update-not-available', () => {
-                if (!this.downloadBusy) return;
-                this.downloadBusy = false;
-                this.set({ phase: 'error', error: 'The update feed is not ready. Check again in a moment.' });
-            });
-            this.updater.on('update-downloaded', () => {
-                if (!this.downloadBusy) return;
-                this.downloadBusy = false;
-                this.set({ phase: 'ready', error: '' });
-            });
-            this.updater.on('error', () => {
-                if (!this.downloadBusy) return;
-                this.downloadBusy = false;
-                this.set({ phase: 'error', error: 'The update could not be downloaded. Check your connection and retry.' });
-            });
-        }
     }
     getState() {
         return { ...this.state };
@@ -159,7 +107,6 @@ class UpdateService {
         return result;
     }
     async check() {
-        if (this.downloadBusy || ['ready', 'installing'].includes(this.state.phase)) return this.getState();
         if (this.checkPromise) return this.checkPromise;
         this.checkPromise = this.performCheck().finally(() => {
             this.checkPromise = null;
@@ -204,49 +151,28 @@ class UpdateService {
         }
     }
     async assertSessionAllowed() {
-        if (!this.state.checkedAt && !this.downloadBusy) await this.check();
+        if (!this.state.checkedAt) await this.check();
         if (this.state.required) throw new Error('Update required. Open Updates to install a supported Hintio version before starting a session.');
     }
-    async download() {
-        if (this.downloadPromise) return this.downloadPromise;
-        if (this.downloadBusy || this.state.phase === 'ready') return this.getState();
-        this.downloadPromise = this.performDownload().finally(() => {
-            this.downloadPromise = null;
+    async openInstaller() {
+        if (this.openPromise) return this.openPromise;
+        this.openPromise = this.performOpenInstaller().finally(() => {
+            this.openPromise = null;
         });
-        return this.downloadPromise;
+        return this.openPromise;
     }
-    async performDownload() {
+    async performOpenInstaller() {
         try {
-            await this.check();
-            if (!this.state.latestVersion || compareVersions(this.state.latestVersion, this.state.currentVersion) <= 0) return this.getState();
-            if (!this.state.supported)
-                throw new Error('In-app installation requires the installed Windows app. Use the installer link for this copy.');
-            if (!this.state.feedReady) throw new Error('This release does not include an in-app update package. Use the installer link.');
-            const response = await this.response(downloadUrl(this.state.latestVersion, 'RELEASES'));
-            if (!releaseManifestValid(await response.text(), this.state.latestVersion))
-                throw new Error('The update manifest is invalid. Installation was stopped.');
-            if (this.now() < this.nativeReadyAt) throw new Error('Windows is finishing the first installation. Wait a few seconds and try again.');
-            this.downloadBusy = true;
-            this.set({ phase: 'downloading', error: '' });
-            this.updater.setFeedURL({ url: DOWNLOAD_ROOT + 'v' + this.state.latestVersion + '/' });
-            this.updater.checkForUpdates();
-            return this.getState();
+            if (!this.state.installerUrl) await this.check();
+            if (!this.state.latestVersion || !this.state.installerUrl)
+                throw new Error('The installer link is unavailable. Check for updates and retry.');
+            const url = downloadUrl(this.state.latestVersion, 'Hintio-' + this.state.latestVersion + '.Setup.exe');
+            if (typeof this.openExternal !== 'function') throw new Error('The browser could not be opened. Please retry.');
+            await this.openExternal(url);
+            return this.set({ error: '', notice: 'Installer link opened. Close Hintio, run the downloaded installer, then reopen the app.' });
         } catch (error) {
-            this.downloadBusy = false;
-            return this.set({ phase: 'error', error: error.message });
+            return this.set({ error: error.message });
         }
-    }
-    async install() {
-        if (this.state.phase !== 'ready') return this.set({ error: 'Download the update before installing it.' });
-        if (await this.isSessionActive()) return this.set({ error: 'End your active session before restarting Hintio.' });
-        if (this.state.phase !== 'ready') return this.getState();
-        this.set({ phase: 'installing', error: '' });
-        try {
-            this.updater.quitAndInstall();
-        } catch {
-            this.set({ phase: 'ready', error: 'Installation could not start. Close Hintio and try again.' });
-        }
-        return this.getState();
     }
 }
-module.exports = { UpdateService, versionParts, compareVersions, releaseInfo, releaseManifestValid, downloadUrl, RELEASES_URL, POLICY_URL };
+module.exports = { UpdateService, versionParts, compareVersions, releaseInfo, downloadUrl, RELEASES_URL, POLICY_URL };

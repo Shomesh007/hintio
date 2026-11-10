@@ -4,7 +4,7 @@ if (require('electron-squirrel-startup')) {
 
 require('dotenv').config();
 
-const { app, autoUpdater, BrowserWindow, shell, ipcMain, dialog, nativeImage } = require('electron');
+const { app, BrowserWindow, shell, ipcMain, dialog, nativeImage } = require('electron');
 const { UpdateService } = require('./utils/updates');
 const path = require('path');
 const fs = require('fs');
@@ -110,31 +110,17 @@ function cleanupLegacyWindowsUninstallEntries() {
     }
 }
 
-function setupAutoUpdates() {
+function setupUpdateNotices() {
     updateService = new UpdateService({
         app,
-        autoUpdater,
         cachePath: path.join(app.getPath('userData'), 'updates', 'policy-cache.json'),
         minimumVersion: require('../update-policy.json').minimumSupportedVersion,
         notify: state => sendToRenderer('updates:state', state),
-        isSessionActive: async () => {
-            if (!mainWindow || mainWindow.isDestroyed()) return false;
-            return mainWindow.webContents.executeJavaScript("document.querySelector('hintio-app')?.sessionActive === true");
-        },
-    });
-    autoUpdater.on('before-quit-for-update', () => {
-        stopMacOSAudioCapture();
-        clearRuntimeProviderSecrets();
-        try {
-            if ((storage.getCredentials().cloudToken || '').trim()) storage.clearProviderSecrets();
-        } catch (error) {
-            console.warn('Could not clear temporary provider credentials before restart:', error.message);
-        }
+        openExternal: url => shell.openExternal(url),
     });
     ipcMain.handle('updates:get-state', () => updateService.getState());
     ipcMain.handle('updates:check', () => updateService.check());
-    ipcMain.handle('updates:download', () => updateService.download());
-    ipcMain.handle('updates:install', () => updateService.install());
+    ipcMain.handle('updates:open-installer', () => updateService.openInstaller());
     const checkTimer = setTimeout(() => updateService.check(), 1000);
     checkTimer.unref();
     const periodicCheck = setInterval(() => updateService.check(), 60 * 60 * 1000);
@@ -189,7 +175,7 @@ app.whenReady().then(async () => {
     }
 
     createMainWindow();
-    setupAutoUpdates();
+    setupUpdateNotices();
     setupProviderRuntimeIpcHandlers(providerSessionRef, { assertSessionAllowed: () => updateService.assertSessionAllowed() });
     setupStorageIpcHandlers();
     setupGeneralIpcHandlers();

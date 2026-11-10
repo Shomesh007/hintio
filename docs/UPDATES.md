@@ -1,46 +1,33 @@
-# Windows in-app updates
+# Windows update notifications
 
-This feature is staged locally in 1.0.5. Do not publish it until the installed-app upgrade test and release review are complete.
+This feature is staged locally in 1.0.5. No new release or production policy has been published.
 
 ## User flow
 
-- Updates opens from the app header and shows installed/latest versions and release notes.
-- Optional updates allow continued use. Update in Hintio downloads the package without opening a browser.
-- A required minimum version blocks new sessions before session credit is consumed. An existing active session is allowed to finish.
-- Download status is indeterminate because the native Squirrel API does not expose reliable byte progress.
-- Restart & install is available only after the native downloaded event. Active sessions must end before installation.
-- Portable/dev copies and historical releases without update packages expose a trusted installer link instead.
+- Updates in the header shows installed/latest versions and release notes.
+- Download latest version opens the official GitHub installer URL in the default browser. Hintio does not download, apply, or restart itself.
+- Finish the active session, close Hintio, run the downloaded installer, then reopen Hintio. The installer preserves existing local settings/history.
+- Optional updates allow continued use. A required minimum blocks new sessions before credit is consumed; an active session may finish.
+- Failed checks or browser launches show a retryable error. No metadata check automatically opens a browser.
+- The main process constructs the installer URL from strict stable versions and expected asset names in the official repository. Renderer-provided URLs and release asset redirect URLs are not trusted.
 
-Existing versions without this updater need one manual installation of the bootstrap release. New UI cannot be added to an already installed binary from the server.
+Older installed binaries need a manual installation to gain the new notices.
 
 ## Release artifacts
 
-Run `npm run make:win` on Windows. This builds the installer, verifies bundled runtimes, and prepares `out/release-upload-VERSION/` with:
-
-- `Hintio-VERSION.Setup.exe`
-- `Hintio-VERSION-full.nupkg`
-- `RELEASES`
-- `SHA256SUMS.txt`
-
-Publish all four files together on the matching stable GitHub release. The preparation script checks that the full package size and SHA-1 match the Squirrel RELEASES entry; SHA-256 checksums are also generated. The app accepts only the configured official repository, strict stable versions, and expected filenames.
-
-The current release uses Squirrel.Windows. Electron's built-in autoUpdater is used; electron-updater's NSIS path is not compatible with this installer.
+Run `npm run make:win` on Windows. This verifies the packaged runtimes and prepares `out/release-manual-VERSION/` with `Hintio-VERSION.Setup.exe`, `SHA256SUMS.txt`, and a local build report. Publish the installer and checksum only after release review. Squirrel remains the installer format; its internally generated packages are not consumed by Hintio as an update feed. Earlier installers and reports remain available for rollback.
 
 ## Required versions
 
-`update-policy.json` on the desktop branch supplies `schemaVersion: 1` and `minimumSupportedVersion`. Increase the minimum only after that version's installer and update feed are published and verified. The app rejects a minimum newer than the latest published release.
+`update-policy.json` on the desktop branch supplies `schemaVersion: 1` and `minimumSupportedVersion`. Raise the minimum only after that version's installer is published and verified. The app rejects a minimum newer than the latest stable release.
 
-A validated minimum is cached under Electron userData/updates. If checks fail offline, a previously required version remains required. A valid policy can lower the minimum back to the bundled baseline for rollback. No policy or release check starts an automatic download.
+A validated minimum is cached under Electron userData/updates. A previously required version remains required offline. A valid policy may lower the minimum back to the bundled baseline for rollback. This client-side policy cannot retrofit notices or enforce policy on older binaries.
 
-Client-side policy only controls clients containing this updater. It does not retrofit UI or enforce server-side version policy in older binaries.
+## Verification
 
-## Verification before publishing
+Unit tests cover version validation, canonical installer URLs, policy/cache behavior, duplicate link clicks, browser failures/retries, and session protection. Browser tests exercise the real view and app shell at 1080x560 and 560x420. These tests use a browser-launch bridge stub and do not prove an installed executable can launch under Windows application control.
 
-Unit tests cover version comparisons, policy/cache behavior, trusted assets, duplicate downloads, native events, retries, first-run locks, and session protection. Browser tests exercise the real view and app shell at 1080x560 and 560x420.
-
-The remaining release check is a real Squirrel upgrade between two installed versions in an isolated Windows environment, including restart and preservation of local settings/history. Do not claim this check passed based on mocked native updater tests.
-
-No new production policy or 1.0.5 release has been published by this implementation work. Preserve the existing releases for rollback.
+Removing the native updater does not resolve the unsigned-binary trust failure below. The rebuilt manual-download version still needs a successful installed launch on a compatible Windows test machine before it can be described as runtime verified.
 
 ## Windows trust investigation — November 10, 2026
 
