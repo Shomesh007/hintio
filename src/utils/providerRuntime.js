@@ -33,7 +33,7 @@ const { formatSpokenInterviewAnswer } = require('./answerFormatting');
 const { LlmKeyPool, parseApiKeys } = require('./llmKeyPool');
 const {
     PROVIDERS,
-    PROVIDER_FALLBACK_ORDER,
+    DEFAULT_PROVIDER_ID,
     OUTPUT_BUDGET,
     getProvider,
     describeError: describeLlmError,
@@ -401,12 +401,14 @@ function getProviderModel(providerId) {
 
 /**
  * Refresh every pool from config and return the ordered provider list the
- * request layer walks: preferred provider first, the rest as fallbacks. A
+ * request layer uses: only the explicitly selected provider. A
  * provider with no keys is omitted entirely.
  */
 function getLlmProviders() {
     const preferred = (process.env.LLM_PROVIDER || '').trim().toLowerCase();
-    const order = preferred && PROVIDERS[preferred] ? [preferred, ...PROVIDER_FALLBACK_ORDER.filter(id => id !== preferred)] : PROVIDER_FALLBACK_ORDER;
+    // A configured GPT session must never silently become a Gemini session.
+    // Another provider is used only when explicitly selected.
+    const order = [preferred && PROVIDERS[preferred] ? preferred : DEFAULT_PROVIDER_ID];
 
     const entries = [];
     for (const id of order) {
@@ -1407,7 +1409,7 @@ async function sendToGemini(transcription, options = {}) {
     const llmProviders = getLlmProviders();
 
     if (!llmProviders.length) {
-        console.log('Gemini API key not configured, skipping Gemini response');
+        console.warn('[LLM] No key is configured for the selected provider; response skipped');
         return;
     }
 
@@ -2434,8 +2436,8 @@ function setupProviderRuntimeIpcHandlers(providerSessionRef) {
         }
 
         if (!hasLlmKey()) {
-            sendToRenderer('update-status', 'Gemini API key is not configured');
-            return { success: false, error: 'Gemini API key is not configured' };
+            sendToRenderer('update-status', 'OpenAI service is not configured for this session. Contact Hintio support.');
+            return { success: false, error: 'OpenAI service is not configured for this session. Contact Hintio support.' };
         }
 
         const groqKey = getEffectiveGroqApiKey();

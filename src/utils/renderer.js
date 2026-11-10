@@ -365,7 +365,7 @@ function parseAccessTokenErrorMessage(errorText = '') {
     if (normalized.includes('access token is required') || normalized.includes('missing access token')) {
         return 'Access token is required.';
     }
-    if (normalized.includes('gemini api key is not configured')) {
+    if (normalized.includes('gemini api key is not configured') || normalized.includes('openai service is not configured')) {
         return 'Service is not configured right now. Please try again shortly.';
     }
     if (normalized.includes('groq stt key not configured')) {

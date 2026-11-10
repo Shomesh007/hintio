@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — provider routing fix
+
+- Prepared the managed resolver to return OpenAI credentials and non-secret configuration diagnostics; production deployment requires approval.
+- Keep GPT sessions on OpenAI instead of silently selecting Gemini when credentials are absent or a request fails.
+- Honor key cooldowns and distinguish quota/billing failures from temporary request limits.
+- Add provider-routing and resolver regression tests.
+
 ## 1.0.3 — 2026-11-10
 
 - Packaged the maintained desktop support and privacy updates as a distinct Windows release.

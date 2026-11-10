@@ -75,8 +75,8 @@ const PROVIDERS = {
 };
 
 const DEFAULT_PROVIDER_ID = 'openai';
-// Tried in order — if OpenAI is down entirely, Gemini still answers.
-const PROVIDER_FALLBACK_ORDER = ['openai', 'gemini'];
+// Cross-provider fallback is disabled by default.
+const PROVIDER_FALLBACK_ORDER = ['openai'];
 
 function getProvider(id) {
     return PROVIDERS[String(id || '').toLowerCase()] || PROVIDERS[DEFAULT_PROVIDER_ID];
@@ -141,7 +141,10 @@ function describeError(provider, status, errorText = '') {
         return `${provider.label} API key was rejected — check the key in settings.`;
     }
     if (status === 429) {
-        return `${provider.label} rate limit hit. Retrying on another key.`;
+        if (/insufficient_quota|billing_hard_limit_reached|credit_balance_exhausted|(?:organization|project)_(?:spend|usage)_limit_exceeded/i.test(String(errorText))) {
+            return `${provider.label} API quota or billing limit reached. The service administrator must check billing and usage limits.`;
+        }
+        return `${provider.label} request limit reached. Please try again shortly.`;
     }
     if (status === 404) {
         return `${provider.label} model not found — it may have been retired.`;
@@ -199,11 +202,16 @@ async function requestOnce({ provider, pool, apiKey, model, messages, stream, te
     const tried = [];
     let lastError = null;
     let overloaded = false;
+    let earliestWaitMs = Infinity;
 
     for (let attempt = 0; attempt < pool.size; attempt++) {
         const lease = pool.acquire(tried);
         if (!lease) break;
         tried.push(lease.index);
+        if (lease.waitMs > 0) {
+            earliestWaitMs = Math.min(earliestWaitMs, lease.waitMs);
+            continue;
+        }
 
         try {
             let response = await send(lease.key, full);
@@ -243,6 +251,13 @@ async function requestOnce({ provider, pool, apiKey, model, messages, stream, te
         }
     }
 
+    if (!lastError && Number.isFinite(earliestWaitMs)) {
+        const error = new Error(`${provider.label} request limit reached. Try again in ${Math.ceil(earliestWaitMs / 1000)} seconds.`);
+        error.status = 429;
+        error.retryAfterMs = earliestWaitMs;
+        error.allKeysExhausted = true;
+        throw error;
+    }
     const detail = lastError ? describeError(provider, lastError.status, lastError.text) : 'No API key available';
     const err = new Error(overloaded ? `${model} is overloaded. ${detail}` : `All ${tried.length || pool.size} ${provider.label} key(s) failed. ${detail}`);
     err.status = lastError?.status || 0;

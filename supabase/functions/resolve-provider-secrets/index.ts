@@ -28,36 +28,18 @@ type RequestPayload = {
     consume?: boolean;
 };
 
-// Gemini model the desktop client should use. Free tier covers the Flash /
-// Flash-Lite families; gemini-3.7-flash is the latest stable Flash.
-const MANAGED_GEMINI_MODEL = (Deno.env.get('HINTIO_MANAGED_GEMINI_MODEL') ?? '').trim() || 'gemini-3.7-flash';
-
-// Extra Gemini keys, comma/whitespace separated. Each free-tier key is ~10
-// requests/minute, so issuing several from separate accounts lets the client
-// spread load and fail over instantly instead of stalling on a 429.
-const MANAGED_GEMINI_EXTRA_KEYS = (Deno.env.get('HINTIO_MANAGED_GEMINI_API_KEYS') ?? '').trim();
-
 // OpenAI is the primary LLM. Comma-separate several keys to raise the ceiling —
 // the client spreads load across them and fails over instantly on a 429.
-const MANAGED_OPENAI_KEYS = (Deno.env.get('HINTIO_MANAGED_OPENAI_API_KEYS') ?? Deno.env.get('HINTIO_MANAGED_OPENAI_API_KEY') ?? '').trim();
+const MANAGED_OPENAI_KEYS =
+    ['HINTIO_MANAGED_OPENAI_API_KEYS', 'HINTIO_MANAGED_OPENAI_API_KEY', 'OPENAI_API_KEYS', 'OPENAI_API_KEY']
+        .map(name => (Deno.env.get(name) ?? '').trim())
+        .find(Boolean) || '';
 const MANAGED_OPENAI_MODEL = (Deno.env.get('HINTIO_MANAGED_OPENAI_MODEL') ?? '').trim() || 'gpt-5.6-luna';
 
 function splitKeys(raw: string): string[] {
     const seen = new Set<string>();
     const keys: string[] = [];
     for (const candidate of raw.split(/[\s,;]+/)) {
-        const key = candidate.trim();
-        if (!key || seen.has(key)) continue;
-        seen.add(key);
-        keys.push(key);
-    }
-    return keys;
-}
-
-function buildGeminiKeyList(rowKey: string): string[] {
-    const seen = new Set<string>();
-    const keys: string[] = [];
-    for (const candidate of [rowKey, MANAGED_GEMINI_EXTRA_KEYS].join(',').split(/[\s,;]+/)) {
         const key = candidate.trim();
         if (!key || seen.has(key)) continue;
         seen.add(key);
@@ -279,11 +261,14 @@ Deno.serve(async (req: Request) => {
             data: {
                 tokenId: row.token_id,
                 providerMode: row.provider_mode,
+                llmProvider: 'openai',
+                providerConfiguration: {
+                    openaiConfigured: splitKeys(MANAGED_OPENAI_KEYS).length > 0,
+                    geminiConfigured: Boolean((row.gemini_api_key ?? '').trim()),
+                },
                 geminiApiKey: includeSecrets ? (row.gemini_api_key ?? '') : '',
-                geminiApiKeys: includeSecrets ? buildGeminiKeyList(row.gemini_api_key ?? '') : [],
                 openaiApiKeys: includeSecrets ? splitKeys(MANAGED_OPENAI_KEYS) : [],
                 openaiModel: MANAGED_OPENAI_MODEL,
-                geminiModel: MANAGED_GEMINI_MODEL,
                 groqApiKey: includeSecrets ? (row.groq_api_key ?? '') : '',
                 azureApiKey: includeSecrets ? (row.azure_api_key ?? '') : '',
                 azureEndpoint: includeSecrets ? (row.azure_endpoint ?? '') : '',
