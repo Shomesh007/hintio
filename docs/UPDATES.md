@@ -41,3 +41,18 @@ Unit tests cover version comparisons, policy/cache behavior, trusted assets, dup
 The remaining release check is a real Squirrel upgrade between two installed versions in an isolated Windows environment, including restart and preservation of local settings/history. Do not claim this check passed based on mocked native updater tests.
 
 No new production policy or 1.0.5 release has been published by this implementation work. Preserve the existing releases for rollback.
+
+## Windows trust investigation — November 10, 2026
+
+The real Squirrel check/download/apply test succeeded, and the installed 1.0.5 ASAR matched the release. Synthetic settings/history and the real user profile were preserved. Windows Code Integrity events 3077/3033 blocked execution of both 1.0.4 and 1.0.5 under VerifiedAndReputableDesktop. Restart verification therefore remains incomplete; this is not a passing launch test.
+
+Both the app executable and the installer are unsigned. There is no signing certificate configured on this machine. A self-signed certificate does not provide public publisher trust.
+
+The Forge configuration now passes the same windowsSign options to both Electron Packager and the Squirrel maker. Configure a trusted signing identity using one of:
+
+- A supported local certificate: WIN_CSC_LINK and WIN_CSC_KEY_PASSWORD. Keep both outside source control.
+- Hardware/cloud signing: WIN_SIGN_WITH_PARAMS and, when required, WIN_SIGNTOOL_PATH. Follow the certificate/service provider's documented parameters; do not put secrets into shell history or logs.
+
+Run npm run make:win:signed for a signed release. It requires signing configuration and does not permit continuing after signing errors. Debug logging is disabled for that command to avoid exposing signing parameters. This wiring does not obtain a certificate or prove the resulting signature is trusted. Verify Authenticode signatures on the packaged Windows binaries and installer/update helper, then rerun the installed launch/restart test before describing a release as signed and verified.
+
+Changing the icon, product name, version number, or updater UI cannot supply publisher trust. Security settings were not disabled during testing.

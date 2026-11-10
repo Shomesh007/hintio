@@ -15,7 +15,8 @@
         "lint": "echo \"No linting configured\"",
         "test": "node --test test/*.test.js",
         "typecheck": "node scripts/check-syntax.js",
-        "prepare:win-update": "node scripts/prepare-windows-update.js"
+        "prepare:win-update": "node scripts/prepare-windows-update.js",
+        "make:win:signed": "node scripts/make-signed-windows.js"
     },
     "keywords": [
         "Hintio",

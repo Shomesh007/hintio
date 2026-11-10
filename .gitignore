@@ -101,3 +101,11 @@ supabase/.temp/
 # Local, per-interview profiles — personal, never committed
 src/profiles/*.local.js
 prep/
+
+# Private Windows signing material
+*.pfx
+*.p12
+*.pem
+*.key
+.env.signing
+.env.trustedsigning

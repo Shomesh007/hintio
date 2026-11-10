@@ -3,8 +3,8 @@ const { FuseV1Options, FuseVersion } = require('@electron/fuses');
 const fs = require('fs');
 const path = require('path');
 
-const windowsCertificateFile = process.env.WIN_CSC_LINK;
-const windowsCertificatePassword = process.env.WIN_CSC_KEY_PASSWORD;
+const { windowsSigningOptions } = require('./scripts/windows-signing');
+const windowsSign = windowsSigningOptions();
 const remoteReleases = process.env.SQUIRREL_REMOTE_RELEASES;
 
 const baseDir = __dirname;
@@ -76,15 +76,7 @@ module.exports = {
             InternalName: 'Hintio',
         },
         icon: 'src/assets/logo',
-        ...(windowsCertificateFile
-            ? {
-                  windowsSign: {
-                      certificateFile: windowsCertificateFile,
-                      certificatePassword: windowsCertificatePassword || undefined,
-                      timestampServer: process.env.WIN_TIMESTAMP_SERVER || 'http://timestamp.digicert.com',
-                  },
-              }
-            : {}),
+        ...(windowsSign ? { windowsSign } : {}),
         // use `security find-identity -v -p codesigning` to find your identity
         // for macos signing
         // also fuck apple
@@ -125,6 +117,7 @@ module.exports = {
                 name: 'Hintio',
                 productName: 'Hintio',
                 shortcutName: 'Hintio',
+                ...(windowsSign ? { windowsSign } : {}),
                 createDesktopShortcut: true,
                 createStartMenuShortcut: true,
                 ...(remoteReleases ? { remoteReleases } : {}),
