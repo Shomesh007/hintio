@@ -1,0 +1,30 @@
+begin;
+do $$
+declare owner_id uuid:=gen_random_uuid(); now_time timestamptz:=now(); result jsonb; first_id uuid; first_key text; original_end timestamptz; extended_end timestamptz; production_count bigint; test_hash text; provider_count bigint; p jsonb;
+begin
+ select count(*) into production_count from public.licenses;
+ insert into auth.users(id,email) values(owner_id,'hintio-sandbox-qa-'||owner_id::text||'@example.test');
+ p:=jsonb_build_object('user_id',owner_id,'email','sandbox-qa@example.test','plan','monthly','payment_id','pay_SandboxFirst','subscription_id','sub_SandboxTest','amount',204900,'currency','INR','paid_at',now_time,'period_start',now_time,'period_end',now_time+interval '30 days');
+ result:=public.test_record_billing_payment(p);
+ first_id:=(result->>'licenseId')::uuid; first_key:=result->>'licenseKey'; original_end:=(result->>'validUntil')::timestamptz;
+ if first_key not like 'HINTIO-TEST-%' then raise exception 'Sandbox key prefix failed'; end if;
+ result:=public.test_record_billing_payment(p);
+ if not (result->>'reused')::boolean or (select count(*) from public.billing_test_payments where license_id=first_id)<>1 then raise exception 'Duplicate payment failed'; end if;
+ p:=p||jsonb_build_object('payment_id','pay_SandboxRenewal','period_start',now_time+interval '30 days','period_end',now_time+interval '60 days');
+ result:=public.test_record_billing_payment(p);
+ extended_end:=(result->>'validUntil')::timestamptz;
+ if result->>'licenseKey'<>first_key or extended_end<=original_end then raise exception 'Renewal failed'; end if;
+ update public.billing_test_licenses set cancel_at_period_end=true,billing_status='cancelled' where id=first_id;
+ if not exists(select 1 from public.billing_test_licenses where id=first_id and valid_until=extended_end and status='active') then raise exception 'Cancellation lost paid access'; end if;
+ perform public.test_record_billing_refund('pay_SandboxRenewal',204900);
+ if not exists(select 1 from public.billing_test_licenses where id=first_id and valid_until=original_end) then raise exception 'Renewal refund failed'; end if;
+ perform public.test_record_billing_refund('pay_SandboxFirst',204900);
+ if exists(select 1 from public.billing_test_access_tokens t join public.billing_test_licenses l on l.access_token_id=t.id where l.id=first_id and t.is_active) then raise exception 'Full refund left active access'; end if;
+ select t.token_hash into test_hash from public.billing_test_access_tokens t join public.billing_test_licenses l on l.access_token_id=t.id where l.id=first_id;
+ if exists(select 1 from public.access_tokens where token_hash=test_hash) then raise exception 'Sandbox token leaked to production'; end if;
+ if (select count(*) from public.licenses)<>production_count then raise exception 'Production license count changed'; end if;
+ select count(*) into provider_count from public.billing_test_provider_secrets s join public.billing_test_licenses l on l.access_token_id=s.token_id where l.id=first_id and (s.groq_api_key is not null or s.gemini_api_key is not null);
+ if provider_count<>0 then raise exception 'Provider credentials were copied'; end if;
+end; $$;
+rollback;
+select 'passed: sandbox payment, duplicate, renewal, cancellation, refund, production isolation; rolled back' as result;
