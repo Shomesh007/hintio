@@ -1,8 +1,8 @@
 # Changelog
 
-## Unreleased — provider routing fix
+## 1.0.4 — provider routing fix
 
-- Prepared the managed resolver to return OpenAI credentials and non-secret configuration diagnostics; production deployment requires approval.
+- Updated the managed resolver to return configured OpenAI credentials and non-secret configuration diagnostics. An OpenAI server secret is required.
 - Keep GPT sessions on OpenAI instead of silently selecting Gemini when credentials are absent or a request fails.
 - Honor key cooldowns and distinguish quota/billing failures from temporary request limits.
 - Add provider-routing and resolver regression tests.
