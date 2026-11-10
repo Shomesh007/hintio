@@ -1139,7 +1139,7 @@ function Info({ type }: { type: 'privacy' | 'terms' }) {
                     <h2>AI responses and reports</h2>
                     <p>
                         Hintio uses live generative AI, which can produce inaccurate or inappropriate content. Review responses before relying on
-                        them. Report response by email opens a draft to admin@builtbygsv.in with an excerpt for review and redaction. Nothing is sent
+                        them. The prepared Store build adds Report response by email, which opens a draft to admin@builtbygsv.in with an excerpt for review and redaction. Nothing is sent
                         until you send the email. Feedback and reports can include information you choose to provide and are used for support, safety
                         review and response. Contact support about retention or deletion; provider records are subject to the provider's policies.
                     </p>

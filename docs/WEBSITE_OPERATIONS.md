@@ -41,3 +41,7 @@ Run npm test, npm run typecheck and npm run build. Desktop scripts/billing-ui-qa
 GET create-razorpay-checkout?verify=1 exposes only public pricing and checks the actual monthly plan. It creates no order. A real captured checkout, delivered live webhook and installed signed app still require end-to-end verification. Use Razorpay Test mode for payment testing; never charge or cancel a customer to simulate a test.
 
 Final Store identity, certification, WACK and Store-delivered runtime checks remain separate gates. Keep the current website EXE link until a real Store product exists.
+
+## Managed provider bootstrap
+
+resolve-provider-secrets checks configured GPT and speech services before consuming credit. Managed paid keys can use the company-managed speech environment or an existing company-issued managed trial service record; BYOK/customer/manual records are excluded from that fallback. Live GPT and synthetic speech HTTP checks passed. The QA keys were retired afterward, with one QA session and zero customer sessions consumed. Paid session metadata is bounded by the paid expiry.
