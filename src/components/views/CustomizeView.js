@@ -280,6 +280,8 @@ export class CustomizeView extends LitElement {
 
     static properties = {
         onContactSupport: { type: Function },
+        onWithdrawConsent: { type: Function },
+        protectedRecords: { type: Boolean },
         pendingDataAction: { type: String },
         selectedProfile: { type: String },
         selectedLanguage: { type: String },
@@ -856,9 +858,16 @@ export class CustomizeView extends LitElement {
                             Hintio stores configuration, provider credentials, preferences, and session history in its local
                             <code>hintio-config</code> folder. History can include responses, transcripts, and screen analyses. Treat this folder and
                             any exports as private.
+                            ${this.protectedRecords
+                                ? 'This Store profile uses Windows-backed encryption at rest; exported copies are not protected by that encryption.'
+                                : 'This EXE profile uses local JSON files without application encryption.'}
                         </dd>
                     </div>
                 </dl>
+                <div class="privacy-support">
+                    <button class="control" @click=${() => this.onWithdrawConsent?.()}>Withdraw cloud-processing consent</button>
+                    <p>Stops an active session and returns to the privacy step. Saved records are retained. You can agree again later.</p>
+                </div>
                 <div class="privacy-support">
                     <strong>Questions or a data request?</strong>
                     <p>

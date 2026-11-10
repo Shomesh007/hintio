@@ -31,6 +31,9 @@ async function main() {
         'src/index.js',
         'src/storage.js',
         'src/utils/distribution.js',
+        'src/utils/protectedStorage.js',
+        'src/utils/documentImport.js',
+        'src/utils/llmProvider.js',
         'src/components/views/UpdatesView.js',
         'src/components/views/OnboardingView.js',
     ])
@@ -50,6 +53,10 @@ async function main() {
         'app/msvcp140.dll',
     ])
         assert.ok(inspected.entries.includes(needed), needed + ' missing');
+    assert.ok(
+        !inspected.entries.some(name => /onnxruntime-node\/bin\/napi-v3\/(?:darwin|linux|win32\/(?:arm64|x86))\//.test(name)),
+        'Foreign native binaries must not ship in x64 Store package'
+    );
     assert.ok(!inspected.entries.includes('AppxSignature.p7x'), 'Store upload must not use a development certificate');
     assert.ok(
         !inspected.entries.some(

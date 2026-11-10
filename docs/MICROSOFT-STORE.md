@@ -28,7 +28,7 @@ The Store build is full-trust x64 desktop software with internetClient, micropho
 
 ## Data compatibility
 
-MSIX installation files are immutable. Configuration/history use package-specific Electron userData; local models also use userData. Legacy EXE data is left alone and is not silently imported. Test exports before uninstall/reset. Clear Local Data resets the configured profile only. Existing saved local data remains JSON, not application-encrypted; the disclosure states this limitation.
+MSIX installation files are immutable. Configuration/history use package-specific Electron userData; local models also use userData. Legacy EXE data is left alone and is not silently imported. Test exports before uninstall/reset. Clear Local Data resets the configured profile only. Store records use AES-256-GCM and an asynchronously Windows-protected key. Errors fail closed without erasing records. Legacy EXE JSON is left untouched. Exports may be unencrypted. Verify actual DPAPI persistence after Store-delivered installation.
 
 ## Submission material
 
@@ -58,3 +58,9 @@ No self-signed certificate, developer-mode change, application-control bypass, o
 - https://www.electronforge.io/config/makers/msix
 - https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msix/app-package-requirements
 - https://learn.microsoft.com/en-us/windows/apps/develop/smart-app-control/test-your-app-with-smart-app-control
+
+## Submission assets and additional gates
+
+Run `npm run test:store-ui` with `HINTIO_TEST_CHROMIUM` pointing to an existing Chrome executable, then `npm run prepare:store-listing`. Output includes actual-component screenshots, captions, listing text, reviewer notes, policy matrix and a 300px tile. Native bridges are test doubles; screenshots do not establish installed runtime behavior.
+
+The owner confirmed INR 2,049/month and INR 14,000/year. Verify live Razorpay prices, renewal, cancellation and usage limits before submission. Deployed checkout code is newer than the local checkout source; do not overwrite its hardening. No billing changes were deployed. Publish matching privacy information before submission. Policy review is evidence, not a guarantee of Microsoft approval.

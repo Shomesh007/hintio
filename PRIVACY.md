@@ -18,7 +18,7 @@ The desktop stores configuration, credentials, preferences, shortcuts, and histo
 | macOS   | `~/Library/Application Support/hintio-config` |
 | Linux   | `~/.config/hintio-config`                     |
 
-The current storage implementation writes JSON files. It does **not** implement encrypted-at-rest storage for these files. Protect your user account, backups, and disk accordingly. History can include responses, transcripts, and screen analyses. Exported records are separate copies.
+Legacy EXE profiles use unencrypted JSON. Store builds encrypt configuration, credentials and history with AES-256-GCM, a random nonce per record and a Windows DPAPI-protected key. Missing protection or authentication errors fail closed. DPAPI protects against other Windows accounts, not every program running as the same user. Exports may be unencrypted. History can contain responses, transcripts and screen analyses. Installed Windows protection verification remains a release check.
 
 ## Data controls
 
@@ -42,3 +42,9 @@ Email **admin@builtbygsv.in** or contact **+91 8438365095**. Describe whether th
 Store builds configure the settings/history root as `hintio-config` under Electron `app.getPath('userData')`. Windows may virtualize this path under the app package's per-user data. The package installation directory is read-only and is not used for mutable settings, credentials, or model downloads. First Store launch uses a separate profile; existing EXE settings/history are not automatically imported or deleted. Keep an export before uninstalling either distribution. Windows manages packaged app data during uninstall/reset.
 
 First-run onboarding explains cloud processing and requires affirmative acknowledgement before completion. Stopping a session stops capture; No Audio limits audio collection, and the app's screen-capture controls limit screenshot context. Local model downloads and access validation may still use the network.
+
+## Consent withdrawal and AI reporting
+
+Cloud consent is required before session initialization and credit consumption. Withdraw it in Settings > Privacy & Data or use Stop & withdraw consent during a live session. Withdrawal stops the session, retains records and returns to onboarding; it does not retract already-sent provider data.
+
+AI responses are labelled and can be inaccurate. Reporting and feedback prepare an email draft to admin@builtbygsv.in. Review and redact response excerpts before sending. Opening a draft does not submit a report. Never include access tokens, provider keys or private third-party content.

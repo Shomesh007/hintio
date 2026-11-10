@@ -6,6 +6,8 @@ let screenshotInterval = null;
 let audioContext = null;
 let audioProcessor = null;
 let micAudioProcessor = null;
+let microphoneStream = null;
+let micAudioContext = null;
 let audioBuffer = [];
 const SAMPLE_RATE = 24000;
 const AUDIO_CHUNK_DURATION = 0.1; // seconds
@@ -628,7 +630,8 @@ async function startCapture(screenshotIntervalSeconds = 5, imageQuality = 'mediu
 
 function setupLinuxMicProcessing(micStream) {
     // Setup microphone audio processing for Linux
-    const micAudioContext = new AudioContext({ sampleRate: SAMPLE_RATE });
+    microphoneStream = micStream;
+    micAudioContext = new AudioContext({ sampleRate: SAMPLE_RATE });
     const micSource = micAudioContext.createMediaStreamSource(micStream);
     const micProcessor = micAudioContext.createScriptProcessor(BUFFER_SIZE, 1, 1);
 
@@ -640,7 +643,7 @@ function setupLinuxMicProcessing(micStream) {
         audioBuffer.push(...inputData);
 
         // Process audio in chunks
-        while (audioBuffer.length >= samplesPerChunk) {
+        while (microphoneStream === micStream && audioBuffer.length >= samplesPerChunk) {
             const chunk = audioBuffer.splice(0, samplesPerChunk);
             const pcmData16 = convertFloat32ToInt16(chunk);
             const base64Data = arrayBufferToBase64(pcmData16.buffer);
@@ -1345,8 +1348,18 @@ function stopCapture() {
 
     // Clean up microphone audio processor (Linux only)
     if (micAudioProcessor) {
+        micAudioProcessor.onaudioprocess = null;
         micAudioProcessor.disconnect();
         micAudioProcessor = null;
+    }
+
+    if (microphoneStream) {
+        microphoneStream.getTracks().forEach(track => track.stop());
+        microphoneStream = null;
+    }
+    if (micAudioContext) {
+        micAudioContext.close().catch(() => {});
+        micAudioContext = null;
     }
 
     if (audioContext) {
@@ -1458,12 +1471,6 @@ ipcRenderer.on('save-screen-analysis', async (event, data) => {
     }
 });
 
-// Listen for emergency erase command from main process
-ipcRenderer.on('clear-sensitive-data', async () => {
-    console.log('Clearing all data...');
-    await storage.clearAll();
-});
-
 // Listen for Telegram image analysis requests
 ipcRenderer.on('telegram-image-received', async (event, data) => {
     try {
@@ -1475,7 +1482,7 @@ ipcRenderer.on('telegram-image-received', async (event, data) => {
         }
 
         console.log(`\n[TELEGRAM] Image received from Telegram`);
-        console.log(`[TELEGRAM]   Caption: "${caption}"`);
+        console.log(`[TELEGRAM] Caption present: ${Boolean(caption)}`);
         console.log(`[TELEGRAM]   Image Size: ${(base64.length / 1024).toFixed(2)} KB`);
         if (metadata?.userId) console.log(`[TELEGRAM]   From UserID: ${metadata.userId}`);
         if (metadata?.timestamp) console.log(`[TELEGRAM]   Timestamp: ${new Date(metadata.timestamp * 1000).toISOString()}`);

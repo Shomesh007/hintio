@@ -44,7 +44,7 @@ A separate unsigned MSIX workflow is available for Microsoft Store certification
 
 ## Data and contact
 
-Cloud providers receive context sent for processing. Local credentials and history are stored as JSON under `hintio-config`; the current implementation does not encrypt these files at rest. See [PRIVACY.md](PRIVACY.md) for paths and deletion behavior.
+Cloud providers receive context sent for processing. Store builds encrypt credentials, configuration and history using AES-256-GCM and a Windows-protected key. Legacy EXE profiles remain JSON; exports may be unencrypted. See [PRIVACY.md](PRIVACY.md) for paths and deletion behavior.
 
 Email **admin@builtbygsv.in** · Phone / WhatsApp **+91 8438365095**
 

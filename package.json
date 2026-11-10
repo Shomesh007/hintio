@@ -19,7 +19,9 @@
         "prepare:win-release": "node scripts/prepare-windows-release.js",
         "make:store": "node scripts/build-store.js",
         "make:store:validation": "node scripts/build-store.js --validation",
-        "verify:store": "node scripts/verify-store-package.js"
+        "verify:store": "node scripts/verify-store-package.js",
+        "test:store-ui": "node scripts/store-ui-qa.js",
+        "prepare:store-listing": "node scripts/prepare-store-listing.js"
     },
     "keywords": [
         "Hintio",
@@ -57,11 +59,13 @@
         "@electron-forge/plugin-fuses": "^7.8.1",
         "@electron/fuses": "^1.8.0",
         "@reforged/maker-appimage": "^5.0.0",
-        "electron": "45.2.3"
+        "electron": "45.2.3",
+        "playwright": "1.65.0"
     },
     "overrides": {
         "gaxios": {
             "uuid": "^11.1.1"
-        }
+        },
+        "sharp": "^0.35.4"
     }
 }

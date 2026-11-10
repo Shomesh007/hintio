@@ -2,6 +2,14 @@
 
 ## Microsoft Store preparation — local, not submitted
 
+- Encrypt Store records with AES-256-GCM and a Windows-protected key; fail closed without erasing corrupt records.
+- Require cloud consent before session initialization and support live withdrawal.
+- Add AI disclosure, reporting/feedback email drafts and provider safety instructions.
+- Restore ordinary taskbar/minimize behavior; remove aggressive window reassertion and silent erase shortcuts.
+- Stop separate microphone tracks and close their audio context on capture shutdown; add a regression test.
+- Test actual PDF/DOCX imports, fix small-PDF parsing, remove remote fonts and tighten script CSP.
+- Update production dependencies and prepare Store listing evidence with explicit release gates.
+
 - Add an unsigned x64 MSIX build with strict Partner Center identity validation and separate validation artifacts.
 - Route Store updates to Microsoft Store and exclude the EXE release policy from Store sessions.
 - Use package-specific writable settings/history storage and leave legacy EXE data untouched.

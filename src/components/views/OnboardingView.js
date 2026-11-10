@@ -278,7 +278,7 @@ export class OnboardingView extends LitElement {
     }
 
     _openHelpGuide() {
-        const helpUrl = 'https://www.hintio.tech/help';
+        const helpUrl = 'https://www.hintio.tech/get-started';
         if (window.electronAPI) {
             const ipcRenderer = window.electronAPI;
             ipcRenderer.invoke('open-external', helpUrl).catch(error => {
@@ -298,6 +298,7 @@ export class OnboardingView extends LitElement {
         if (this.contextText.trim()) {
             await hintio.storage.updatePreference('customPrompt', this.contextText.trim());
         }
+        await hintio.storage.updateConfig('cloudConsent', true);
         await hintio.storage.updateConfig('onboarded', true);
         this.onComplete();
     }
@@ -430,8 +431,8 @@ export class OnboardingView extends LitElement {
                 </div>
 
                 <p style="font-size:12px;line-height:1.6;margin-bottom:14px;">
-                    Saved credentials and history are local JSON files and are not encrypted by Hintio. See Settings → Privacy &amp; Data for storage
-                    and deletion controls.
+                    Store builds protect local records with Windows-backed encryption. EXE builds currently use local JSON files. Exports are separate
+                    and may be unencrypted. See Settings → Privacy &amp; Data for storage and deletion controls.
                 </p>
                 <label style="display:flex;gap:10px;font-size:12px;line-height:1.6;margin-bottom:16px;"
                     ><input
@@ -441,7 +442,8 @@ export class OnboardingView extends LitElement {
                             this.privacyAccepted = e.target.checked;
                         }}
                     />
-                    I understand the data sharing described above and will only capture content I am authorized to use.</label
+                    I agree to sending my selected session context to the configured cloud providers and will only capture content I am authorized to
+                    share. I can withdraw this consent in Settings.</label
                 >
                 <div class="actions">
                     <button

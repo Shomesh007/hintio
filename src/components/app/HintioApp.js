@@ -554,7 +554,7 @@ export class HintioApp extends LitElement {
         try {
             const [config, prefs] = await Promise.all([hintio.storage.getConfig(), hintio.storage.getPreferences()]);
 
-            this.currentView = config.onboarded ? 'main' : 'onboarding';
+            this.currentView = config.onboarded && config.cloudConsent ? 'main' : 'onboarding';
             this.selectedProfile = prefs.selectedProfile || 'interview';
             this.selectedLanguage = prefs.selectedLanguage || 'en-US';
             this.selectedScreenshotInterval = prefs.selectedScreenshotInterval || '5';
@@ -845,6 +845,12 @@ export class HintioApp extends LitElement {
             this.requestUpdate();
             return;
         }
+        const config = await hintio.storage.getConfig();
+        if (!config.cloudConsent) {
+            this.currentView = 'onboarding';
+            this.requestUpdate();
+            return;
+        }
         this._awaitingScreenAnalysis = false;
         this._screenAnalysisMode = '';
         this._errorContent = '';
@@ -878,7 +884,7 @@ export class HintioApp extends LitElement {
     async handleAPIKeyHelp() {
         if (window.electronAPI) {
             const ipcRenderer = window.electronAPI;
-            await ipcRenderer.invoke('open-external', 'https://hintio.com/help/api-key');
+            await ipcRenderer.invoke('open-external', 'https://www.hintio.tech/get-started');
         }
     }
 
@@ -956,6 +962,13 @@ export class HintioApp extends LitElement {
         this.requestUpdate();
     }
 
+    async withdrawCloudConsent() {
+        await hintio.storage.updateConfig('cloudConsent', false);
+        if (this.sessionActive) await this._endSessionToHome();
+        this.currentView = 'onboarding';
+        this.requestUpdate();
+    }
+
     handleOnboardingComplete() {
         this.currentView = 'main';
     }
@@ -1009,6 +1022,8 @@ export class HintioApp extends LitElement {
                 return html`
                     <customize-view
                         .onContactSupport=${() => this.navigate('help')}
+                        .onWithdrawConsent=${() => this.withdrawCloudConsent()}
+                        .protectedRecords=${this._updateState?.channel === 'microsoft-store'}
                         .selectedProfile=${this.selectedProfile}
                         .selectedLanguage=${this.selectedLanguage}
                         .selectedScreenshotInterval=${this.selectedScreenshotInterval}
@@ -1174,6 +1189,13 @@ export class HintioApp extends LitElement {
                     ${hasSessionLimit ? html`<span class="live-bar-text ${remainingTimeClass}">Left ${remainingSessionTime}</span>` : ''}
                     <span class="live-bar-text">${this.getElapsedTime()}</span>
                     ${this._isClickThrough ? html`<span class="live-bar-text">[pass-thru]</span>` : ''}
+                    <button
+                        class="live-bar-text clickable"
+                        style="font:inherit;font-size:11px;background:transparent;color:var(--text-secondary);border:1px solid var(--border);padding:4px 7px;-webkit-app-region:no-drag;"
+                        @click=${() => this.withdrawCloudConsent()}
+                    >
+                        Stop &amp; withdraw consent
+                    </button>
                     <span class="live-bar-text clickable" @click=${() => this.handleHideToggle()}>[hide]</span>
                 </div>
             </div>

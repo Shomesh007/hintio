@@ -10,7 +10,7 @@ const store = storeBuild ? require('./scripts/store-manifest').prepareStore() : 
 const remoteReleases = process.env.SQUIRREL_REMOTE_RELEASES;
 
 const baseDir = __dirname;
-const extraResource = [path.join(baseDir, 'src/assets/SystemAudioDump')];
+const extraResource = storeBuild ? [] : [path.join(baseDir, 'src/assets/SystemAudioDump')];
 const optionalWindowsBundle = path.join(baseDir, 'build/windows');
 if (fs.existsSync(optionalWindowsBundle)) {
     extraResource.push(optionalWindowsBundle);
@@ -60,6 +60,13 @@ function resolvePackagedOutputPaths(options = {}) {
 module.exports = {
     packagerConfig: {
         ignore: [
+            ...(storeBuild
+                ? [
+                      /^\/node_modules\/onnxruntime-node\/bin\/napi-v3\/(?:darwin|linux)(?:\/|$)/,
+                      /^\/node_modules\/onnxruntime-node\/bin\/napi-v3\/win32\/(?:arm64|x86)(?:\/|$)/,
+                  ]
+                : []),
+            /^\/forge\.config\.js$/,
             /^\/(?:packaging|hintio-website|design|supabase|test|scripts|out|logs|prep|\.git|\.codex|\.agents|\.cache|\.npm|\.specstory)(?:\/|$)/,
             /^\/src\/(?:data|profiles\/[^/]+\.local\.js)(?:\/|$)/,
             /(?:^|\/)\.env(?:[./]|$)/,

@@ -1,3 +1,4 @@
+import { makeSupportEmailDraft, SUPPORT_EMAIL } from '../../utils/supportDetails.js';
 import '../icons/HintioIcon.js';
 import { html, css, LitElement } from '../../assets/lit-core-2.7.4.min.js';
 
@@ -536,6 +537,7 @@ export class AssistantView extends LitElement {
 
     static properties = {
         responses: { type: Array },
+        _reportStatus: { state: true },
         currentResponseIndex: { type: Number },
         selectedProfile: { type: String },
         onSendText: { type: Function },
@@ -549,6 +551,7 @@ export class AssistantView extends LitElement {
     constructor() {
         super();
         this.responses = [];
+        this._reportStatus = '';
         this.currentResponseIndex = -1;
         this.selectedProfile = 'interview';
         this.onSendText = () => {};
@@ -1107,10 +1110,44 @@ export class AssistantView extends LitElement {
         });
     }
 
+    async reportCurrentResponse() {
+        const response = String(this.getCurrentResponse() || '');
+        if (!response.trim()) return;
+        const url = makeSupportEmailDraft(
+            'Hintio: inappropriate AI response report',
+            'Please describe the concern and remove private information before sending.\n\nAI response excerpt:\n' + response
+        );
+        try {
+            const result = await window.electronAPI.invoke('open-external', url);
+            if (!result?.success) throw new Error('Email application unavailable');
+            this._reportStatus = 'Email draft opened. Review or redact the response and send it from your email app.';
+        } catch {
+            this._reportStatus =
+                'Could not open an email app. Report the concern to ' +
+                SUPPORT_EMAIL +
+                '. Do not include credentials or private third-party content.';
+        }
+    }
+
     render() {
         const hasMultipleResponses = this.responses.length > 1;
 
         return html`
+            <div
+                class="ai-disclosure"
+                style="padding:8px 16px;font-size:11px;line-height:1.5;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:center;flex-wrap:wrap;"
+            >
+                <span>AI-generated content can be inaccurate. Review before relying on it.</span>
+                <button
+                    style="color:var(--text-secondary);background:transparent;border:1px solid var(--border);padding:5px 8px;cursor:pointer;"
+                    ?disabled=${!this.getCurrentResponse()}
+                    @click=${this.reportCurrentResponse}
+                    title="Opens an email draft with a response excerpt. Review and redact before sending."
+                >
+                    Report response by email
+                </button>
+                ${this._reportStatus ? html`<span role="status">${this._reportStatus}</span>` : ''}
+            </div>
             <div class="response-container" id="responseContainer"></div>
 
             ${this._renderErrorPanel()}

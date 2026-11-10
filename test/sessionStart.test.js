@@ -11,7 +11,7 @@ const appSource = fs
     .replace(/^import .*;\r?\n/gm, '')
     .replace('export class HintioApp', 'class HintioApp');
 
-function createApp({ approved = true, token = '', remoteVersion = 'v1.0.2' } = {}) {
+function createApp({ approved = true, token = '', remoteVersion = 'v1.0.2', consent = true } = {}) {
     const calls = [];
     let savedToken = token;
     const hintio = {
@@ -28,6 +28,10 @@ function createApp({ approved = true, token = '', remoteVersion = 'v1.0.2' } = {
             },
         },
         storage: {
+            getConfig: async () => ({ onboarded: true, cloudConsent: consent }),
+            updateConfig: async (key, value) => {
+                calls.push(['config', key, value]);
+            },
             async setAccessToken(value) {
                 calls.push('save-token');
                 savedToken = value;
@@ -115,4 +119,25 @@ test('a required update prevents initialization and capture', async () => {
     assert.equal(app.currentView, 'updates');
     assert.equal(app.sessionActive, false);
     assert.deepEqual(calls, ['save-token']);
+});
+
+test('withheld cloud consent blocks initialization and capture', async () => {
+    const { app, calls } = createApp({ consent: false });
+    await app.handleStart('test-access-token');
+    assert.equal(app.currentView, 'onboarding');
+    assert.equal(app.sessionActive, false);
+    assert.deepEqual(calls, ['save-token']);
+});
+
+test('withdrawing cloud consent ends an active session and returns to privacy onboarding', async () => {
+    const { app, calls } = createApp();
+    app.sessionActive = true;
+    app._endSessionToHome = async () => {
+        calls.push('end-session');
+        app.sessionActive = false;
+    };
+    await app.withdrawCloudConsent();
+    assert.equal(app.currentView, 'onboarding');
+    assert.equal(app.sessionActive, false);
+    assert.deepEqual(calls, [['config', 'cloudConsent', false], 'end-session']);
 });

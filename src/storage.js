@@ -23,6 +23,7 @@ const CONFIG_VERSION = 1;
 const DEFAULT_CONFIG = {
     configVersion: CONFIG_VERSION,
     onboarded: false,
+    cloudConsent: false,
     layout: 'normal',
 };
 
@@ -69,6 +70,10 @@ const DEFAULT_LIMITS = {
 
 // Store installs write to Electron userData, never the read-only package directory.
 let configuredStorageRoot = null;
+let protectedCodec = null;
+function configureProtection(codec) {
+    protectedCodec = codec;
+}
 function configureStorageRoot(directory) {
     if (typeof directory !== 'string' || !path.isAbsolute(directory)) throw new Error('Storage root must be an absolute path');
     configuredStorageRoot = path.resolve(directory);
@@ -119,53 +124,36 @@ function getVoiceProfilePath() {
     return path.join(getConfigDir(), 'voice-profile.json');
 }
 
-// Helper to read JSON file safely
+// Protected records fail closed: never replace unreadable data with defaults.
 function readJsonFile(filePath, defaultValue) {
+    if (!fs.existsSync(filePath)) return defaultValue;
     try {
-        if (fs.existsSync(filePath)) {
-            const data = fs.readFileSync(filePath, 'utf8');
-            return JSON.parse(data);
+        const value = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+        if (value?.format?.startsWith('hintio.')) {
+            if (!protectedCodec) throw new Error('Protected records require Windows data protection');
+            return JSON.parse(protectedCodec.decode(value, filePath));
         }
+        if (protectedCodec && !writeJsonFile(filePath, value)) throw new Error('Could not protect existing record');
+        return value;
     } catch (error) {
-        console.warn(`Error reading ${filePath}:`, error.message);
+        throw new Error('Could not read local record ' + path.basename(filePath) + '. Records were left unchanged.', { cause: error });
     }
-    return defaultValue;
 }
-
-// Helper to write JSON file safely
 function writeJsonFile(filePath, data) {
-    try {
-        const dir = path.dirname(filePath);
-        if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true });
-        }
-        fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
-        return true;
-    } catch (error) {
-        console.error(`Error writing ${filePath}:`, error.message);
-        return false;
-    }
-}
-
-// Check if we need to reset (no configVersion or wrong version)
-function needsReset() {
-    const configPath = getConfigPath();
-    if (!fs.existsSync(configPath)) {
-        return true;
-    }
-
-    try {
-        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-        return !config.configVersion || config.configVersion !== CONFIG_VERSION;
-    } catch {
-        return true;
-    }
+    const dir = path.dirname(filePath);
+    fs.mkdirSync(dir, { recursive: true });
+    const temporary = filePath + '.tmp';
+    const value = protectedCodec ? protectedCodec.encode(JSON.stringify(data), filePath) : data;
+    fs.writeFileSync(temporary, JSON.stringify(value, null, 2), { mode: 0o600 });
+    fs.renameSync(temporary, filePath);
+    return true;
 }
 
 // Wipe and reinitialize the config directory
 function resetConfigDir() {
     const configDir = getConfigDir();
 
+    const wrappedKey = protectedCodec ? fs.readFileSync(protectedCodec.keyPath) : null;
     console.log('Resetting config directory...');
 
     // Remove existing directory if it exists
@@ -176,6 +164,7 @@ function resetConfigDir() {
     // Create fresh directory structure
     fs.mkdirSync(configDir, { recursive: true });
     fs.mkdirSync(getHistoryDir(), { recursive: true });
+    if (wrappedKey) fs.writeFileSync(protectedCodec.keyPath, wrappedKey, { mode: 0o600 });
 
     // Initialize with defaults
     writeJsonFile(getConfigPath(), DEFAULT_CONFIG);
@@ -187,19 +176,22 @@ function resetConfigDir() {
 
 // Initialize storage - call this on app startup
 function initializeStorage() {
-    if (needsReset()) {
-        resetConfigDir();
-    } else {
-        // Ensure history directory exists
-        const historyDir = getHistoryDir();
-        if (!fs.existsSync(historyDir)) {
-            fs.mkdirSync(historyDir, { recursive: true });
-        }
+    fs.mkdirSync(getConfigDir(), { recursive: true });
+    fs.mkdirSync(getHistoryDir(), { recursive: true });
+    for (const [file, defaults] of [
+        [getConfigPath(), DEFAULT_CONFIG],
+        [getCredentialsPath(), DEFAULT_CREDENTIALS],
+        [getPreferencesPath(), DEFAULT_PREFERENCES],
+    ]) {
+        if (!fs.existsSync(file)) writeJsonFile(file, defaults);
     }
+    const config = readJsonFile(getConfigPath(), DEFAULT_CONFIG);
+    if (config.configVersion !== CONFIG_VERSION) throw new Error('Unsupported local data version. Existing records were left unchanged.');
 }
 
 const CONFIG_KEYS = {
     onboarded: value => ensureBoolean(value, 'config.onboarded'),
+    cloudConsent: value => ensureBoolean(value, 'config.cloudConsent'),
     layout: value => {
         const normalized = sanitizeText(value, { fieldName: 'config.layout', maxLength: 20, multiline: false });
         if (!['normal', 'minimal', 'compact'].includes(normalized)) {
@@ -774,6 +766,7 @@ module.exports = {
     // Initialization
     initializeStorage,
     configureStorageRoot,
+    configureProtection,
     getConfigDir,
 
     // Config

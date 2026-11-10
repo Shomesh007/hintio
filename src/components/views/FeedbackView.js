@@ -1,3 +1,4 @@
+import { makeSupportEmailDraft, SUPPORT_EMAIL } from '../../utils/supportDetails.js';
 import '../icons/HintioIcon.js';
 import { html, css, LitElement } from '../../assets/lit-core-2.7.4.min.js';
 import { unifiedPageStyles } from './sharedPageStyles.js';
@@ -299,83 +300,25 @@ export class FeedbackView extends LitElement {
     }
 
     async _submitFeedback() {
-        const text = String(this._feedbackText || '')
-            .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
-            .trim();
+        const text = String(this._feedbackText || '').trim();
         if (!text || this._feedbackSending) return;
-
-        const now = Date.now();
-        const lastFeedbackAt = Number(localStorage.getItem('hintio-feedback-last-submit-at') || '0');
-        const waitMs = FeedbackView.FEEDBACK_COOLDOWN_MS - (now - lastFeedbackAt);
-        if (waitMs > 0) {
-            const waitSeconds = Math.ceil(waitMs / 1000);
-            this._feedbackStatus = `error:Please wait ${waitSeconds}s before sending again`;
-            this.requestUpdate();
-            return;
-        }
-
-        const suspiciousPatterns = [/https?:\/\//gi, /<script/gi, /buy\s+now/gi, /free\s+money/gi, /telegram/gi];
-        const suspiciousHitCount = suspiciousPatterns.reduce((count, pattern) => count + (pattern.test(text) ? 1 : 0), 0);
-        if (suspiciousHitCount >= 2) {
-            this._feedbackStatus = 'error:Feedback looks automated and was blocked';
-            this.requestUpdate();
-            return;
-        }
-
-        const email = String(this._feedbackEmail || '').trim();
-        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
-            this._feedbackStatus = 'error:Invalid email format';
-            this.requestUpdate();
-            return;
-        }
-
-        let content = text;
-        if (this._selectedCategory) content = `[${this._selectedCategory}] ${content}`;
-        if (this._rating > 0) content += `\n\nRating: ${this._rating}/5 stars`;
-        if (this._attachInfo) {
-            content += `\n\nSent from ${this._getOS()} version ${this._version}`;
-        }
-
-        if (content.length > 2000) {
-            this._feedbackStatus = 'error:Max 2000 characters';
-            this.requestUpdate();
-            return;
-        }
-
+        const subject = this._selectedCategory ? 'Hintio feedback: ' + this._selectedCategory : 'Hintio feedback';
+        const body =
+            text +
+            (this._rating ? '\nRating: ' + this._rating + '/5' : '') +
+            (this._attachInfo ? '\nHintio ' + this._version + ' / ' + this._getOS() : '') +
+            (this._feedbackEmail ? '\nReply contact: ' + this._feedbackEmail : '');
         this._feedbackSending = true;
         this._feedbackStatus = '';
-        this.requestUpdate();
-
         try {
-            const body = { feedback: content };
-            if (email) {
-                body.email = email;
-            }
-
-            const res = await fetch('https://api.hintio.com/api/feedback', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body),
-            });
-
-            if (res.ok) {
-                this._feedbackText = '';
-                this._feedbackEmail = '';
-                this._rating = 0;
-                this._selectedCategory = '';
-                localStorage.setItem('hintio-feedback-last-submit-at', String(Date.now()));
-                this._feedbackStatus = 'success:Feedback sent — thank you!';
-            } else if (res.status === 429) {
-                this._feedbackStatus = 'error:Please wait a few minutes before sending again';
-            } else {
-                this._feedbackStatus = 'error:Failed to send. Try again shortly.';
-            }
-        } catch (e) {
-            this._feedbackStatus = 'error:Could not connect to server';
+            const result = await window.electronAPI.invoke('open-external', makeSupportEmailDraft(subject, body));
+            if (!result?.success) throw new Error('Email app unavailable');
+            this._feedbackStatus = 'success:Email draft opened. Review it and send it from your email app.';
+        } catch {
+            this._feedbackStatus = 'error:Could not open email. Contact ' + SUPPORT_EMAIL + ' directly.';
+        } finally {
+            this._feedbackSending = false;
         }
-
-        this._feedbackSending = false;
-        this.requestUpdate();
     }
 
     render() {
@@ -387,7 +330,11 @@ export class FeedbackView extends LitElement {
         return html`
             <div class="unified-page">
                 <div class="unified-wrap">
-                    <div class="page-title">Send Feedback</div>
+                    <div class="page-title">Feedback & AI reports</div>
+                    <p style="font-size:12px;color:var(--text-secondary);">
+                        Opens a draft to admin@builtbygsv.in. Review and redact before sending; nothing is sent automatically. For an AI response
+                        report, describe the issue or use Report response in the assistant.
+                    </p>
 
                     <!-- Rating -->
                     <section class="surface">
@@ -479,7 +426,7 @@ export class FeedbackView extends LitElement {
                                 ?disabled=${!this._feedbackText.trim() || this._feedbackSending}
                             >
                                 <hintio-icon class="icon" name="send"></hintio-icon>
-                                ${this._feedbackSending ? 'Sending…' : 'Send Feedback'}
+                                ${this._feedbackSending ? 'Sending…' : 'Open email draft'}
                             </button>
                         </div>
                         ${this._feedbackStatus

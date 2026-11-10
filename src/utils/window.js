@@ -1,7 +1,6 @@
 const { BrowserWindow, globalShortcut, ipcMain, screen, shell } = require('electron');
 const path = require('node:path');
 const storage = require('../storage');
-const { setWindowAsTopmost, enforceWindowOnTop, forceWindowToFront } = require('./windowsNativeApi');
 
 let mouseEventsIgnored = false;
 let currentView = 'main';
@@ -82,7 +81,7 @@ function createWindow(sendToRenderer, providerSessionRef) {
         transparent: !visibleMode,
         hasShadow: visibleMode,
         alwaysOnTop: !visibleMode,
-        skipTaskbar: !visibleMode,
+        skipTaskbar: false,
         maximizable: false,
         webPreferences: {
             preload: path.join(__dirname, '../preload.js'),
@@ -104,9 +103,12 @@ function createWindow(sendToRenderer, providerSessionRef) {
     const { session, desktopCapturer } = require('electron');
     session.defaultSession.setDisplayMediaRequestHandler(
         (request, callback) => {
-            desktopCapturer.getSources({ types: ['screen'] }).then(sources => {
-                callback({ video: sources[0], audio: 'loopback' });
-            });
+            desktopCapturer
+                .getSources({ types: ['screen'] })
+                .then(sources => {
+                    callback(sources.length ? { video: sources[0], audio: 'loopback' } : {});
+                })
+                .catch(() => callback({}));
         },
         { useSystemPicker: true }
     );
@@ -130,35 +132,6 @@ function createWindow(sendToRenderer, providerSessionRef) {
     const x = Math.floor((screenWidth - windowWidth) / 2);
     const y = 0;
     mainWindow.setPosition(x, y);
-
-    if (!visibleMode && process.platform === 'win32') {
-        mainWindow.setAlwaysOnTop(true, 'screen-saver', 1);
-
-        // Try wrapper approach for additional safety
-        try {
-            setWindowAsTopmost(mainWindow);
-        } catch (error) {
-            console.warn('[Window] Initial topmost set via wrapper failed:', error.message);
-        }
-
-        // For Mettl Secure Browser and other high-security environments,
-        // periodically re-assert the window's top position since they may
-        // aggressively manage z-order and hide overlays
-        const ensureWindowOnTopInterval = setInterval(() => {
-            if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible()) {
-                try {
-                    setWindowAsTopmost(mainWindow);
-                } catch (error) {
-                    console.debug('[Window] Periodic topmost enforcement failed:', error.message);
-                }
-            }
-        }, 500); // 500ms interval for aggressive enforcement
-
-        // Clean up interval on window close
-        mainWindow.on('closed', () => {
-            clearInterval(ensureWindowOnTopInterval);
-        });
-    }
 
     mainWindow.loadFile(path.join(__dirname, '../index.html'));
 
@@ -198,32 +171,6 @@ function createWindow(sendToRenderer, providerSessionRef) {
 
     setupWindowIpcHandlers(mainWindow, sendToRenderer, providerSessionRef);
 
-    // Enhanced event handlers for secure browser environments like Mettl
-    // These ensure the overlay stays visible and on top
-    mainWindow.on('blur', () => {
-        if (!visibleMode && process.platform === 'win32' && mainWindow && !mainWindow.isDestroyed()) {
-            // Re-apply always-on-top when window loses focus (Mettl may try to hide it)
-            mainWindow.setAlwaysOnTop(true, 'screen-saver', 1);
-            setWindowAsTopmost(mainWindow);
-        }
-    });
-
-    mainWindow.on('show', () => {
-        if (!visibleMode && process.platform === 'win32' && mainWindow && !mainWindow.isDestroyed()) {
-            // Reapply always-on-top when window is shown
-            mainWindow.setAlwaysOnTop(true, 'screen-saver', 1);
-            setWindowAsTopmost(mainWindow);
-        }
-    });
-
-    mainWindow.on('minimize', () => {
-        if (!visibleMode && mainWindow && !mainWindow.isDestroyed()) {
-            // Prevent minimization in overlay mode
-            mainWindow.restore();
-            mainWindow.showInactive();
-        }
-    });
-
     return mainWindow;
 }
 
@@ -247,7 +194,6 @@ function getDefaultKeybinds() {
         dockLeft: isMac ? 'Cmd+Shift+R' : 'Ctrl+Shift+R',
         dockRight: isMac ? 'Cmd+Shift+Q' : 'Ctrl+Shift+Q',
         dockDefault: isMac ? 'Cmd+Shift+T' : 'Ctrl+Shift+T',
-        emergencyErase: isMac ? 'Cmd+Shift+X' : 'Ctrl+Shift+X',
         focusTextInput: isMac ? 'Cmd+Shift+Space' : 'Ctrl+Shift+Space',
         submitTextInput: isMac ? 'Cmd+Alt+Enter' : 'Ctrl+Alt+Enter',
     };
@@ -395,31 +341,6 @@ function updateGlobalShortcuts(keybinds, mainWindow, sendToRenderer, providerSes
     }
 
     // Register emergency erase shortcut
-    if (keybinds.emergencyErase) {
-        registerGlobalShortcut('emergencyErase', keybinds.emergencyErase, () => {
-            console.log('Emergency Erase triggered!');
-            if (mainWindow && !mainWindow.isDestroyed()) {
-                mainWindow.hide();
-
-                if (providerSessionRef.stopSTT) {
-                    providerSessionRef.stopSTT();
-                    providerSessionRef.stopSTT = null;
-                }
-                if (providerSessionRef.current) {
-                    providerSessionRef.current.close();
-                    providerSessionRef.current = null;
-                }
-
-                sendToRenderer('clear-sensitive-data');
-
-                setTimeout(() => {
-                    const { app } = require('electron');
-                    app.quit();
-                }, 300);
-            }
-        });
-    }
-
     // Register focus text input shortcut
     if (keybinds.focusTextInput) {
         registerGlobalShortcut('focusTextInput', keybinds.focusTextInput, () => {
@@ -514,16 +435,6 @@ function setupWindowIpcHandlers(mainWindow, sendToRenderer, providerSessionRef) 
                 mainWindow.hide();
             } else {
                 mainWindow.showInactive();
-                // For Mettl Secure Browser compatibility, ensure the window is truly on top
-                if (process.platform === 'win32') {
-                    // Small delay to ensure the show completes before re-applying always-on-top
-                    setTimeout(() => {
-                        if (!mainWindow.isDestroyed()) {
-                            mainWindow.setAlwaysOnTop(true, 'screen-saver', 1);
-                            setWindowAsTopmost(mainWindow);
-                        }
-                    }, 50);
-                }
             }
             return { success: true };
         } catch (error) {

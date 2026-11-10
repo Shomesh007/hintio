@@ -4,7 +4,7 @@ if (!process.windowsStore && require('electron-squirrel-startup')) {
 
 require('dotenv').config();
 
-const { app, BrowserWindow, shell, ipcMain, dialog, nativeImage } = require('electron');
+const { app, BrowserWindow, shell, ipcMain, dialog, nativeImage, safeStorage } = require('electron');
 const { UpdateService } = require('./utils/updates');
 const { isStoreDistribution, StoreUpdateService } = require('./utils/distribution');
 const path = require('path');
@@ -133,10 +133,32 @@ app.whenReady().then(async () => {
     if (!hasSingleInstanceLock) return;
 
     if (!isStoreDistribution(app)) cleanupLegacyWindowsUninstallEntries();
-    else storage.configureStorageRoot(path.join(app.getPath('userData'), 'hintio-config'));
+    else {
+        const directory = path.join(app.getPath('userData'), 'hintio-config');
+        storage.configureStorageRoot(directory);
+        try {
+            storage.configureProtection(await require('./utils/protectedStorage').openProtectedStorage(directory, safeStorage));
+        } catch {
+            dialog.showErrorBox(
+                'Hintio data protection',
+                'Local records could not be unlocked. Existing data was left unchanged. Contact admin@builtbygsv.in.'
+            );
+            app.quit();
+            return;
+        }
+    }
 
     // Initialize storage (checks version, resets if needed)
-    storage.initializeStorage();
+    try {
+        storage.initializeStorage();
+    } catch {
+        dialog.showErrorBox(
+            'Hintio local data',
+            'Local records could not be opened safely. Existing data was left unchanged. Contact admin@builtbygsv.in.'
+        );
+        app.quit();
+        return;
+    }
 
     // Initialize Telegram bot if credentials are available
     const telegramToken = process.env.TELEGRAM_BOT_TOKEN;
@@ -179,7 +201,13 @@ app.whenReady().then(async () => {
 
     createMainWindow();
     setupUpdateNotices();
-    setupProviderRuntimeIpcHandlers(providerSessionRef, { assertSessionAllowed: () => updateService.assertSessionAllowed() });
+    setupProviderRuntimeIpcHandlers(providerSessionRef, {
+        assertSessionAllowed: async () => {
+            await updateService.assertSessionAllowed();
+            if (!storage.getConfig().cloudConsent)
+                throw new Error('Cloud processing consent is required. Complete the privacy step before starting a session.');
+        },
+    });
     setupStorageIpcHandlers();
     setupGeneralIpcHandlers();
 });
@@ -593,34 +621,7 @@ function setupGeneralIpcHandlers() {
     // Parse PDF or DOCX and return raw text
     ipcMain.handle('parse-document', async (event, filePath) => {
         enforceIpcRateLimit(event, 'system.parse-document', IPC_RATE_POLICIES.parseDocument);
-        const safePath = ensureFilePath(filePath, {
-            fieldName: 'document path',
-            allowedExtensions: ['.pdf', '.docx'],
-        });
-
-        const stat = fs.statSync(safePath);
-        const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
-        if (!stat.isFile() || stat.size <= 0 || stat.size > MAX_DOCUMENT_BYTES) {
-            throw new Error('Invalid file size. Only PDF/DOCX files up to 10MB are allowed.');
-        }
-
-        const ext = path.extname(safePath).toLowerCase();
-        if (ext === '.docx') {
-            const mammoth = require('mammoth');
-            const result = await mammoth.extractRawText({ path: safePath });
-            const text = sanitizeText(String(result.value || ''), { fieldName: 'docx text', maxLength: 250000, allowEmpty: true });
-            return { text, fileName: path.basename(safePath) };
-        } else if (ext === '.pdf') {
-            const pdfParse = require('pdf-parse');
-            const buffer = fs.readFileSync(safePath);
-            if (buffer.length < 4 || buffer.subarray(0, 4).toString('utf8') !== '%PDF') {
-                throw new Error('Invalid PDF file signature');
-            }
-            const result = await pdfParse(buffer);
-            const text = sanitizeText(String(result.text || ''), { fieldName: 'pdf text', maxLength: 250000, allowEmpty: true });
-            return { text, fileName: path.basename(safePath) };
-        }
-        throw new Error('Unsupported file type. Please use PDF or DOCX.');
+        return require('./utils/documentImport').parseDocument(filePath);
     });
 
     ipcMain.handle('save-text-file', async (event, payload = {}) => {

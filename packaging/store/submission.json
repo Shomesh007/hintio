@@ -2,7 +2,7 @@
     "status": "draft-not-submitted",
     "displayName": "Hintio",
     "suggestedCategory": "Productivity",
-    "description": "Hintio is a desktop assistant for questions, meetings, and learning. Choose screen and audio context, add resume text or custom instructions, and review contextual AI responses in a configurable overlay. Cloud sessions require internet access and a valid access token. Screen-sharing behavior varies by platform and capture tool. Use only content you are authorized to capture and share.",
+    "description": "Hintio is a desktop AI assistant for authorized questions, meetings and learning. Choose screen and audio context, add resume text or custom instructions, and review contextual AI-generated responses in an adjustable overlay.\n\nImport PDF or DOCX context, review session history and export records. Choose speaker, microphone, combined or no-audio modes. Stop capture and withdraw cloud consent from the live session or privacy controls. Only capture and share material you are authorized to use.\n\nAI responses may be inaccurate. Review important answers before relying on them. Report response by email prepares a draft: review and redact it before sending.\n\nFree installation; paid service access and a valid access token are required. Internet is required for cloud sessions. Intended India pricing is INR 2,049/month or INR 14,000/year. Live prices, renewal, cancellation and usage terms are pending verification; replace this draft wording before submission.\n\nThe Store build encrypts local records using AES-256-GCM with a Windows-protected key. Exports may be unencrypted. Cloud processing is subject to provider terms. Updates are managed by Microsoft Store. Screen-sharing behavior depends on the capture tool; invisibility is not guaranteed.",
     "features": [
         "Selectable speaker, microphone, combined and no-audio session modes",
         "Screen analysis and document context",
@@ -13,7 +13,7 @@
     "supportEmail": "admin@builtbygsv.in",
     "supportPhone": "+91 8438365095",
     "privacyUrl": "https://www.hintio.tech/privacy",
-    "supportUrl": "https://www.hintio.tech/help",
+    "supportUrl": "https://www.hintio.tech/contact",
     "capabilityJustifications": {
         "runFullTrust": "Electron desktop app uses normal user-level desktop window, global shortcut, screen/audio capture and native module APIs. It does not request administrator elevation.",
         "microphone": "Captures microphone audio only in a user-selected microphone-enabled session mode.",
@@ -23,8 +23,41 @@
         "Supply working temporary access token privately in Partner Center certification notes",
         "Keep backend reachable and provide adequate test credits",
         "Explain screen/audio consent and each capture mode",
-        "Complete service pricing disclosure, age ratings and availability before submission"
+        "Complete service pricing disclosure, age ratings and availability before submission",
+        "Verify live prices, renewal/cancellation and usage limits.",
+        "Publish matching privacy information.",
+        "Complete live generative AI declaration and IARC questionnaire."
     ],
     "identity": "pending actual Partner Center reservation",
-    "screenshotStatus": "Final installed-package screenshots pending; browser QA previews are not certification evidence"
+    "screenshotStatus": "Five actual-component 1600x1000 PNG captures using test-only native bridges and synthetic content. Installed Store runtime unverified.",
+    "publisherDisplayName": "BuiltbyGSV",
+    "language": "en-US",
+    "shortDescription": "A desktop AI assistant with selected screen, audio and document context.",
+    "keywords": ["AI assistant", "desktop assistant", "document context", "meeting notes", "screen analysis", "session history"],
+    "gettingStartedUrl": "https://www.hintio.tech/get-started",
+    "usesLiveGenerativeAI": true,
+    "purchaseDisclosure": {
+        "appInstallPrice": "Free",
+        "paidServiceRequired": true,
+        "currency": "INR",
+        "monthlyPriceOwnerConfirmed": 2049,
+        "yearlyPriceOwnerConfirmed": 14000,
+        "livePriceVerified": false,
+        "renewal": "Razorpay monthly recurring plan verified at INR 2,049 once a month. Yearly checkout uses a prepaid order in deployed code; actual charge and access period remain to be verified.",
+        "cancellation": "Pending verification of actual customer cancellation route.",
+        "usageLimits": "Pending entitlement verification. No unlimited claim.",
+        "submissionBlockedUntilVerified": true,
+        "monthlyLivePlanVerified": true,
+        "monthlyPlanId": "plan_SRiBHkkKQcRnBV",
+        "monthlyBillingCycle": "Once a month",
+        "yearlyLivePriceVerified": false,
+        "entitlementIssue": "Live license and app access-token tables are separate. Aggregate check found 3 licenses and only 1 matching access-token hash. Reconcile paid delivery and lifecycle before submission."
+    },
+    "systemRequirements": {
+        "architecture": "x64",
+        "minimumWindowsBuild": "10.0.19041.0",
+        "internet": "Required for cloud sessions and access validation",
+        "access": "Valid paid access token",
+        "microphone": "Optional, for microphone-enabled modes"
+    }
 }
