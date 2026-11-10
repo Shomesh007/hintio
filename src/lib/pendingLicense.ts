@@ -48,3 +48,8 @@ export function forgetPendingLicense(persistent: StorageAccess, legacy?: Storage
         }
     }
 }
+
+export function pendingPaymentReference(plan: 'monthly' | 'yearly', persistent: StorageAccess, legacy?: StorageAccess): string | undefined {
+    const pending = readPendingLicense(persistent, legacy);
+    return pending?.plan === plan && /^pay_[A-Za-z0-9]{1,56}$/.test(pending.reference) ? pending.reference : undefined;
+}

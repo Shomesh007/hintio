@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase, missingSupabaseEnvVars } from './lib/supabase';
-import { readPendingLicense, rememberPendingLicense, forgetPendingLicense, type PendingLicense } from './lib/pendingLicense';
+import { readPendingLicense, rememberPendingLicense, forgetPendingLicense, pendingPaymentReference, type PendingLicense } from './lib/pendingLicense';
 import {
     abortable,
     withDeadline,
@@ -185,7 +185,7 @@ export default function App() {
             plan,
             (requestedPlan, signal) =>
                 client.functions.invoke('get-my-license', {
-                    body: { plan: requestedPlan },
+                    body: { plan: requestedPlan, paymentId: pendingPaymentReference(requestedPlan, window.localStorage, window.sessionStorage) },
                     signal,
                     timeout: REQUEST_TIMEOUT_MS,
                 }),

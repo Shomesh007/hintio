@@ -323,6 +323,8 @@ export function createBillingService({ admin, env, fetcher = fetch, now = Date.n
             if (req.method !== 'POST') return json(req, { error: 'Method not allowed' }, 405);
             const owner = await user(req),
                 body = await readJson(req);
+            if (body.plan && !['monthly', 'yearly'].includes(body.plan)) throw new BillingError('Invalid plan');
+            if (body.paymentId) await fulfill(body.paymentId, owner.id, { plan: body.plan });
             const rows = await ownedLicenses(owner.id);
             for (const row of rows.filter((x: Entity) => !body.plan || x.plan === body.plan).slice(0, 3)) {
                 try {
@@ -331,13 +333,16 @@ export function createBillingService({ admin, env, fetcher = fetch, now = Date.n
                     /* Retain already-verified, unexpired access during provider outages. */
                 }
             }
-            if (rows.some((x: Entity) => !x.access_token_id && !x.razorpay_payment_id && !x.razorpay_subscription_id)) {
+            if (
+                !body.paymentId &&
+                (rows.length === 0 || rows.some((x: Entity) => !x.access_token_id && !x.razorpay_payment_id && !x.razorpay_subscription_id))
+            ) {
                 const recent = await api('payments?count=50');
                 for (const payment of recent.items || []) {
                     if (payment.email?.toLowerCase() !== owner.email.toLowerCase() && payment.notes?.user_id !== owner.id) continue;
                     if (!['captured', 'refunded'].includes(payment.status)) continue;
                     try {
-                        await fulfill(payment.id, owner.id);
+                        await fulfill(payment.id, owner.id, { plan: body.plan });
                     } catch (error) {
                         if (!(error instanceof BillingError) || error.status >= 500) throw error;
                     }

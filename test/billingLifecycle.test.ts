@@ -57,6 +57,22 @@ function setup(o: any = {}) {
         },
         rpc: async (name: string, args: any) => {
             calls.push({ rpc: name, args });
+            if (name === 'record_billing_payment' && o.provisionRpc) {
+                rows.licenses = [
+                    {
+                        id: 'license_example',
+                        user_id: owner,
+                        plan: notes.plan_type,
+                        status: 'active',
+                        valid_until: new Date((start + 365 * 86400) * 1000).toISOString(),
+                        access_token_id: 'token_example',
+                        license_key: 'SKI-SYNTHETICKEY',
+                    },
+                ];
+                rows.access_tokens = [
+                    { id: 'token_example', is_active: true, status: 'active', expires_at: new Date((start + 365 * 86400) * 1000).toISOString() },
+                ];
+            }
             return {
                 data:
                     name === 'enforce_access_token_rate_limit'
@@ -173,7 +189,7 @@ function setup(o: any = {}) {
             })
         );
     };
-    return { service, calls, rows, req, issue, webhook };
+    return { service, calls, rows, req, issue, webhook, payment };
 }
 test('public pricing is INR 2049/month and 14000/year with no order side effects', async () => {
     const s = setup();
@@ -390,4 +406,23 @@ test('a captured webhook retries while its invoice is not fully settled', async 
     const s = setup({ plan: 'monthly', payment: { invoice_id: 'inv_example' }, invoice: { status: 'issued' } });
     assert.equal((await s.webhook({ event: 'payment.captured', payload: { payment: { entity: { id: 'pay_example' } } } })).status, 503);
     assert.equal(s.rows.billing_webhook_events.length, 0);
+});
+
+test('a new customer recovers after delayed capture even when no license existed and no webhook arrived', async () => {
+    const s = setup({ payment: { status: 'authorized' }, provisionRpc: true });
+    assert.equal((await s.service.recover(s.req({ plan: 'yearly', paymentId: 'pay_example' }))).status, 202);
+    assert.equal(
+        s.calls.some(x => x.rpc === 'record_billing_payment'),
+        false
+    );
+    s.payment.status = 'captured';
+    const response = await s.service.recover(s.req({ plan: 'yearly', paymentId: 'pay_example' }));
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).licenseKey, 'SKI-SYNTHETICKEY');
+});
+test('automatic recovery proof is still bound to the signed-in owner and selected plan', async () => {
+    const s = setup({ notes: { user_id: other } });
+    assert.equal((await s.service.recover(s.req({ plan: 'yearly', paymentId: 'pay_example' }))).status, 403);
+    const t = setup();
+    assert.equal((await t.service.recover(t.req({ plan: 'monthly', paymentId: 'pay_example' }))).status, 400);
 });
