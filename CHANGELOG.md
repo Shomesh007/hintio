@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.4 — provider routing fix
+
+- Keep GPT sessions on OpenAI instead of silently falling back to Gemini.
+- Correct quota and rate-limit messages and respect key cooldowns.
+- Update the Windows installer link after live GPT verification.
+
 ## 1.0.3 — 2026-11-10
 
 - Packaged the maintained desktop support and privacy updates as a distinct Windows release.

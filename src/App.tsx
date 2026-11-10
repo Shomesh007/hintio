@@ -36,7 +36,7 @@ import {
 
 export default function App() {
     const windowsDownloadUrl =
-        import.meta.env.VITE_WINDOWS_DOWNLOAD_URL || 'https://github.com/Shomesh007/hintio/releases/download/v1.0.3/Hintio-1.0.3.Setup.exe';
+        import.meta.env.VITE_WINDOWS_DOWNLOAD_URL || 'https://github.com/Shomesh007/hintio/releases/download/v1.0.4/Hintio-1.0.4.Setup.exe';
     const defaultSupabaseUrl = 'https://vsybqtunyuanxspxhzue.supabase.co';
     const supabaseFunctionsBaseUrl = import.meta.env.VITE_SUPABASE_URL || defaultSupabaseUrl;
     const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
