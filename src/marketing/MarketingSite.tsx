@@ -1133,15 +1133,17 @@ function Info({ type }: { type: 'privacy' | 'terms' }) {
                         app. It does not remove exported copies or data held by an AI, sign-in, or payment provider.
                     </p>
                     <p>
-                        Cloud processing requires opt-in consent in the desktop app. Withdraw it in Settings to stop a session and return to the
-                        privacy step; saved records are retained. Only share third-party content with the required permission.
+                        The prepared Microsoft Store build adds affirmative cloud-processing consent and a withdrawal control in Settings that stops
+                        the session and retains saved records. In the current EXE, end the session to stop capture and use its local-data controls as
+                        needed. Only share third-party content with the required permission.
                     </p>
                     <h2>AI responses and reports</h2>
                     <p>
                         Hintio uses live generative AI, which can produce inaccurate or inappropriate content. Review responses before relying on
-                        them. The prepared Store build adds Report response by email, which opens a draft to admin@builtbygsv.in with an excerpt for review and redaction. Nothing is sent
-                        until you send the email. Feedback and reports can include information you choose to provide and are used for support, safety
-                        review and response. Contact support about retention or deletion; provider records are subject to the provider's policies.
+                        them. The prepared Store build adds Report response by email, which opens a draft to admin@builtbygsv.in with an excerpt for
+                        review and redaction. Nothing is sent until you send the email. Feedback and reports can include information you choose to
+                        provide and are used for support, safety review and response. Contact support about retention or deletion; provider records
+                        are subject to the provider's policies.
                     </p>
                     <h2>Website sign-in and checkout</h2>
                     <p>
