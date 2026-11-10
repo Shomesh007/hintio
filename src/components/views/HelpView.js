@@ -1,3 +1,4 @@
+import '../icons/HintioIcon.js';
 import { html, css, LitElement } from '../../assets/lit-core-2.7.4.min.js';
 import { unifiedPageStyles } from './sharedPageStyles.js';
 import { SUPPORT_EMAIL, SUPPORT_PHONE, SUPPORT_EMAIL_URL, SUPPORT_WHATSAPP_URL } from '../../utils/supportDetails.js';
@@ -87,7 +88,7 @@ export class HelpView extends LitElement {
             }
             /* ── Material icon helper ── */
             .icon {
-                font-family: 'Material Symbols Rounded';
+                font-family: inherit;
                 font-size: 20px;
                 font-weight: normal;
                 font-style: normal;
@@ -328,9 +329,9 @@ export class HelpView extends LitElement {
                             <a
                                 href=${SUPPORT_EMAIL_URL}
                                 @click=${event => {
-                                event.preventDefault();
-                                this.openSupport(SUPPORT_EMAIL_URL);
-                            }}
+                                    event.preventDefault();
+                                    this.openSupport(SUPPORT_EMAIL_URL);
+                                }}
                                 >${SUPPORT_EMAIL}</a
                             >
                         </div>
@@ -354,7 +355,7 @@ export class HelpView extends LitElement {
                     <!-- Tips -->
                     <section class="surface">
                         <div class="surface-header">
-                            <span class="icon" style="font-size:16px;color:#6366F1">lightbulb</span>
+                            <hintio-icon class="icon" style="font-size:16px;color:#6366F1" name="lightbulb"></hintio-icon>
                             <div class="surface-title">Pro Tips</div>
                         </div>
                         <div class="tips-grid">
@@ -362,7 +363,7 @@ export class HelpView extends LitElement {
                                 tip => html`
                                     <div class="tip-card">
                                         <div class="tip-icon-wrap">
-                                            <span class="icon">${tip.icon}</span>
+                                            <hintio-icon class="icon" name=${tip.icon}></hintio-icon>
                                         </div>
                                         <div class="tip-text">
                                             <div class="tip-title">${tip.title}</div>
@@ -377,7 +378,7 @@ export class HelpView extends LitElement {
                     <!-- Keyboard shortcuts -->
                     <section class="surface">
                         <div class="surface-header">
-                            <span class="icon" style="font-size:16px;color:#6366F1">keyboard</span>
+                            <hintio-icon class="icon" style="font-size:16px;color:#6366F1" name="keyboard"></hintio-icon>
                             <div class="surface-title">Keyboard Shortcuts</div>
                         </div>
                         <div class="shortcut-grid">

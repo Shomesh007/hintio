@@ -10,38 +10,38 @@ export const unifiedPageStyles = css`
 
     /* Re-declare tokens — CSS vars don't auto-inherit into shadow DOM */
     :host {
-        --accent:         #6366F1;
-        --accent-hover:   #4F46E5;
-        --accent-subtle:  rgba(99, 102, 241, 0.08);
-        --bg-app:         #09090B;
-        --bg-surface:     #0F0F12;
-        --bg-elevated:    #18181B;
-        --bg-hover:       #1E1E24;
-        --text-primary:   #FAFAFA;
-        --text-secondary: #A1A1AA;
-        --text-muted:     #52525B;
-        --border:         #27272A;
-        --border-strong:  #3F3F46;
-        --success:        #22C55E;
-        --danger:         #EF4444;
-        --radius-sm:      6px;
-        --radius-md:      10px;
-        --radius-lg:      16px;
-        --space-xs:       4px;
-        --space-sm:       8px;
-        --space-md:       16px;
-        --space-lg:       24px;
-        --transition:     160ms ease;
-        --font:           'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-        --font-mono:      'SF Mono', 'Menlo', 'Monaco', 'Consolas', monospace;
-        --font-size-xs:   11px;
-        --font-size-sm:   13px;
+        --accent: #6366f1;
+        --accent-hover: #4f46e5;
+        --accent-subtle: rgba(99, 102, 241, 0.08);
+        --bg-app: #09090b;
+        --bg-surface: #0f0f12;
+        --bg-elevated: #18181b;
+        --bg-hover: #1e1e24;
+        --text-primary: #fafafa;
+        --text-secondary: #a1a1aa;
+        --text-muted: #52525b;
+        --border: #27272a;
+        --border-strong: #3f3f46;
+        --success: #22c55e;
+        --danger: #ef4444;
+        --radius-sm: 6px;
+        --radius-md: 10px;
+        --radius-lg: 16px;
+        --space-xs: 4px;
+        --space-sm: 8px;
+        --space-md: 16px;
+        --space-lg: 24px;
+        --transition: 160ms ease;
+        --font: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+        --font-mono: 'SF Mono', 'Menlo', 'Monaco', 'Consolas', monospace;
+        --font-size-xs: 11px;
+        --font-size-sm: 13px;
         --font-size-base: 14px;
-        --font-size-lg:   16px;
-        --font-size-xl:   20px;
-        --font-weight-medium:    500;
-        --font-weight-semibold:  600;
-        --font-weight-bold:      700;
+        --font-size-lg: 16px;
+        --font-size-xl: 20px;
+        --font-weight-medium: 500;
+        --font-weight-semibold: 600;
+        --font-weight-bold: 700;
 
         display: block;
         height: 100%;
@@ -51,8 +51,14 @@ export const unifiedPageStyles = css`
     /* ── Keyframes ── */
 
     @keyframes fade-up {
-        from { opacity: 0; transform: translateY(8px); }
-        to   { opacity: 1; transform: translateY(0); }
+        from {
+            opacity: 0;
+            transform: translateY(8px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     /* ── Page shell ── */
@@ -103,12 +109,14 @@ export const unifiedPageStyles = css`
         border-radius: var(--radius-md);
         background: var(--bg-surface);
         padding: var(--space-md);
-        transition: border-color var(--transition), box-shadow var(--transition);
+        transition:
+            border-color var(--transition),
+            box-shadow var(--transition);
     }
 
     .surface:hover {
         border-color: var(--border-strong);
-        box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
     }
 
     .surface-header {
@@ -139,12 +147,16 @@ export const unifiedPageStyles = css`
     /* ── Material icon helper ── */
 
     .icon {
-        font-family: 'Material Symbols Rounded';
+        font-family: inherit;
         font-size: 18px;
         font-weight: normal;
         font-style: normal;
         line-height: 1;
-        font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+        font-variation-settings:
+            'FILL' 1,
+            'wght' 400,
+            'GRAD' 0,
+            'opsz' 20;
         flex-shrink: 0;
         display: inline-flex;
         align-items: center;
@@ -204,7 +216,9 @@ export const unifiedPageStyles = css`
         border-radius: var(--radius-sm);
         padding: 8px 12px;
         font-size: var(--font-size-sm);
-        transition: border-color var(--transition), box-shadow var(--transition);
+        transition:
+            border-color var(--transition),
+            box-shadow var(--transition);
         font-family: var(--font);
     }
 
@@ -215,7 +229,7 @@ export const unifiedPageStyles = css`
     .control:focus {
         outline: none;
         border-color: var(--accent);
-        box-shadow: 0 0 0 2px rgba(99,102,241,0.2);
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
     }
 
     select.control {
@@ -248,7 +262,7 @@ export const unifiedPageStyles = css`
         align-items: center;
         border-radius: var(--radius-sm);
         background: var(--accent-subtle);
-        border: 1px solid rgba(99,102,241,0.25);
+        border: 1px solid rgba(99, 102, 241, 0.25);
         color: var(--accent);
         padding: 2px 8px;
         font-size: var(--font-size-xs);
@@ -262,22 +276,32 @@ export const unifiedPageStyles = css`
         color: var(--text-muted);
     }
 
-    .muted { color: var(--text-muted); }
-    .danger { color: var(--danger); }
+    .muted {
+        color: var(--text-muted);
+    }
+    .danger {
+        color: var(--danger);
+    }
 
     /* ── Scrollbar ── */
 
-    .unified-page::-webkit-scrollbar { width: 4px; }
-    .unified-page::-webkit-scrollbar-track { background: transparent; }
+    .unified-page::-webkit-scrollbar {
+        width: 4px;
+    }
+    .unified-page::-webkit-scrollbar-track {
+        background: transparent;
+    }
     .unified-page::-webkit-scrollbar-thumb {
         background: var(--border-strong);
         border-radius: 2px;
     }
     .unified-page::-webkit-scrollbar-thumb:hover {
-        background: #52525B;
+        background: #52525b;
     }
 
     @media (max-width: 640px) {
-        .unified-page { padding: var(--space-md); }
+        .unified-page {
+            padding: var(--space-md);
+        }
     }
 `;

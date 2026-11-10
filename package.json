@@ -1,7 +1,7 @@
 {
     "name": "hintio",
     "productName": "Hintio",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "description": "Hintio",
     "main": "src/index.js",
     "scripts": {
@@ -10,11 +10,12 @@
         "package:win": "electron-forge package --platform=win32 --arch=x64",
         "verify:win-package": "node scripts/verify-windows-package.js",
         "make": "electron-forge make",
-        "make:win": "electron-forge make --platform=win32 --arch=x64 && npm run verify:win-package",
+        "make:win": "electron-forge make --platform=win32 --arch=x64 && npm run verify:win-package && npm run prepare:win-update",
         "publish": "electron-forge publish",
         "lint": "echo \"No linting configured\"",
         "test": "node --test test/*.test.js",
-        "typecheck": "node scripts/check-syntax.js"
+        "typecheck": "node scripts/check-syntax.js",
+        "prepare:win-update": "node scripts/prepare-windows-update.js"
     },
     "keywords": [
         "Hintio",

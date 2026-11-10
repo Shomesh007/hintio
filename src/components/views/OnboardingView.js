@@ -1,3 +1,4 @@
+import '../icons/HintioIcon.js';
 import { html, css, LitElement } from '../../assets/lit-core-2.7.4.min.js';
 
 export class OnboardingView extends LitElement {
@@ -24,7 +25,7 @@ export class OnboardingView extends LitElement {
         }
 
         .icon {
-            font-family: 'Material Symbols Rounded';
+            font-family: inherit;
             font-weight: normal;
             font-style: normal;
             line-height: 1;
@@ -315,21 +316,21 @@ export class OnboardingView extends LitElement {
 
                 <div class="feature-list">
                     <div class="feature-item">
-                        <div class="feature-icon-wrap"><span class="icon">bolt</span></div>
+                        <div class="feature-icon-wrap"><hintio-icon class="icon" name="bolt"></hintio-icon></div>
                         <div class="feature-text">
                             <strong>Real-time analysis</strong>
                             <span>Processes screen and audio instantly without dropping performance.</span>
                         </div>
                     </div>
                     <div class="feature-item">
-                        <div class="feature-icon-wrap"><span class="icon">visibility_off</span></div>
+                        <div class="feature-icon-wrap"><hintio-icon class="icon" name="visibility_off"></hintio-icon></div>
                         <div class="feature-text">
                             <strong>Stealth UI</strong>
                             <span>Designed to remain undetectable and unobtrusive while active.</span>
                         </div>
                     </div>
                     <div class="feature-item">
-                        <div class="feature-icon-wrap"><span class="icon">tune</span></div>
+                        <div class="feature-icon-wrap"><hintio-icon class="icon" name="tune"></hintio-icon></div>
                         <div class="feature-text">
                             <strong>Highly customizable</strong>
                             <span>Tune the assistant's context on-the-fly for specific scenarios.</span>
@@ -344,7 +345,7 @@ export class OnboardingView extends LitElement {
                             this.currentSlide = 1;
                         }}
                     >
-                        Configure Setup <span class="icon" style="font-size: 16px;">arrow_forward</span>
+                        Configure Setup <hintio-icon class="icon" style="font-size: 16px;" name="arrow_forward"></hintio-icon>
                     </button>
                 </div>
             </div>
@@ -379,7 +380,7 @@ export class OnboardingView extends LitElement {
                             this.currentSlide = 0;
                         }}
                     >
-                        <span class="icon">arrow_back</span> Back
+                        <hintio-icon class="icon" name="arrow_back"></hintio-icon> Back
                     </button>
                     ${!this.contextText.trim() ? html`<span class="skip-hint">You can add this later.</span>` : ''}
                     <button
@@ -411,7 +412,7 @@ export class OnboardingView extends LitElement {
 
                 <div class="feature-list" style="margin-bottom: 28px;">
                     <div class="feature-item">
-                        <div class="feature-icon-wrap"><span class="icon">menu_book</span></div>
+                        <div class="feature-icon-wrap"><hintio-icon class="icon" name="menu_book"></hintio-icon></div>
                         <div class="feature-text">
                             <strong>Usage Help Guide</strong>
                             <span>Open the guide to avoid common mistakes and use your key correctly.</span>
@@ -426,7 +427,7 @@ export class OnboardingView extends LitElement {
                             this.currentSlide = 1;
                         }}
                     >
-                        <span class="icon">arrow_back</span> Back
+                        <hintio-icon class="icon" name="arrow_back"></hintio-icon> Back
                     </button>
                     <button class="btn-secondary" @click=${() => this._openHelpGuide()}>Open Help Guide</button>
                     <button class="btn-primary" @click=${this.completeOnboarding}>Go to Start Session</button>

@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.5 — staged locally, not published
+
+- Add an Updates screen with optional and required version states.
+- Replace network-dependent icon labels throughout the UI with shared offline SVG icons.
+- Download Squirrel packages inside Hintio and restart to install after a session ends.
+- Gate unsupported versions before session credit consumption.
+- Prepare and verify RELEASES/full-package artifacts for future update feeds.
+- Cache required-version policy, support retries, and keep update controls visible in small windows.
+
 ## 1.0.4 — provider routing fix
 
 - Updated the managed resolver to return configured OpenAI credentials and non-secret configuration diagnostics. An OpenAI server secret is required.

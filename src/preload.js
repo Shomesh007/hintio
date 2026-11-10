@@ -6,6 +6,10 @@ const invokeChannels = new Set([
     'clear-runtime-provider-secrets',
     'close-session',
     'get-app-version',
+    'updates:get-state',
+    'updates:check',
+    'updates:download',
+    'updates:install',
     'initialize-gemini',
     'open-external',
     'open-file-dialog',
@@ -82,6 +86,7 @@ const receiveChannels = new Set([
     'telegram-text-received',
     'update-response',
     'update-status',
+    'updates:state',
     'whisper-downloading',
 ]);
 

@@ -1,3 +1,4 @@
+import '../icons/HintioIcon.js';
 import { html, css, LitElement } from '../../assets/lit-core-2.7.4.min.js';
 
 export class AssistantView extends LitElement {
@@ -290,7 +291,7 @@ export class AssistantView extends LitElement {
         }
 
         .icon {
-            font-family: 'Material Symbols Rounded';
+            font-family: inherit;
             font-weight: normal;
             font-style: normal;
             line-height: 1;
@@ -1031,11 +1032,11 @@ export class AssistantView extends LitElement {
             <div class="error-panel ${this._errorPanelOpen ? 'open' : ''}">
                 <div class="error-panel-header">
                     <span class="error-panel-title">
-                        <span class="icon">terminal</span>
+                        <hintio-icon class="icon" name="terminal"></hintio-icon>
                         Code Issue
                     </span>
                     <button class="error-panel-close" @click=${() => this._dismissErrorPanel()} title="Dismiss">
-                        <span class="icon">close</span>
+                        <hintio-icon class="icon" name="close"></hintio-icon>
                     </button>
                 </div>
                 <div class="error-panel-body" .innerHTML=${renderedError}></div>
@@ -1081,7 +1082,7 @@ export class AssistantView extends LitElement {
 
             const copyBtn = document.createElement('button');
             copyBtn.className = 'code-block-copy';
-            copyBtn.innerHTML = `<span class="icon" style="font-size:14px;margin-right:2px">content_copy</span>copy`;
+            copyBtn.innerHTML = `<hintio-icon class="icon" style="font-size:14px;margin-right:2px" name="content_copy"></hintio-icon>copy`;
             copyBtn.addEventListener('click', () => {
                 const text = code ? code.innerText : pre.innerText;
                 navigator.clipboard
@@ -1090,7 +1091,7 @@ export class AssistantView extends LitElement {
                         copyBtn.textContent = 'copied!';
                         copyBtn.classList.add('copied');
                         setTimeout(() => {
-                            copyBtn.innerHTML = `<span class="icon" style="font-size:14px;margin-right:2px">content_copy</span>copy`;
+                            copyBtn.innerHTML = `<hintio-icon class="icon" style="font-size:14px;margin-right:2px" name="content_copy"></hintio-icon>copy`;
                             copyBtn.classList.remove('copied');
                         }, 2000);
                     })
@@ -1113,31 +1114,29 @@ export class AssistantView extends LitElement {
             <div class="response-container" id="responseContainer"></div>
 
             ${this._renderErrorPanel()}
-            ${
-                hasMultipleResponses
-                    ? html`
-                          <div class="response-nav">
-                              <button
-                                  class="nav-btn"
-                                  @click=${this.navigateToPreviousResponse}
-                                  ?disabled=${this.currentResponseIndex <= 0}
-                                  title="Previous response"
-                              >
-                                  <span class="icon">chevron_left</span>
-                              </button>
-                              <span class="response-counter">${this.currentResponseIndex + 1} of ${this.responses.length}</span>
-                              <button
-                                  class="nav-btn"
-                                  @click=${this.navigateToNextResponse}
-                                  ?disabled=${this.currentResponseIndex >= this.responses.length - 1}
-                                  title="Next response"
-                              >
-                                  <span class="icon">chevron_right</span>
-                              </button>
-                          </div>
-                      `
-                    : ''
-            }
+            ${hasMultipleResponses
+                ? html`
+                      <div class="response-nav">
+                          <button
+                              class="nav-btn"
+                              @click=${this.navigateToPreviousResponse}
+                              ?disabled=${this.currentResponseIndex <= 0}
+                              title="Previous response"
+                          >
+                              <hintio-icon class="icon" name="chevron_left"></hintio-icon>
+                          </button>
+                          <span class="response-counter">${this.currentResponseIndex + 1} of ${this.responses.length}</span>
+                          <button
+                              class="nav-btn"
+                              @click=${this.navigateToNextResponse}
+                              ?disabled=${this.currentResponseIndex >= this.responses.length - 1}
+                              title="Next response"
+                          >
+                              <hintio-icon class="icon" name="chevron_right"></hintio-icon>
+                          </button>
+                      </div>
+                  `
+                : ''}
 
             <div class="input-bar ${this._inputExpanded ? 'expanded' : ''}">
                 <div class="input-bar-inner">
@@ -1146,7 +1145,7 @@ export class AssistantView extends LitElement {
                 <button class="analyze-btn ${this.isAnalyzing ? 'analyzing' : ''}" @click=${this.handleScreenAnswer}>
                     <canvas class="analyze-canvas"></canvas>
                     <span class="analyze-btn-content">
-                        <span class="icon" style="font-size: 16px;">psychology</span>
+                        <hintio-icon class="icon" style="font-size: 16px;" name="psychology"></hintio-icon>
                         Analyze Screen
                     </span>
                 </button>

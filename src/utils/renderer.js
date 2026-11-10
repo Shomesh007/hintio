@@ -356,6 +356,7 @@ async function initializeGemini(profile = 'interview', language = 'en-US') {
 
 function parseAccessTokenErrorMessage(errorText = '') {
     const normalized = String(errorText || '').toLowerCase();
+    if (normalized.includes('update required')) return 'Update required. Open Updates to install a supported Hintio version.';
     if (normalized.includes('usage limit') || normalized.includes('interviews used') || normalized.includes('exhausted')) {
         return 'Access token usage limit reached.';
     }
@@ -1953,6 +1954,12 @@ const theme = {
 const hintio = {
     // App version
     getVersion: async () => ipcRenderer.invoke('get-app-version'),
+    updates: {
+        getState: () => ipcRenderer.invoke('updates:get-state'),
+        check: () => ipcRenderer.invoke('updates:check'),
+        download: () => ipcRenderer.invoke('updates:download'),
+        install: () => ipcRenderer.invoke('updates:install'),
+    },
 
     // Element access
     element: () => hintioApp,

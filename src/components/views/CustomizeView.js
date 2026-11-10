@@ -1,3 +1,4 @@
+import '../icons/HintioIcon.js';
 import { html, css, LitElement } from '../../assets/lit-core-2.7.4.min.js';
 import { unifiedPageStyles } from './sharedPageStyles.js';
 
@@ -698,7 +699,7 @@ export class CustomizeView extends LitElement {
         return html`
             <section class="surface">
                 <div class="surface-header">
-                    <span class="icon" style="font-size:16px;color:#6366F1">mic</span>
+                    <hintio-icon class="icon" style="font-size:16px;color:#6366F1" name="mic"></hintio-icon>
                     <div class="surface-title">Audio Input</div>
                 </div>
                 <div class="form-grid">
@@ -711,13 +712,9 @@ export class CustomizeView extends LitElement {
                             <option value="none">No Audio (Screenshots Only)</option>
                         </select>
                     </div>
-                    ${
-                        this.audioMode !== 'speaker_only'
-                            ? html`
-                                  <div class="warning-callout">May cause unexpected behavior. Only change this if you know what you're doing.</div>
-                              `
-                            : ''
-                    }
+                    ${this.audioMode !== 'speaker_only'
+                        ? html` <div class="warning-callout">May cause unexpected behavior. Only change this if you know what you're doing.</div> `
+                        : ''}
                     <div class="form-group">
                         <label class="form-label">Image Quality</label>
                         <select class="control" .value=${this.selectedImageQuality} @change=${this.handleImageQualitySelect}>
@@ -735,7 +732,7 @@ export class CustomizeView extends LitElement {
         return html`
             <section class="surface">
                 <div class="surface-header">
-                    <span class="icon" style="font-size:16px;color:#6366F1">translate</span>
+                    <hintio-icon class="icon" style="font-size:16px;color:#6366F1" name="translate"></hintio-icon>
                     <div class="surface-title">Language</div>
                 </div>
                 <div class="form-grid">
@@ -754,7 +751,7 @@ export class CustomizeView extends LitElement {
         return html`
             <section class="surface">
                 <div class="surface-header">
-                    <span class="icon" style="font-size:16px;color:#6366F1">palette</span>
+                    <hintio-icon class="icon" style="font-size:16px;color:#6366F1" name="palette"></hintio-icon>
                     <div class="surface-title">Appearance</div>
                 </div>
                 <div class="form-grid">
@@ -803,7 +800,7 @@ export class CustomizeView extends LitElement {
         return html`
             <section class="surface">
                 <div class="surface-header">
-                    <span class="icon" style="font-size:16px;color:#6366F1">keyboard</span>
+                    <hintio-icon class="icon" style="font-size:16px;color:#6366F1" name="keyboard"></hintio-icon>
                     <div class="surface-title">Keyboard Shortcuts</div>
                 </div>
                 ${this.getKeybindActions().map(
@@ -833,7 +830,7 @@ export class CustomizeView extends LitElement {
         return html`
             <section class="surface privacy-surface" aria-labelledby="privacy-title">
                 <div class="surface-header">
-                    <span class="icon" style="color:var(--accent)">shield</span>
+                    <hintio-icon class="icon" style="color:var(--accent)" name="shield"></hintio-icon>
                     <div class="surface-title" id="privacy-title">Privacy & Data</div>
                 </div>
                 <p class="privacy-intro">Know what enters a session, where it is processed, and what stays on this device.</p>
@@ -873,33 +870,35 @@ export class CustomizeView extends LitElement {
             </section>
             <section class="surface danger-surface">
                 <div class="surface-header">
-                    <span class="icon" style="color:var(--danger)">delete_forever</span>
+                    <hintio-icon class="icon" style="color:var(--danger)" name="delete_forever"></hintio-icon>
                     <div class="surface-title">Local data controls</div>
                 </div>
                 <p class="privacy-intro">
                     Restore settings resets preferences, shortcuts, saved resume text, and custom instructions. Delete local data resets the entire
                     Hintio configuration folder, including saved credentials and history, then closes the app. Exported copies are separate.
                 </p>
-                ${
-                    this.pendingDataAction
-                        ? html`<div class="data-confirmation" role="alert">
-                              <strong
-                                  >${this.pendingDataAction === 'delete' ? 'Delete the local Hintio configuration and history?' : 'Reset your preferences and saved AI context?'}</strong
-                              >
-                              <p>
-                                  ${this.pendingDataAction === 'delete' ? 'This cannot be undone in the app. Your saved provider keys and local session records will be removed.' : 'Your resume text, custom instructions, appearance, and shortcuts return to their defaults. Session history is retained.'}
-                              </p>
-                              <button
-                                  class="control"
-                                  @click=${() => {
-                                      this.pendingDataAction = '';
-                                  }}
-                              >
-                                  Cancel
-                              </button>
-                          </div>`
-                        : ''
-                }
+                ${this.pendingDataAction
+                    ? html`<div class="data-confirmation" role="alert">
+                          <strong
+                              >${this.pendingDataAction === 'delete'
+                                  ? 'Delete the local Hintio configuration and history?'
+                                  : 'Reset your preferences and saved AI context?'}</strong
+                          >
+                          <p>
+                              ${this.pendingDataAction === 'delete'
+                                  ? 'This cannot be undone in the app. Your saved provider keys and local session records will be removed.'
+                                  : 'Your resume text, custom instructions, appearance, and shortcuts return to their defaults. Session history is retained.'}
+                          </p>
+                          <button
+                              class="control"
+                              @click=${() => {
+                                  this.pendingDataAction = '';
+                              }}
+                          >
+                              Cancel
+                          </button>
+                      </div>`
+                    : ''}
                 <div class="data-actions">
                     <button class="danger-button" @click=${this.restoreAllSettings} ?disabled=${this.isRestoring || this.isClearing}>
                         ${this.isRestoring ? 'Restoring…' : this.pendingDataAction === 'restore' ? 'Confirm reset settings' : 'Restore settings'}
@@ -908,7 +907,11 @@ export class CustomizeView extends LitElement {
                         ${this.isClearing ? 'Deleting…' : this.pendingDataAction === 'delete' ? 'Confirm delete local data' : 'Delete local data'}
                     </button>
                 </div>
-                ${this.clearStatusMessage ? html`<div class="status ${this.clearStatusType === 'success' ? 'success' : 'error'}" role="status">${this.clearStatusMessage}</div>` : ''}
+                ${this.clearStatusMessage
+                    ? html`<div class="status ${this.clearStatusType === 'success' ? 'success' : 'error'}" role="status">
+                          ${this.clearStatusMessage}
+                      </div>`
+                    : ''}
             </section>
         `;
     }

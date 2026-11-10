@@ -34,6 +34,10 @@ npm run make:win
 
 See [DEVELOPMENT.md](docs/DEVELOPMENT.md) for prerequisites, source layout, packaging outputs, and clean-machine verification. The current implementation is JavaScript, Electron, and Lit. `typecheck` performs JavaScript syntax checks.
 
+## In-app updates (staged in 1.0.5)
+
+The local 1.0.5 build adds optional/required update screens and Squirrel-compatible download and restart actions. It is not published yet. See [the update release guide](docs/UPDATES.md) for feed artifacts, policy controls, legacy-client limits, and the remaining installed-upgrade test.
+
 ## Data and contact
 
 Cloud providers receive context sent for processing. Local credentials and history are stored as JSON under `hintio-config`; the current implementation does not encrypt these files at rest. See [PRIVACY.md](PRIVACY.md) for paths and deletion behavior.

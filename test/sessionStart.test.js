@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const { compareVersions } = require('../src/utils/updates');
 
 // Exercise the actual app controller with browser rendering and external services stubbed.
 const appSource = fs
@@ -15,6 +16,17 @@ function createApp({ approved = true, token = '', remoteVersion = 'v1.0.2' } = {
     let savedToken = token;
     const hintio = {
         getVersion: async () => '1.0.2',
+        updates: {
+            getState: async () => ({ currentVersion: '1.0.2', phase: 'idle', required: false }),
+            check: async () => {
+                calls.push('update-check');
+                let available = false;
+                try {
+                    available = compareVersions(remoteVersion, '1.0.2') > 0;
+                } catch {}
+                return { currentVersion: '1.0.2', phase: available ? 'available' : 'current', required: false };
+            },
+        },
         storage: {
             async setAccessToken(value) {
                 calls.push('save-token');
@@ -63,11 +75,11 @@ test('a first-time user goes straight from an approved key to the assistant with
     assert.deepEqual(calls, ['save-token', ['validate-and-initialize', 'interview', 'en-US'], 'capture', 'timer']);
 });
 
-test('desktop update checks use Hintio releases and recognize a newer release', async () => {
+test('desktop update state comes from the main process and recognizes a newer release', async () => {
     const { app, calls } = createApp({ remoteVersion: 'v1.0.3' });
     await app._checkForUpdates();
     assert.equal(app._updateAvailable, true);
-    assert.deepEqual(calls, [['update-url', 'https://api.github.com/repos/Shomesh007/hintio/releases/latest']]);
+    assert.deepEqual(calls, ['update-check']);
 });
 
 test('the current release and invalid release tags do not show a false update', async () => {
@@ -94,4 +106,13 @@ test('a missing key cannot start a session', async () => {
     assert.equal(app.currentView, 'main');
     assert.equal(app.sessionActive, false);
     assert.deepEqual(calls, [['error', 'Access token is required.']]);
+});
+
+test('a required update prevents initialization and capture', async () => {
+    const { app, calls } = createApp();
+    app._updateState = { required: true };
+    await app.handleStart('test-access-token');
+    assert.equal(app.currentView, 'updates');
+    assert.equal(app.sessionActive, false);
+    assert.deepEqual(calls, ['save-token']);
 });

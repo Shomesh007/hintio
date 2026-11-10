@@ -310,7 +310,9 @@ function absorbIntoCurrentTurn(transcription) {
     }
 
     // Whisper can re-emit the tail of the previous chunk; don't duplicate it.
-    const combined = currentTurnText.toLowerCase().includes(text.toLowerCase()) ? currentTurnText : `${currentTurnText} ${text}`.replace(/\s+/g, ' ').trim();
+    const combined = currentTurnText.toLowerCase().includes(text.toLowerCase())
+        ? currentTurnText
+        : `${currentTurnText} ${text}`.replace(/\s+/g, ' ').trim();
 
     currentTurnText = combined;
     console.log(`[TurnGate] Continuation — treating as one question (${combined.length} chars)`);
@@ -427,9 +429,11 @@ function hasLlmKey() {
 
 /** Human-readable summary for logs — never includes key material. */
 function describeLlmConfig() {
-    return getLlmProviders()
-        .map(e => `${e.provider.label}:${e.model} (${e.pool.size} key${e.pool.size === 1 ? '' : 's'})`)
-        .join(' -> ') || 'none configured';
+    return (
+        getLlmProviders()
+            .map(e => `${e.provider.label}:${e.model} (${e.pool.size} key${e.pool.size === 1 ? '' : 's'})`)
+            .join(' -> ') || 'none configured'
+    );
 }
 
 /**
@@ -885,7 +889,6 @@ function hasGroqKey() {
 }
 
 // helper to check if the Gemini LLM (AI Studio free tier) has been configured
-
 
 function compactFastContext(rawContext = '', maxChars = FAST_INTERVIEW_CUSTOM_CONTEXT_MAX_CHARS) {
     const normalized = String(rawContext || '')
@@ -1461,7 +1464,13 @@ async function sendToGemini(transcription, options = {}) {
     try {
         // Fails over across keys on 429, then across models, then across
         // providers — all without backoff. See llmKeyPool / llmProvider.
-        const { response, keyIndex, attempts, provider: usedProvider, model: usedModel } = await requestLlm({
+        const {
+            response,
+            keyIndex,
+            attempts,
+            provider: usedProvider,
+            model: usedModel,
+        } = await requestLlm({
             providers: llmProviders,
             messages: [{ role: 'system', content: systemPrompt }, ...historyToSend, { role: 'user', content: transcription.trim() }],
             stream: true,
@@ -1580,7 +1589,9 @@ async function sendToGemini(transcription, options = {}) {
             const queuedReplaces = pendingReplacesLast;
             pendingInterviewerTranscript = '';
             pendingReplacesLast = false;
-            console.log(queuedReplaces ? '[TurnGate] Re-answering the full question in place' : '[TurnGate] Processing queued interviewer transcript');
+            console.log(
+                queuedReplaces ? '[TurnGate] Re-answering the full question in place' : '[TurnGate] Processing queued interviewer transcript'
+            );
             sendToRenderer('update-status', 'Processing...');
             sendToGemini(queuedTranscript, { replaceLast: queuedReplaces });
         }
@@ -1672,9 +1683,7 @@ Rules:
 
                 // Check if starts with JPEG magic bytes
                 if (!img.startsWith('/9j/')) {
-                    console.error(
-                        `[VISION] ⚠ WARNING: Base64 doesn't start with "/9j/" (JPEG magic bytes). Starts with: "${img.slice(0, 10)}"`
-                    );
+                    console.error(`[VISION] ⚠ WARNING: Base64 doesn't start with "/9j/" (JPEG magic bytes). Starts with: "${img.slice(0, 10)}"`);
                 }
 
                 return {
@@ -1697,12 +1706,21 @@ Rules:
         // behind the varying images the prefix was only the ~300-token system
         // instruction and never qualified. Front-loading it makes the prefix
         // ~1100 tokens, so repeat screenshots bill it at the cached rate.
-        const { response, keyIndex, attempts, provider: usedProvider, model: usedModel } = await requestLlm({
+        const {
+            response,
+            keyIndex,
+            attempts,
+            provider: usedProvider,
+            model: usedModel,
+        } = await requestLlm({
             providers: llmProviders,
             messages: [
-                { role: 'system', content: `${systemInstruction}
+                {
+                    role: 'system',
+                    content: `${systemInstruction}
 
-${String(prompt || '')}` },
+${String(prompt || '')}`,
+                },
                 {
                     role: 'user',
                     content: userContent,
@@ -2336,7 +2354,7 @@ async function sendImageToLegacyHttp(base64Data, prompt) {
     }
 }
 
-function setupProviderRuntimeIpcHandlers(providerSessionRef) {
+function setupProviderRuntimeIpcHandlers(providerSessionRef, { assertSessionAllowed = async () => {} } = {}) {
     // Store the providerSessionRef globally for reconnection access
     global.providerSessionRef = providerSessionRef;
 
@@ -2420,6 +2438,7 @@ function setupProviderRuntimeIpcHandlers(providerSessionRef) {
         clearTrialSessionTimeout();
 
         try {
+            await assertSessionAllowed();
             ensureStringWithinLimit(apiKey, 256, 'Access token');
             ensureStringWithinLimit(customPrompt || '', 16_000, 'Custom prompt');
             enforceIpcRateLimit(event, 'auth.initialize-gemini', RATE_LIMIT_POLICIES.initializeGemini);

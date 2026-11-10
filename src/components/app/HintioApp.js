@@ -1,3 +1,4 @@
+import '../icons/HintioIcon.js';
 import { html, css, LitElement } from '../../assets/lit-core-2.7.4.min.js';
 import { MainView } from '../views/MainView.js';
 import { ResizeHandles } from './ResizeHandles.js';
@@ -8,6 +9,7 @@ import { AssistantView } from '../views/AssistantView.js';
 import { OnboardingView } from '../views/OnboardingView.js';
 import { AICustomizeView } from '../views/AICustomizeView.js';
 import { FeedbackView } from '../views/FeedbackView.js';
+import { UpdatesView } from '../views/UpdatesView.js';
 
 export class HintioApp extends LitElement {
     static DEFAULT_SESSION_LIMIT_MS = 15 * 60 * 1000;
@@ -141,14 +143,17 @@ export class HintioApp extends LitElement {
             display: flex;
             align-items: center;
             gap: 1px;
-            flex: 0 1 auto;
+            flex: 1 1 auto;
+            min-width: 0;
+            overflow-x: auto;
+            scrollbar-width: none;
             -webkit-app-region: no-drag;
             padding: 0 8px;
         }
 
         .nav-drag-spacer {
-            flex: 1;
-            min-width: 24px;
+            flex: 0 1 16px;
+            min-width: 0;
             height: 100%;
             -webkit-app-region: drag;
         }
@@ -172,27 +177,11 @@ export class HintioApp extends LitElement {
             position: relative;
         }
 
-        /* Material Symbols inside nav items */
-        .nav-item .icon {
-            font-family: 'Material Symbols Rounded';
-            font-size: 16px;
-            font-weight: normal;
-            font-style: normal;
-            line-height: 1;
-            font-variation-settings:
-                'FILL' 0,
-                'wght' 400,
-                'GRAD' 0,
-                'opsz' 20;
+        .nav-symbol {
+            display: inline-flex;
+            width: 16px;
+            height: 16px;
             flex-shrink: 0;
-        }
-
-        .nav-item.active .icon {
-            font-variation-settings:
-                'FILL' 1,
-                'wght' 400,
-                'GRAD' 0,
-                'opsz' 20;
         }
 
         .nav-item:hover {
@@ -483,6 +472,7 @@ export class HintioApp extends LitElement {
         shouldAnimateResponse: { type: Boolean },
         _storageLoaded: { state: true },
         _updateAvailable: { state: true },
+        _updateState: { state: true },
         _whisperDownloading: { state: true },
         _awaitingScreenAnalysis: { state: true },
         _screenAnalysisMode: { state: true },
@@ -512,6 +502,7 @@ export class HintioApp extends LitElement {
         this._storageLoaded = false;
         this._timerInterval = null;
         this._updateAvailable = false;
+        this._updateState = { phase: 'idle', required: false };
         this._whisperDownloading = false;
         this._localVersion = '';
         this._awaitingScreenAnalysis = false;
@@ -525,28 +516,49 @@ export class HintioApp extends LitElement {
         this._checkForUpdates();
     }
 
+    _applyUpdateState(state) {
+        this._updateState = { ...this._updateState, ...state };
+        this._localVersion = state.currentVersion || this._localVersion;
+        this._updateAvailable = Boolean(state.required || ['available', 'downloading', 'ready'].includes(state.phase));
+        this.requestUpdate();
+    }
+
     async _checkForUpdates() {
         try {
-            this._localVersion = await hintio.getVersion();
-            this.requestUpdate();
-
-            const res = await fetch('https://api.github.com/repos/Shomesh007/hintio/releases/latest');
-            if (!res.ok) return;
-            const remote = await res.json();
-            const remoteVersion = String(remote.tag_name || '').replace(/^v/, '');
-            if (!/^\d+\.\d+\.\d+$/.test(remoteVersion)) return;
-
-            const toNum = v => v.split('.').map(Number);
-            const [rMaj, rMin, rPatch] = toNum(remoteVersion);
-            const [lMaj, lMin, lPatch] = toNum(this._localVersion);
-
-            if (rMaj > lMaj || (rMaj === lMaj && rMin > lMin) || (rMaj === lMaj && rMin === lMin && rPatch > lPatch)) {
-                this._updateAvailable = true;
-                this.requestUpdate();
-            }
-        } catch (e) {
-            // silently ignore
+            this._applyUpdateState(await hintio.updates.getState());
+            this._applyUpdateState(await hintio.updates.check());
+        } catch {
+            this._applyUpdateState({ phase: 'error', error: 'The update check is unavailable. Please retry.' });
         }
+    }
+
+    async _downloadUpdate() {
+        try {
+            this._applyUpdateState(await hintio.updates.download());
+        } catch {
+            this._applyUpdateState({ phase: 'error', error: 'The update could not start. Please retry.' });
+        }
+    }
+
+    async _installUpdate() {
+        try {
+            this._applyUpdateState(await hintio.updates.install());
+        } catch {
+            this._applyUpdateState({ error: 'Installation could not start. Please retry.' });
+        }
+    }
+
+    renderUpdates() {
+        return html`<updates-view
+            .state=${this._updateState}
+            .sessionActive=${this.sessionActive}
+            .onCheck=${() => this._checkForUpdates()}
+            .onDownload=${() => this._downloadUpdate()}
+            .onInstall=${() => this._installUpdate()}
+            .onOpenInstaller=${url => this.handleExternalLinkClick(url)}
+            .onBack=${() => this.navigate('main')}
+            .onQuit=${() => this.handleClose()}
+        ></updates-view>`;
     }
 
     async _loadFromStorage() {
@@ -574,6 +586,7 @@ export class HintioApp extends LitElement {
 
         if (window.electronAPI) {
             const ipcRenderer = window.electronAPI;
+            ipcRenderer.on('updates:state', (_, state) => this._applyUpdateState(state));
             ipcRenderer.on('new-response', (_, response) => this.addNewResponse(response));
             ipcRenderer.on('update-response', (_, response) => this.updateCurrentResponse(response));
             ipcRenderer.on('update-status', (_, status) => this.setStatus(status));
@@ -598,6 +611,7 @@ export class HintioApp extends LitElement {
         this._stopTimer();
         if (window.electronAPI) {
             const ipcRenderer = window.electronAPI;
+            ipcRenderer.removeAllListeners('updates:state');
             ipcRenderer.removeAllListeners('new-response');
             ipcRenderer.removeAllListeners('update-response');
             ipcRenderer.removeAllListeners('update-status');
@@ -837,6 +851,11 @@ export class HintioApp extends LitElement {
     }
 
     async _startSession() {
+        if (this._updateState?.required) {
+            this.currentView = 'updates';
+            this.requestUpdate();
+            return;
+        }
         this._awaitingScreenAnalysis = false;
         this._screenAnalysisMode = '';
         this._errorContent = '';
@@ -971,6 +990,8 @@ export class HintioApp extends LitElement {
 
     renderCurrentView() {
         switch (this.currentView) {
+            case 'updates':
+                return this.renderUpdates();
             case 'onboarding':
                 return html`
                     <onboarding-view .onComplete=${() => this.handleOnboardingComplete()} .onClose=${() => this.handleClose()}></onboarding-view>
@@ -1054,37 +1075,41 @@ export class HintioApp extends LitElement {
         }
     }
 
+    renderNavigationIcon(name) {
+        return html`<hintio-icon class="nav-symbol" name=${name}></hintio-icon>`;
+    }
+
     renderSidebar() {
         const items = [
             {
                 id: 'main',
                 label: 'Home',
-                icon: html`<span class="icon">home</span>`,
+                icon: this.renderNavigationIcon('home'),
             },
             {
                 id: 'ai-customize',
                 label: 'AI Context',
-                icon: html`<span class="icon">psychology</span>`,
+                icon: this.renderNavigationIcon('psychology'),
             },
             {
                 id: 'history',
                 label: 'History',
-                icon: html`<span class="icon">history</span>`,
+                icon: this.renderNavigationIcon('history'),
             },
             {
                 id: 'customize',
                 label: 'Settings',
-                icon: html`<span class="icon">tune</span>`,
+                icon: this.renderNavigationIcon('tune'),
             },
             {
                 id: 'feedback',
                 label: 'Feedback',
-                icon: html`<span class="icon">rate_review</span>`,
+                icon: this.renderNavigationIcon('rate_review'),
             },
             {
                 id: 'help',
                 label: 'Help & Contact',
-                icon: html`<span class="icon">help</span>`,
+                icon: this.renderNavigationIcon('help'),
             },
         ];
 
@@ -1111,13 +1136,19 @@ export class HintioApp extends LitElement {
 
                 <!-- End: version tag + wc buttons -->
                 <div class="nav-end">
-                    ${this._updateAvailable ? html`<div class="update-dot" title="Update available"></div>` : ''}
-                    ${this._localVersion ? html`<span class="version-tag">v${this._localVersion}</span>` : ''}
-                    <button class="wc-btn minimize" @click=${() => this._handleMinimize()} title="Minimise">
-                        <span class="icon" style="font-size:14px; position:relative; top:-2px">minimize</span>
+                    <button
+                        class="version-tag"
+                        style="cursor:pointer;background:transparent;border:1px solid var(--border);padding:5px 8px;max-width:150px;white-space:nowrap;font-size:11px;color:var(--text-primary)"
+                        @click=${() => this.navigate('updates')}
+                    >
+                        ${this._updateState?.required ? 'Update required' : this._updateAvailable ? 'Update available' : 'Updates'}
                     </button>
-                    <button class="wc-btn close" @click=${() => this.handleClose()} title="Close">
-                        <span class="icon" style="font-size:14px">close</span>
+                    ${this._localVersion ? html`<span class="version-tag">v${this._localVersion}</span>` : ''}
+                    <button class="wc-btn minimize" @click=${() => this._handleMinimize()} title="Minimise" aria-label="Minimise">
+                        ${this.renderNavigationIcon('minimize')}
+                    </button>
+                    <button class="wc-btn close" @click=${() => this.handleClose()} title="Close" aria-label="Close Hintio">
+                        ${this.renderNavigationIcon('close')}
                     </button>
                 </div>
             </div>
@@ -1161,6 +1192,9 @@ export class HintioApp extends LitElement {
     }
 
     render() {
+        if (this._updateState?.required && !this.sessionActive) {
+            return html`<div class="fullscreen">${this.renderUpdates()}</div>`;
+        }
         // Onboarding is fullscreen, no nav
         if (this.currentView === 'onboarding') {
             return html` <div class="fullscreen">${this.renderCurrentView()}</div> `;

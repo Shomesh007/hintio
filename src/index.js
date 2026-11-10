@@ -4,7 +4,8 @@ if (require('electron-squirrel-startup')) {
 
 require('dotenv').config();
 
-const { app, BrowserWindow, shell, ipcMain, dialog, nativeImage } = require('electron');
+const { app, autoUpdater, BrowserWindow, shell, ipcMain, dialog, nativeImage } = require('electron');
+const { UpdateService } = require('./utils/updates');
 const path = require('path');
 const fs = require('fs');
 const { execFileSync } = require('child_process');
@@ -15,12 +16,7 @@ const { initTelegramBot, startPolling, stopPolling } = require('./utils/telegram
 const { enforceIpcRateLimit } = require('./utils/abuseProtection');
 const { sanitizeText, ensureSafeUrl, ensureFilePath, ensureSafeFilename, ensurePlainObject } = require('./utils/inputValidation');
 
-let autoUpdater = null;
-try {
-    ({ autoUpdater } = require('electron-updater'));
-} catch (error) {
-    autoUpdater = null;
-}
+let updateService = null;
 
 const providerSessionRef = { current: null };
 let mainWindow = null;
@@ -115,36 +111,34 @@ function cleanupLegacyWindowsUninstallEntries() {
 }
 
 function setupAutoUpdates() {
-    if (!app.isPackaged || !autoUpdater) {
-        return;
-    }
-
-    const updateFeedUrl = process.env.AUTO_UPDATE_URL;
-    if (!updateFeedUrl) {
-        return;
-    }
-
-    try {
-        autoUpdater.autoDownload = true;
-        autoUpdater.autoInstallOnAppQuit = true;
-        autoUpdater.setFeedURL({ provider: 'generic', url: updateFeedUrl });
-
-        autoUpdater.on('checking-for-update', () => sendToRenderer('update-status', 'Checking for updates...'));
-        autoUpdater.on('update-available', () => sendToRenderer('update-status', 'Update available. Downloading...'));
-        autoUpdater.on('update-not-available', () => sendToRenderer('update-status', 'App up to date'));
-        autoUpdater.on('download-progress', () => sendToRenderer('update-status', 'Downloading update...'));
-        autoUpdater.on('update-downloaded', () => sendToRenderer('update-status', 'Update downloaded. Will install on quit.'));
-        autoUpdater.on('error', err => {
-            console.error('Auto-update error:', err);
-            sendToRenderer('update-status', 'Auto-update failed');
-        });
-
-        autoUpdater.checkForUpdates().catch(err => {
-            console.error('Auto-update check failed:', err);
-        });
-    } catch (error) {
-        console.error('Error configuring auto updates:', error);
-    }
+    updateService = new UpdateService({
+        app,
+        autoUpdater,
+        cachePath: path.join(app.getPath('userData'), 'updates', 'policy-cache.json'),
+        minimumVersion: require('../update-policy.json').minimumSupportedVersion,
+        notify: state => sendToRenderer('updates:state', state),
+        isSessionActive: async () => {
+            if (!mainWindow || mainWindow.isDestroyed()) return false;
+            return mainWindow.webContents.executeJavaScript("document.querySelector('hintio-app')?.sessionActive === true");
+        },
+    });
+    autoUpdater.on('before-quit-for-update', () => {
+        stopMacOSAudioCapture();
+        clearRuntimeProviderSecrets();
+        try {
+            if ((storage.getCredentials().cloudToken || '').trim()) storage.clearProviderSecrets();
+        } catch (error) {
+            console.warn('Could not clear temporary provider credentials before restart:', error.message);
+        }
+    });
+    ipcMain.handle('updates:get-state', () => updateService.getState());
+    ipcMain.handle('updates:check', () => updateService.check());
+    ipcMain.handle('updates:download', () => updateService.download());
+    ipcMain.handle('updates:install', () => updateService.install());
+    const checkTimer = setTimeout(() => updateService.check(), 1000);
+    checkTimer.unref();
+    const periodicCheck = setInterval(() => updateService.check(), 60 * 60 * 1000);
+    periodicCheck.unref();
 }
 
 app.whenReady().then(async () => {
@@ -195,10 +189,10 @@ app.whenReady().then(async () => {
     }
 
     createMainWindow();
-    setupProviderRuntimeIpcHandlers(providerSessionRef);
+    setupAutoUpdates();
+    setupProviderRuntimeIpcHandlers(providerSessionRef, { assertSessionAllowed: () => updateService.assertSessionAllowed() });
     setupStorageIpcHandlers();
     setupGeneralIpcHandlers();
-    setupAutoUpdates();
 });
 
 app.on('window-all-closed', () => {
