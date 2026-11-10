@@ -1,0 +1,30 @@
+{
+    "status": "draft-not-submitted",
+    "displayName": "Hintio",
+    "suggestedCategory": "Productivity",
+    "description": "Hintio is a desktop assistant for questions, meetings, and learning. Choose screen and audio context, add resume text or custom instructions, and review contextual AI responses in a configurable overlay. Cloud sessions require internet access and a valid access token. Screen-sharing behavior varies by platform and capture tool. Use only content you are authorized to capture and share.",
+    "features": [
+        "Selectable speaker, microphone, combined and no-audio session modes",
+        "Screen analysis and document context",
+        "Adjustable overlay and keyboard shortcuts",
+        "Session history and export",
+        "Privacy and local-data controls"
+    ],
+    "supportEmail": "admin@builtbygsv.in",
+    "supportPhone": "+91 8438365095",
+    "privacyUrl": "https://www.hintio.tech/privacy",
+    "supportUrl": "https://www.hintio.tech/help",
+    "capabilityJustifications": {
+        "runFullTrust": "Electron desktop app uses normal user-level desktop window, global shortcut, screen/audio capture and native module APIs. It does not request administrator elevation.",
+        "microphone": "Captures microphone audio only in a user-selected microphone-enabled session mode.",
+        "internetClient": "Validates access tokens, sends selected context to configured AI providers and downloads optional local models."
+    },
+    "reviewerRequirements": [
+        "Supply working temporary access token privately in Partner Center certification notes",
+        "Keep backend reachable and provide adequate test credits",
+        "Explain screen/audio consent and each capture mode",
+        "Complete service pricing disclosure, age ratings and availability before submission"
+    ],
+    "identity": "pending actual Partner Center reservation",
+    "screenshotStatus": "Final installed-package screenshots pending; browser QA previews are not certification evidence"
+}

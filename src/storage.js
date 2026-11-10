@@ -67,8 +67,15 @@ const DEFAULT_LIMITS = {
     data: [], // Array of { date: 'YYYY-MM-DD', flash: { count }, flashLite: { count }, groq: { 'qwen3-32b': { chars, limit }, 'gpt-oss-120b': { chars, limit }, 'gpt-oss-20b': { chars, limit } }, gemini: { 'gemma-3-27b-it': { chars } } }
 };
 
+// Store installs write to Electron userData, never the read-only package directory.
+let configuredStorageRoot = null;
+function configureStorageRoot(directory) {
+    if (typeof directory !== 'string' || !path.isAbsolute(directory)) throw new Error('Storage root must be an absolute path');
+    configuredStorageRoot = path.resolve(directory);
+}
 // Get the config directory path based on OS
 function getConfigDir() {
+    if (configuredStorageRoot) return configuredStorageRoot;
     const platform = os.platform();
     let configDir;
 
@@ -442,7 +449,7 @@ function clearProviderSecrets() {
         groqApiKey: '',
         azureApiKey: '',
         azureEndpoint: '',
-        });
+    });
 }
 
 // ============ PREFERENCES ============
@@ -766,6 +773,7 @@ function clearAllData() {
 module.exports = {
     // Initialization
     initializeStorage,
+    configureStorageRoot,
     getConfigDir,
 
     // Config

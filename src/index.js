@@ -1,4 +1,4 @@
-if (require('electron-squirrel-startup')) {
+if (!process.windowsStore && require('electron-squirrel-startup')) {
     process.exit(0);
 }
 
@@ -6,6 +6,7 @@ require('dotenv').config();
 
 const { app, BrowserWindow, shell, ipcMain, dialog, nativeImage } = require('electron');
 const { UpdateService } = require('./utils/updates');
+const { isStoreDistribution, StoreUpdateService } = require('./utils/distribution');
 const path = require('path');
 const fs = require('fs');
 const { execFileSync } = require('child_process');
@@ -111,7 +112,8 @@ function cleanupLegacyWindowsUninstallEntries() {
 }
 
 function setupUpdateNotices() {
-    updateService = new UpdateService({
+    const Service = isStoreDistribution(app) ? StoreUpdateService : UpdateService;
+    updateService = new Service({
         app,
         cachePath: path.join(app.getPath('userData'), 'updates', 'policy-cache.json'),
         minimumVersion: require('../update-policy.json').minimumSupportedVersion,
@@ -130,7 +132,8 @@ function setupUpdateNotices() {
 app.whenReady().then(async () => {
     if (!hasSingleInstanceLock) return;
 
-    cleanupLegacyWindowsUninstallEntries();
+    if (!isStoreDistribution(app)) cleanupLegacyWindowsUninstallEntries();
+    else storage.configureStorageRoot(path.join(app.getPath('userData'), 'hintio-config'));
 
     // Initialize storage (checks version, resets if needed)
     storage.initializeStorage();

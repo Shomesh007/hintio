@@ -12,11 +12,11 @@ Cloud providers can receive audio or transcripts, screenshots, resume text, and 
 
 The desktop stores configuration, credentials, preferences, shortcuts, and history under `hintio-config`:
 
-| OS | Folder |
-| --- | --- |
+| OS      | Folder                                        |
+| ------- | --------------------------------------------- |
 | Windows | `%USERPROFILE%/AppData/Roaming/hintio-config` |
-| macOS | `~/Library/Application Support/hintio-config` |
-| Linux | `~/.config/hintio-config` |
+| macOS   | `~/Library/Application Support/hintio-config` |
+| Linux   | `~/.config/hintio-config`                     |
 
 The current storage implementation writes JSON files. It does **not** implement encrypted-at-rest storage for these files. Protect your user account, backups, and disk accordingly. History can include responses, transcripts, and screen analyses. Exported records are separate copies.
 
@@ -36,3 +36,9 @@ The website uses Google sign-in through its authentication service and Razorpay 
 ## Questions and requests
 
 Email **admin@builtbygsv.in** or contact **+91 8438365095**. Describe whether the request concerns desktop records, website access, or a connected provider. Do not attach private session content or credentials.
+
+## Microsoft Store build
+
+Store builds configure the settings/history root as `hintio-config` under Electron `app.getPath('userData')`. Windows may virtualize this path under the app package's per-user data. The package installation directory is read-only and is not used for mutable settings, credentials, or model downloads. First Store launch uses a separate profile; existing EXE settings/history are not automatically imported or deleted. Keep an export before uninstalling either distribution. Windows manages packaged app data during uninstall/reset.
+
+First-run onboarding explains cloud processing and requires affirmative acknowledgement before completion. Stopping a session stops capture; No Audio limits audio collection, and the app's screen-capture controls limit screenshot context. Local model downloads and access validation may still use the network.

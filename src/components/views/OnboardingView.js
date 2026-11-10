@@ -19,7 +19,7 @@ export class OnboardingView extends LitElement {
             position: fixed;
             top: 0;
             left: 0;
-            overflow: hidden;
+            overflow: auto;
             background: #09090b;
             color: #fafafa;
         }
@@ -42,7 +42,8 @@ export class OnboardingView extends LitElement {
 
         .onboarding {
             width: 100%;
-            height: 100%;
+            min-height: 100%;
+            height: auto;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -265,11 +266,13 @@ export class OnboardingView extends LitElement {
         currentSlide: { type: Number },
         contextText: { type: String },
         onComplete: { type: Function },
+        privacyAccepted: { type: Boolean },
     };
 
     constructor() {
         super();
         this.currentSlide = 0;
+        this.privacyAccepted = false;
         this.contextText = '';
         this.onComplete = () => {};
     }
@@ -291,6 +294,7 @@ export class OnboardingView extends LitElement {
     }
 
     async completeOnboarding() {
+        if (!this.privacyAccepted) return;
         if (this.contextText.trim()) {
             await hintio.storage.updatePreference('customPrompt', this.contextText.trim());
         }
@@ -310,7 +314,7 @@ export class OnboardingView extends LitElement {
                 <div class="header-group">
                     <div class="title">Welcome to Hintio</div>
                     <div class="subtitle">
-                        A precise, low-latency assistant designed to give you the competitive edge in high-stakes environments.
+                        An assistant for questions, meetings, and learning, using the screen and audio context you choose to share.
                     </div>
                 </div>
 
@@ -319,14 +323,14 @@ export class OnboardingView extends LitElement {
                         <div class="feature-icon-wrap"><hintio-icon class="icon" name="bolt"></hintio-icon></div>
                         <div class="feature-text">
                             <strong>Real-time analysis</strong>
-                            <span>Processes screen and audio instantly without dropping performance.</span>
+                            <span>Uses selected screen and audio context to help you prepare responses.</span>
                         </div>
                     </div>
                     <div class="feature-item">
                         <div class="feature-icon-wrap"><hintio-icon class="icon" name="visibility_off"></hintio-icon></div>
                         <div class="feature-text">
-                            <strong>Stealth UI</strong>
-                            <span>Designed to remain undetectable and unobtrusive while active.</span>
+                            <strong>Flexible overlay</strong>
+                            <span>Reposition or hide the overlay. Screen-sharing behavior depends on the platform and capture tool.</span>
                         </div>
                     </div>
                     <div class="feature-item">
@@ -378,6 +382,7 @@ export class OnboardingView extends LitElement {
                         class="btn-secondary"
                         @click=${() => {
                             this.currentSlide = 0;
+                            this.privacyAccepted = false;
                         }}
                     >
                         <hintio-icon class="icon" name="arrow_back"></hintio-icon> Back
@@ -406,8 +411,12 @@ export class OnboardingView extends LitElement {
                 </div>
 
                 <div class="header-group">
-                    <div class="title">Read this before start</div>
-                    <div class="subtitle">Before using your access key, check this help guide for proper instructions on usage.</div>
+                    <div class="title">Choose what you share</div>
+                    <div class="subtitle">
+                        Starting a cloud session can send selected audio or transcripts, screenshots, resume text, and instructions to the configured
+                        AI providers. Capture only material you have permission to share. Stop the session to stop capture; choose No Audio and use
+                        the screen-capture controls to limit capture.
+                    </div>
                 </div>
 
                 <div class="feature-list" style="margin-bottom: 28px;">
@@ -420,6 +429,20 @@ export class OnboardingView extends LitElement {
                     </div>
                 </div>
 
+                <p style="font-size:12px;line-height:1.6;margin-bottom:14px;">
+                    Saved credentials and history are local JSON files and are not encrypted by Hintio. See Settings → Privacy &amp; Data for storage
+                    and deletion controls.
+                </p>
+                <label style="display:flex;gap:10px;font-size:12px;line-height:1.6;margin-bottom:16px;"
+                    ><input
+                        type="checkbox"
+                        .checked=${this.privacyAccepted}
+                        @change=${e => {
+                            this.privacyAccepted = e.target.checked;
+                        }}
+                    />
+                    I understand the data sharing described above and will only capture content I am authorized to use.</label
+                >
                 <div class="actions">
                     <button
                         class="btn-secondary"
@@ -430,7 +453,7 @@ export class OnboardingView extends LitElement {
                         <hintio-icon class="icon" name="arrow_back"></hintio-icon> Back
                     </button>
                     <button class="btn-secondary" @click=${() => this._openHelpGuide()}>Open Help Guide</button>
-                    <button class="btn-primary" @click=${this.completeOnboarding}>Go to Start Session</button>
+                    <button class="btn-primary" ?disabled=${!this.privacyAccepted} @click=${this.completeOnboarding}>Go to Start Session</button>
                 </div>
             </div>
         `;

@@ -4,7 +4,9 @@ const fs = require('fs');
 const path = require('path');
 
 const { windowsSigningOptions } = require('./scripts/windows-signing');
-const windowsSign = windowsSigningOptions();
+const storeBuild = process.env.HINTIO_DISTRIBUTION === 'store';
+const windowsSign = storeBuild ? undefined : windowsSigningOptions();
+const store = storeBuild ? require('./scripts/store-manifest').prepareStore() : null;
 const remoteReleases = process.env.SQUIRREL_REMOTE_RELEASES;
 
 const baseDir = __dirname;
@@ -58,11 +60,20 @@ function resolvePackagedOutputPaths(options = {}) {
 module.exports = {
     packagerConfig: {
         ignore: [
-            /^\/(?:hintio-website|design|supabase|test|scripts|out|logs|prep|\.git|\.codex|\.agents|\.cache|\.npm|\.specstory)(?:\/|$)/,
+            /^\/(?:packaging|hintio-website|design|supabase|test|scripts|out|logs|prep|\.git|\.codex|\.agents|\.cache|\.npm|\.specstory)(?:\/|$)/,
             /^\/src\/(?:data|profiles\/[^/]+\.local\.js)(?:\/|$)/,
             /(?:^|\/)\.env(?:[./]|$)/,
             /^\/[^/]+\.(?:md|pfx|p12|pem|key|log)$/i,
         ],
+        ...(storeBuild
+            ? {
+                  afterCopy: [
+                      (appPath, electronVersion, platform, arch, done) => {
+                          fs.writeFile(path.join(appPath, 'distribution.json'), JSON.stringify({ channel: 'microsoft-store' }), done);
+                      },
+                  ],
+              }
+            : {}),
         asar: {
             unpack: '**/{onnxruntime-node,onnxruntime-common,@huggingface/transformers,sharp,@img}/**',
         },
@@ -76,7 +87,7 @@ module.exports = {
             InternalName: 'Hintio',
         },
         icon: 'src/assets/logo',
-        ...(windowsSign ? { windowsSign } : {}),
+        ...(!storeBuild && windowsSign ? { windowsSign } : {}),
         // use `security find-identity -v -p codesigning` to find your identity
         // for macos signing
         // also fuck apple
@@ -110,42 +121,56 @@ module.exports = {
             }
         },
     },
-    makers: [
-        {
-            name: '@electron-forge/maker-squirrel',
-            config: {
-                name: 'Hintio',
-                productName: 'Hintio',
-                shortcutName: 'Hintio',
-                ...(windowsSign ? { windowsSign } : {}),
-                createDesktopShortcut: true,
-                createStartMenuShortcut: true,
-                ...(remoteReleases ? { remoteReleases } : {}),
-            },
-        },
-        {
-            name: '@electron-forge/maker-zip',
-            platforms: ['win32'],
-        },
-        {
-            name: '@electron-forge/maker-dmg',
-            platforms: ['darwin'],
-        },
-        {
-            name: '@reforged/maker-appimage',
-            platforms: ['linux'],
-            config: {
-                options: {
-                    name: 'Hintio',
-                    productName: 'Hintio',
-                    genericName: 'AI Assistant',
-                    description: 'AI assistant for interviews and learning',
-                    categories: ['Development', 'Education'],
-                    icon: 'src/assets/logo.png',
-                },
-            },
-        },
-    ],
+    makers: storeBuild
+        ? [
+              {
+                  name: '@electron-forge/maker-msix',
+                  config: {
+                      appManifest: store.manifest,
+                      packageAssets: path.join(baseDir, 'packaging', 'store', 'assets'),
+                      windowsKitPath: process.env.HINTIO_WINDOWS_KIT_PATH || path.join(baseDir, '.cache', 'msix-sdk', 'bin', '10.0.28000.0', 'x64'),
+                      sign: false,
+                      createPri: true,
+                      logLevel: 'warn',
+                  },
+              },
+          ]
+        : [
+              {
+                  name: '@electron-forge/maker-squirrel',
+                  config: {
+                      name: 'Hintio',
+                      productName: 'Hintio',
+                      shortcutName: 'Hintio',
+                      ...(windowsSign ? { windowsSign } : {}),
+                      createDesktopShortcut: true,
+                      createStartMenuShortcut: true,
+                      ...(remoteReleases ? { remoteReleases } : {}),
+                  },
+              },
+              {
+                  name: '@electron-forge/maker-zip',
+                  platforms: ['win32'],
+              },
+              {
+                  name: '@electron-forge/maker-dmg',
+                  platforms: ['darwin'],
+              },
+              {
+                  name: '@reforged/maker-appimage',
+                  platforms: ['linux'],
+                  config: {
+                      options: {
+                          name: 'Hintio',
+                          productName: 'Hintio',
+                          genericName: 'AI Assistant',
+                          description: 'AI assistant for interviews and learning',
+                          categories: ['Development', 'Education'],
+                          icon: 'src/assets/logo.png',
+                      },
+                  },
+              },
+          ],
     plugins: [
         {
             name: '@electron-forge/plugin-auto-unpack-natives',

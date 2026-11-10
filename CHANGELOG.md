@@ -1,5 +1,14 @@
 # Changelog
 
+## Microsoft Store preparation — local, not submitted
+
+- Add an unsigned x64 MSIX build with strict Partner Center identity validation and separate validation artifacts.
+- Route Store updates to Microsoft Store and exclude the EXE release policy from Store sessions.
+- Use package-specific writable settings/history storage and leave legacy EXE data untouched.
+- Add cloud-data disclosure and affirmative consent to first-run onboarding; correct unsupported invisibility claims.
+- Update Electron from 30.5.1 to 45.2.3; installed runtime and capture verification remain pending Store signing.
+- Verify package contents, source correspondence, runtime dependencies, and absence of development/private files.
+
 ## 1.0.5 — staged locally, not published
 
 - Add an Updates screen with optional and required version states.

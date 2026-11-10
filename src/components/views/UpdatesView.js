@@ -156,6 +156,26 @@ export class UpdatesView extends LitElement {
     }
     render() {
         const s = this.state || {};
+        if (s.channel === 'microsoft-store')
+            return html`<section class="page" aria-labelledby="updates-title">
+                <div class="eyebrow">Hintio / Microsoft Store</div>
+                <h1 id="updates-title">Updates through Microsoft Store.</h1>
+                <p class="intro">Microsoft Store installs and updates this copy of Hintio. You don’t need a separate Windows installer.</p>
+                <div class="versions">
+                    <div><span class="label">Installed</span><span class="version">v${s.currentVersion}</span></div>
+                    <div><span class="label">Distribution</span><span>Microsoft Store</span></div>
+                </div>
+                <div class="actions">
+                    <button class="primary" @click=${() => this.onOpenInstaller?.()}>Open Microsoft Store</button
+                    ><button @click=${() => this.onBack?.()}>Back to Hintio</button>
+                </div>
+                ${s.error ? html`<p class="status error" role="alert">${s.error}</p>` : ''}
+                ${s.notice ? html`<p class="status" role="status">${s.notice}</p>` : ''}
+                <p class="note">
+                    Finish your session before applying updates. This screen does not check Store availability; use the Store Downloads page to check
+                    for updates.
+                </p>
+            </section>`;
         const busy = s.phase === 'checking';
         const available = Boolean(s.available || s.required);
         const title = s.required ? 'An update is required.' : available ? 'A newer Hintio is ready.' : 'Keep Hintio up to date.';

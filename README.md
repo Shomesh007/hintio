@@ -38,6 +38,10 @@ See [DEVELOPMENT.md](docs/DEVELOPMENT.md) for prerequisites, source layout, pack
 
 The local 1.0.5 build shows optional/required update notices and opens the official Windows installer in your browser. It does not download, apply, or restart itself. It is not published yet. See [the update guide](docs/UPDATES.md) for policy controls, verification, and Windows trust limitations.
 
+## Microsoft Store preparation
+
+A separate unsigned MSIX workflow is available for Microsoft Store certification. Run `npm run make:store:validation` to check packaging with a clearly marked validation identity. Final submission requires the identity reserved in Partner Center; `npm run make:store` fails without it. Store builds use Store-managed updates and package-specific writable storage. See [the Store guide](docs/MICROSOFT-STORE.md) for setup, reviewer notes, and remaining installed-runtime checks. The validation package is not a public installer.
+
 ## Data and contact
 
 Cloud providers receive context sent for processing. Local credentials and history are stored as JSON under `hintio-config`; the current implementation does not encrypt these files at rest. See [PRIVACY.md](PRIVACY.md) for paths and deletion behavior.

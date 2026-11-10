@@ -16,7 +16,10 @@
         "test": "node --test test/*.test.js",
         "typecheck": "node scripts/check-syntax.js",
         "make:win:signed": "node scripts/make-signed-windows.js",
-        "prepare:win-release": "node scripts/prepare-windows-release.js"
+        "prepare:win-release": "node scripts/prepare-windows-release.js",
+        "make:store": "node scripts/build-store.js",
+        "make:store:validation": "node scripts/build-store.js --validation",
+        "verify:store": "node scripts/verify-store-package.js"
     },
     "keywords": [
         "Hintio",
@@ -46,6 +49,7 @@
         "@electron-forge/cli": "^7.8.1",
         "@electron-forge/maker-deb": "^7.8.1",
         "@electron-forge/maker-dmg": "^7.8.1",
+        "@electron-forge/maker-msix": "7.11.2",
         "@electron-forge/maker-rpm": "^7.8.1",
         "@electron-forge/maker-squirrel": "^7.8.1",
         "@electron-forge/maker-zip": "^7.8.1",
@@ -53,7 +57,7 @@
         "@electron-forge/plugin-fuses": "^7.8.1",
         "@electron/fuses": "^1.8.0",
         "@reforged/maker-appimage": "^5.0.0",
-        "electron": "^30.0.5"
+        "electron": "45.2.3"
     },
     "overrides": {
         "gaxios": {
