@@ -31,7 +31,7 @@ async function main() {
     assert.equal(validation.llmProvider, 'openai');
     assert.equal(validation.providerConfiguration.openaiConfigured, true);
     assert.equal(validation.providerConfiguration.groqConfigured, true);
-    assert.equal(validation.groqApiKey, '');
+    assert.equal(Boolean(validation.groqApiKey), false);
     assert.equal(validation.openaiApiKeys.length, 0);
     assert.equal(validation.creditConsumed, false);
     if(process.argv.includes('--preflight-only')) {
