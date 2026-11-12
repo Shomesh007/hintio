@@ -140,7 +140,7 @@ test('chat uses server model and server credentials, ignoring client URL and mod
     assert.equal(response.status, 200);
     const call = r.calls.find(x => x[0] === 'fetch');
     assert.equal(call[1], 'https://api.openai.com/v1/chat/completions');
-    assert.equal(JSON.parse(call[2].body).model, 'gpt-5.6-luna');
+    assert.equal(JSON.parse(call[2].body).model, 'gpt-6-luna');
     assert.ok(!(await response.text()).includes('SECRET'));
 });
 test('rate limit rejects before provider call', async () => {
