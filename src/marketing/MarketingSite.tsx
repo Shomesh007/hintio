@@ -978,8 +978,8 @@ function Access({ onDownload, onUpgrade, onRecover, onMacDownload, checkoutLoadi
                         Already paid? Retrieve my key <ArrowRight size={15} />
                     </button>
                     <small>
-                        Sign in with Google. Access is issued after a full captured payment. No daily or session-count cap and no fixed paid-session
-                        time limit; network and provider availability apply.
+                        Sign in with Google. Access is issued after a full captured payment. No purchased session quota or fixed active-session
+                        duration. Service-protection limits and provider/network availability apply.
                     </small>
                 </div>
             </section>
@@ -1182,8 +1182,9 @@ function Info({ type }: { type: 'privacy' | 'terms' }) {
                     </p>
                     <p>
                         Yearly access is ₹14,000 prepaid for 365 days, without automatic renewal. Manual yearly renewal retains remaining verified
-                        paid time. Paid access has no daily or session-count cap or fixed session time limit; connectivity and provider availability
-                        apply.
+                        paid time. Paid access has no purchased session quota or fixed active-session duration. Service-protection limits apply: 40
+                        chat requests per minute, 120 speech requests per minute, 180 total per minute and 10,000 managed AI requests per rolling 24
+                        hours per license. Connectivity and provider availability also apply.
                     </p>
                     <p>
                         Cancellation stops future billing and does not itself request a refund. Contact admin@builtbygsv.in for refund requests and
