@@ -32,3 +32,7 @@ Owner: admin@builtbygsv.in. Confirm a monitored inbox, review reports for potent
 Deployed price policy and atomic entitlement fixes verified. Account/cancellation UI and 87 website tests pass; live monthly plan verified. Finish deferred live webhook setup, real Test-mode payment delivery, final public deployment verification and Store-signed runtime checks. Pre-existing backend advisor findings and build-tool audit findings remain documented; this is not an all-security-controls pass.
 
 Live GPT and synthetic speech checks passed. Provider setup is validated before consuming a session credit. Two temporary QA tokens are retired; no customer credit was consumed.
+
+## Current security and billing status (12 November)
+
+Earlier deferred-webhook and audit notes above are superseded by verified payment/renewal/cancellation delivery, 99 website tests, 71 desktop tests, zero-vulnerability full npm audits, restricted RPCs and the managed gateway. See [current security review](SECURITY-REVIEW.md). Key rotation, active-credential renewal approval, secure-client distribution and Microsoft gates remain explicit.

@@ -13,6 +13,7 @@ function selectProviders(keys, preferred = '') {
     const pools = { openai: new LlmKeyPool(), gemini: new LlmKeyPool() };
     const select = vm.runInNewContext('(' + runtime.slice(start, end).trim() + ')', {
         process: { env: { LLM_PROVIDER: preferred } },
+        runtimeProviderSecrets: null,
         PROVIDERS,
         DEFAULT_PROVIDER_ID,
         keyPools: pools,
@@ -108,4 +109,27 @@ test('provider requests include content safety instructions without mutating use
     } finally {
         global.fetch = original;
     }
+});
+
+test('managed transport bypasses all local key pools and preserves streaming responses', async () => {
+    let received;
+    const result = await requestChatCompletion({
+        providers: [
+            {
+                provider: PROVIDERS.openai,
+                model: 'managed-gpt',
+                transport: async opts => {
+                    received = opts;
+                    return new Response('data: [DONE]\n\n', { headers: { 'content-type': 'text/event-stream' } });
+                },
+            },
+        ],
+        messages: [{ role: 'user', content: 'Hi' }],
+        stream: true,
+        live: true,
+        maxTokens: 600,
+    });
+    assert.equal(received.stream, true);
+    assert.equal(result.provider, 'openai');
+    assert.equal(await result.response.text(), 'data: [DONE]\n\n');
 });

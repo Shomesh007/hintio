@@ -35,11 +35,14 @@ async function main() {
         'src/utils/protectedStorage.js',
         'src/utils/documentImport.js',
         'src/utils/llmProvider.js',
+        'src/utils/providerRuntime.js',
+        'src/utils/managedGateway.js',
+        'src/utils/speechStt.js',
         'src/components/views/UpdatesView.js',
         'src/components/views/OnboardingView.js',
     ])
         assert.deepEqual(asar.extractFile(archive, path.normalize(file)), fs.readFileSync(path.join(root, file)), file + ' is stale');
-    const input = path.join(root, 'out', 'make', 'msix', 'x64', 'Hintio.msix');
+    const input = path.join(root, 'out', 'make', 'msix', 'x64', 'Hintio-win32-x64-' + version + '.msix');
     const inspected = await inspectZip(input, hash(archive));
     assert.equal(inspected.manifest.replace(/\r/g, '').trim(), makeManifest(identity, version).trim(), 'Manifest must match the validated identity');
     assert.equal(inspected.asarMatches, true);

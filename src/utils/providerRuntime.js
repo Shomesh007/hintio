@@ -24,6 +24,9 @@ const {
     getModelForToday,
 } = require('../storage');
 const supabaseConfig = require('./supabaseConfig');
+const { randomUUID } = require('node:crypto');
+const { gatewayRequest, gatewayJson, gatewayChat, gatewayTranscribe } = require('./managedGateway');
+let pendingGatewayRequest = null;
 const { connectCloud, sendCloudAudio, sendCloudText, sendCloudImage, closeCloud, isCloudActive, setOnTurnComplete } = require('./cloud');
 const azureStt = require('./azureStt');
 const speechStt = require('./speechStt');
@@ -295,7 +298,7 @@ const TURN_CONTINUATION_WINDOW_MS = 12_000;
  *
  * So a transcript arriving inside the window is appended to what came before,
  * and the whole question is re-answered over the top of the existing answer.
- * The re-answer costs one extra request — trivial next to reading a half answer
+ * The re-answer costs one extra request â€” trivial next to reading a half answer
  * to an interviewer.
  */
 function absorbIntoCurrentTurn(transcription) {
@@ -315,7 +318,7 @@ function absorbIntoCurrentTurn(transcription) {
         : `${currentTurnText} ${text}`.replace(/\s+/g, ' ').trim();
 
     currentTurnText = combined;
-    console.log(`[TurnGate] Continuation — treating as one question (${combined.length} chars)`);
+    console.log(`[TurnGate] Continuation â€” treating as one question (${combined.length} chars)`);
     return { text: combined, isContinuation: true };
 }
 
@@ -353,7 +356,7 @@ function shouldDispatchInterviewerTurn(transcription = '') {
 
 /**
  * One key pool per provider, shared across the whole app, so per-key rate
- * windows are tracked globally — a screenshot analysis and a spoken turn draw
+ * windows are tracked globally â€” a screenshot analysis and a spoken turn draw
  * from the same budget and the pool knows it.
  */
 const keyPools = {
@@ -407,6 +410,10 @@ function getProviderModel(providerId) {
  * provider with no keys is omitted entirely.
  */
 function getLlmProviders() {
+    if (runtimeProviderSecrets?.gatewayToken) {
+        const session = runtimeProviderSecrets.gatewayToken;
+        return [{ provider: getProvider('openai'), model: runtimeProviderSecrets.openaiModel, transport: options => gatewayChat(session, options) }];
+    }
     const preferred = (process.env.LLM_PROVIDER || '').trim().toLowerCase();
     // A configured GPT session must never silently become a Gemini session.
     // Another provider is used only when explicitly selected.
@@ -427,8 +434,9 @@ function hasLlmKey() {
     return getLlmProviders().length > 0;
 }
 
-/** Human-readable summary for logs — never includes key material. */
+/** Human-readable summary for logs â€” never includes key material. */
 function describeLlmConfig() {
+    if (runtimeProviderSecrets?.gatewayToken) return 'OpenAI managed gateway';
     return (
         getLlmProviders()
             .map(e => `${e.provider.label}:${e.model} (${e.pool.size} key${e.pool.size === 1 ? '' : 's'})`)
@@ -469,96 +477,33 @@ function hasManagedCloudToken() {
 }
 
 function clearRuntimeProviderSecrets() {
+    const previousSession = runtimeProviderSecrets?.gatewayToken;
+    if (previousSession) void gatewayRequest(previousSession, { operation: 'close' }, 10000).catch(() => {});
     runtimeProviderSecrets = null;
+    pendingGatewayRequest = null;
     runtimeSecretsToken = '';
     runtimeSecretsResolvedAt = 0;
 }
 
 async function resolveProviderSecrets(accessToken, options = {}) {
-    const token = (accessToken || '').trim();
+    const token = String(accessToken || '').trim();
+    if (!token) throw new Error('Access token is required');
     const consume = Boolean(options.consume);
-    const internal = Boolean(options.internal);
-    if (!token) {
-        throw new Error('Access token is required');
-    }
-
-    const now = Date.now();
-    if (!consume && runtimeProviderSecrets && runtimeSecretsToken === token && now - runtimeSecretsResolvedAt < PROVIDER_SECRETS_CACHE_TTL_MS) {
+    if (runtimeSecretsToken === token && runtimeProviderSecrets?.gatewayToken && Date.parse(runtimeProviderSecrets.gatewayExpiresAt) > Date.now()) {
         return { success: true, data: runtimeProviderSecrets, cached: true };
     }
-
-    const storedCreds = getCredentials();
-    const supabaseUrl = (supabaseConfig.url || storedCreds.supabaseUrl || '').trim();
-    const supabaseAnonKey = (supabaseConfig.anonKey || storedCreds.supabaseAnonKey || '').trim();
-    const functionName = (supabaseConfig.resolveSecretsFunction || 'resolve-provider-secrets').trim();
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-        throw new Error('Supabase runtime is not configured. Set SUPABASE_URL and SUPABASE_ANON_KEY.');
+    if (!consume) return gatewayJson(token, { operation: 'status' });
+    if (!pendingGatewayRequest || pendingGatewayRequest.token !== token) {
+        pendingGatewayRequest = { token, requestId: randomUUID() };
     }
-
-    const endpoint = `${supabaseUrl.replace(/\/$/, '')}/functions/v1/${functionName}`;
-    const headers = {
-        Authorization: `Bearer ${token}`,
-        apikey: supabaseAnonKey,
-        'Content-Type': 'application/json',
-        'x-client-intent': 'desktop-runtime',
-    };
-
-    if (internal) {
-        const runtimeSecret = (process.env.HINTIO_INTERNAL_RUNTIME_SECRET || '').trim();
-        if (!runtimeSecret) {
-            throw new Error('HINTIO_INTERNAL_RUNTIME_SECRET is required for internal secret resolution');
-        }
-        headers['x-runtime-secret'] = runtimeSecret;
+    const result = await gatewayJson(token, { operation: 'session', requestId: pendingGatewayRequest.requestId });
+    if (!result.data?.gatewayToken || !/^HGW-[a-f0-9]{64}$/.test(result.data.gatewayToken)) {
+        throw new Error('Invalid managed session response');
     }
-
-    const response = await fetch(endpoint, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ accessToken: token, consume }),
-        signal: AbortSignal.timeout(15_000),
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Secret resolution failed (${response.status}): ${errorText}`);
-    }
-
-    const payload = await response.json();
-    const data = payload?.data || payload;
-    if (!data || typeof data !== 'object') {
-        throw new Error('Invalid secret response payload');
-    }
-
-    const resolvedSecrets = {
-        geminiApiKey: data.geminiApiKey || '',
-        // Several keys can be issued so the client can fail over between accounts.
-        geminiApiKeys: parseApiKeys(data.geminiApiKeys || data.geminiApiKey || ''),
-        openaiApiKeys: parseApiKeys(data.openaiApiKeys || data.openaiApiKey || ''),
-        openaiModel: data.openaiModel || '',
-        geminiModel: data.geminiModel || '',
-        groqApiKey: data.groqApiKey || '',
-        azureApiKey: data.azureApiKey || '',
-        azureEndpoint: data.azureEndpoint || '',
-        cloudToken: data.cloudToken || '',
-        providerMode: data.providerMode || '',
-        expiresAt: data.expiresAt || '',
-        metadata: data.metadata || {},
-        maxInterviews: Number(data.maxInterviews || 0),
-        interviewsUsed: Number(data.interviewsUsed || 0),
-        interviewsRemaining: Number(data.interviewsRemaining || 0),
-        creditConsumed: Boolean(data.creditConsumed),
-        secretsIssued: Boolean(data.secretsIssued),
-    };
-
-    const shouldCacheSecrets = consume || data.secretsIssued === true;
-    if (shouldCacheSecrets) {
-        runtimeProviderSecrets = resolvedSecrets;
-        runtimeSecretsToken = token;
-        runtimeSecretsResolvedAt = now;
-    }
-
-    return { success: true, data: shouldCacheSecrets ? runtimeProviderSecrets : resolvedSecrets };
+    runtimeProviderSecrets = result.data;
+    runtimeSecretsToken = token;
+    runtimeSecretsResolvedAt = Date.now();
+    return result;
 }
 
 function formatSpeakerResults(results) {
@@ -661,7 +606,7 @@ function initializeNewSession(profile = null, customPrompt = null, language = ''
     currentProfile = normalizeProfile(profile);
     currentCustomPrompt = customPrompt;
     if (language) currentLanguage = language;
-    // The field the candidate is interviewing in — drives terminology, not code.
+    // The field the candidate is interviewing in â€” drives terminology, not code.
     currentInterviewDomain = getInterviewDomain();
     // Read keys from disk / managed secrets once per session, never per turn.
     console.log(`[LLM] Providers ready: ${describeLlmConfig()}`);
@@ -801,10 +746,10 @@ async function schedulePostAnswerSelfHeal({ transcription, response, provider = 
             const healedText = String(healed || '').trim();
             if (!healedText || healedText === baseText) return;
 
-            // A new question has been answered since — 'update-response' always
+            // A new question has been answered since â€” 'update-response' always
             // targets the latest answer, so writing now would clobber it.
             if (currentAnswerSeq !== seqAtSchedule) {
-                console.log('[SelfHeal] Dropping stale rewrite — a newer answer is on screen');
+                console.log('[SelfHeal] Dropping stale rewrite â€” a newer answer is on screen');
                 return;
             }
 
@@ -828,7 +773,7 @@ function getCurrentSessionData() {
     };
 }
 
-// ── Intelligent auto-advance logic ──
+// â”€â”€ Intelligent auto-advance logic â”€â”€
 /**
  * Determines if a new response should auto-advance the UI or stay on current response.
  * In speaker-only mode, prevents jumping to follow-up questions until user answers first.
@@ -959,7 +904,7 @@ function formatInterviewAnswer(text = '', questionShape = null) {
  * An explicit request to produce code. Bare mentions of "code", "array",
  * "string" or "java" turn up constantly in ordinary interview conversation,
  * and matching on those dragged every behavioural and conceptual answer
- * through the code verifier — extra latency for nothing, on answers the
+ * through the code verifier â€” extra latency for nothing, on answers the
  * verifier was never meant to touch.
  */
 const EXPLICIT_CODING_REQUEST =
@@ -1137,114 +1082,16 @@ function extractJsonObject(text = '') {
 }
 
 async function transcribeCalibrationAudioSecure(accessToken, audioBase64, mimeType = 'audio/webm;codecs=opus', language = 'en-US') {
-    const resolved = await resolveProviderSecrets(accessToken, { consume: false, internal: true });
-    const secrets = resolved?.data || {};
-    const buffer = Buffer.from(String(audioBase64 || ''), 'base64');
-    if (!buffer.length) {
-        throw new Error('Calibration audio payload is empty');
-    }
-
-    const groqKey = (secrets.groqApiKey || '').trim();
-    if (groqKey) {
-        const blob = new Blob([buffer], { type: mimeType || 'audio/webm;codecs=opus' });
-        const formData = new FormData();
-        formData.append('file', blob, 'calibration.webm');
-        formData.append('model', process.env.GROQ_STT_MODEL || 'whisper-large-v3-turbo');
-        formData.append('language', String(language || 'en-US').split('-')[0]);
-        formData.append('response_format', 'text');
-
-        const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${groqKey}` },
-            body: formData,
-            signal: AbortSignal.timeout(45_000),
-        });
-
-        if (response.ok) {
-            return (await response.text()).trim();
-        }
-    }
-
-    const azureKey = (secrets.azureApiKey || '').trim();
-    const azureEndpoint = (secrets.azureEndpoint || '').trim();
-    const region = extractAzureRegion(azureEndpoint);
-    if (azureKey && region) {
-        const recognitionUrl = `https://${region}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=${encodeURIComponent(language || 'en-US')}&format=simple`;
-        const response = await fetch(recognitionUrl, {
-            method: 'POST',
-            headers: {
-                'Ocp-Apim-Subscription-Key': azureKey,
-                'Content-Type': mimeType || 'audio/webm;codecs=opus',
-            },
-            body: buffer,
-            signal: AbortSignal.timeout(45_000),
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            return String(data.DisplayText || data.NBest?.[0]?.Display || '').trim();
-        }
-    }
-
-    throw new Error('No secure transcription provider available for calibration');
+    const resolved = await resolveProviderSecrets(accessToken, { consume: true });
+    return gatewayTranscribe(resolved.data.gatewayToken, Buffer.from(String(audioBase64 || ''), 'base64'), mimeType, language);
 }
 
 async function analyzeCalibrationProfileSecure(accessToken, prompt) {
-    const resolved = await resolveProviderSecrets(accessToken, { consume: false, internal: true });
-    const secrets = resolved?.data || {};
-
-    // Calibration runs once per session and is not latency-critical.
-    const providers = getLlmProviders();
-
-    if (providers.length) {
-        try {
-            const content = await fetchLlmText({
-                providers,
-                deeper: true,
-                messages: [
-                    { role: 'system', content: 'You are a speech pattern analyst. Respond only with valid JSON.' },
-                    { role: 'user', content: String(prompt || '') },
-                ],
-                temperature: 0.1,
-                maxTokens: 2048,
-                timeoutMs: 60_000,
-            });
-            const parsed = extractJsonObject(content);
-            if (parsed) return parsed;
-        } catch (error) {
-            console.warn('Gemini calibration analysis failed, falling back to Groq:', error.message);
-        }
-    }
-
-    const groqKey = (secrets.groqApiKey || '').trim();
-    if (groqKey) {
-        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                Authorization: `Bearer ${groqKey}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                model: 'llama-3.3-70b-versatile',
-                messages: [
-                    { role: 'system', content: 'You are a speech pattern analyst. Respond only with valid JSON.' },
-                    { role: 'user', content: String(prompt || '') },
-                ],
-                temperature: 0.1,
-                max_tokens: 2048,
-            }),
-            signal: AbortSignal.timeout(60_000),
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            const content = data?.choices?.[0]?.message?.content || '';
-            const parsed = extractJsonObject(content);
-            if (parsed) return parsed;
-        }
-    }
-
-    throw new Error('No secure analysis provider available for calibration');
+    await resolveProviderSecrets(accessToken, { consume: true });
+    const text = await fetchLlmText({ providers: getLlmProviders(), messages: [{ role: 'user', content: prompt }], maxTokens: 1500, deeper: true });
+    const profile = extractJsonObject(text);
+    if (!profile) throw new Error('Calibration returned no profile. Please retry.');
+    return profile;
 }
 
 async function sendToGroq(transcription) {
@@ -1398,7 +1245,7 @@ async function sendToGroq(transcription) {
  * @param {string} transcription   the interviewer's question
  * @param {{replaceLast?: boolean}} [options]
  *   replaceLast overwrites the answer already on screen instead of opening a
- *   new window — used when the interviewer's question arrived in pieces.
+ *   new window â€” used when the interviewer's question arrived in pieces.
  */
 async function sendToGemini(transcription, options = {}) {
     if (isGeminiResponseInFlight) {
@@ -1430,11 +1277,11 @@ async function sendToGemini(transcription, options = {}) {
         content: transcription.trim(),
     });
 
-    // For interview profile: send ZERO history — fastest TTFT (~1.5s vs 1.9s with 6 turns).
+    // For interview profile: send ZERO history â€” fastest TTFT (~1.5s vs 1.9s with 6 turns).
     // Each interview question is independent. For other profiles keep 4 turns for context.
     const isInterview = isInterviewProfile(currentProfile);
     const questionShape = classifyInterviewQuestion(transcription);
-    // Interview turns normally send zero history — each question is
+    // Interview turns normally send zero history â€” each question is
     // independent and it is the single biggest TTFT saving. The exception is
     // shapes that genuinely depend on earlier turns (schema for a coding
     // question, requirements for a design question), where the answer is wrong
@@ -1463,7 +1310,7 @@ async function sendToGemini(transcription, options = {}) {
 
     try {
         // Fails over across keys on 429, then across models, then across
-        // providers — all without backoff. See llmKeyPool / llmProvider.
+        // providers â€” all without backoff. See llmKeyPool / llmProvider.
         const {
             response,
             keyIndex,
@@ -1511,7 +1358,7 @@ async function sendToGemini(transcription, options = {}) {
         await consumeOpenAIStream(response.body, token => {
             if (!firstTokenAt) firstTokenAt = Date.now();
             fullText += token;
-            // Only pay for the strip when a tag could actually be present —
+            // Only pay for the strip when a tag could actually be present â€”
             // this runs on every token over the whole accumulated answer.
             const displayText = fullText.includes('<') ? stripThinkingTags(fullText) : fullText;
             if (displayText) {
@@ -1526,7 +1373,7 @@ async function sendToGemini(transcription, options = {}) {
         // The code verifier is NOT awaited here. It only fires on coding
         // prompts, it is a second non-streaming round trip, and
         // schedulePostAnswerSelfHeal below already runs exactly the same pass a
-        // second later — awaiting it held the turn gate open (blocking the next
+        // second later â€” awaiting it held the turn gate open (blocking the next
         // question) to do work that was about to be repeated anyway.
         const finalResponse = cleanedResponse;
         const interviewResponse = isInterview ? formatInterviewAnswer(finalResponse, questionShape) : finalResponse;
@@ -1671,7 +1518,7 @@ Rules:
             .map(img => {
                 // Check if it already has data URI prefix (double encoding issue)
                 if (img.startsWith('data:')) {
-                    console.error('[VISION] ⚠ WARNING: Base64 already has data: prefix! This will cause double encoding. Removing...');
+                    console.error('[VISION] âš  WARNING: Base64 already has data: prefix! This will cause double encoding. Removing...');
                     const cleanBase64 = img.replace(/^data:[^;]*;base64,/, '');
                     return {
                         type: 'image_url',
@@ -1683,7 +1530,7 @@ Rules:
 
                 // Check if starts with JPEG magic bytes
                 if (!img.startsWith('/9j/')) {
-                    console.error(`[VISION] ⚠ WARNING: Base64 doesn't start with "/9j/" (JPEG magic bytes). Starts with: "${img.slice(0, 10)}"`);
+                    console.error(`[VISION] âš  WARNING: Base64 doesn't start with "/9j/" (JPEG magic bytes). Starts with: "${img.slice(0, 10)}"`);
                 }
 
                 return {
@@ -1965,7 +1812,7 @@ async function initializeLegacyLiveSession(apiKey, customPrompt = '', profile = 
                         }
                     }
 
-                    // Fire Gemini as soon as user's speech turn ends — don't wait
+                    // Fire Gemini as soon as user's speech turn ends â€” don't wait
                     // for Gemini to generate any response (we don't use it).
                     if (message.serverContent?.turnComplete) {
                         if (currentTranscription.trim() !== '') {
@@ -2006,15 +1853,15 @@ async function initializeLegacyLiveSession(apiKey, customPrompt = '', profile = 
                 },
             },
             config: {
-                // TEXT modality only — Gemini transcribes audio but never synthesises
+                // TEXT modality only â€” Gemini transcribes audio but never synthesises
                 // an audio reply, so turnComplete fires as soon as speech ends.
                 responseModalities: [Modality.TEXT],
-                // Minimal input transcription — no diarization, no proactive audio.
+                // Minimal input transcription â€” no diarization, no proactive audio.
                 // Diarization adds ~0.5-1s before turnComplete fires.
                 inputAudioTranscription: {},
                 contextWindowCompression: { slidingWindow: {} },
                 speechConfig: { languageCode: language },
-                // Tell Gemini not to generate any text reply either — just transcribe.
+                // Tell Gemini not to generate any text reply either â€” just transcribe.
                 systemInstruction: {
                     parts: [{ text: 'You are a transcription-only service. Never generate any response or reply. Only transcribe what is spoken.' }],
                 },
@@ -2366,8 +2213,9 @@ function setupProviderRuntimeIpcHandlers(providerSessionRef, { assertSessionAllo
                 ...RATE_LIMIT_POLICIES.authResolve,
                 max: 5,
             });
-            const result = await resolveProviderSecrets(accessToken, options);
-            return result;
+            const result = await resolveProviderSecrets(accessToken, { consume: false });
+            const { gatewayToken, ...safeData } = result.data || {};
+            return { ...result, data: safeData };
         } catch (error) {
             return { success: false, error: error.message };
         }
@@ -2460,8 +2308,9 @@ function setupProviderRuntimeIpcHandlers(providerSessionRef, { assertSessionAllo
         }
 
         const groqKey = getEffectiveGroqApiKey();
-        if (!groqKey) {
-            console.error('[Init] Live mode requires a Groq API key for STT — add it in settings');
+        const managedSession = runtimeProviderSecrets?.gatewayToken;
+        if (!groqKey && !managedSession) {
+            console.error('[Init] Live mode requires a Groq API key for STT â€” add it in settings');
             sendToRenderer('update-status', 'Groq STT key not configured in Supabase');
             return { success: false, error: 'Groq STT key not configured in Supabase' };
         }
@@ -2477,42 +2326,47 @@ function setupProviderRuntimeIpcHandlers(providerSessionRef, { assertSessionAllo
         });
         initializeNewSession(profile, customPrompt, language);
 
-        speechStt.startSpeechSTT(groqKey, language, transcription => {
-            if (isTrialSessionTimedOut) {
-                sendToRenderer('update-status', 'User timedout');
-                return;
-            }
+        speechStt.startSpeechSTT(
+            groqKey,
+            language,
+            transcription => {
+                if (isTrialSessionTimedOut) {
+                    sendToRenderer('update-status', 'User timedout');
+                    return;
+                }
 
-            const gate = shouldDispatchInterviewerTurn(transcription);
-            if (!gate.accept) {
-                console.log(`[TurnGate] Ignored transcript (${gate.reason}), ${String(transcription || '').length} chars`);
-                sendToRenderer('update-status', 'Listening...');
-                return;
-            }
+                const gate = shouldDispatchInterviewerTurn(transcription);
+                if (!gate.accept) {
+                    console.log(`[TurnGate] Ignored transcript (${gate.reason}), ${String(transcription || '').length} chars`);
+                    sendToRenderer('update-status', 'Listening...');
+                    return;
+                }
 
-            const turn = absorbIntoCurrentTurn(transcription);
+                const turn = absorbIntoCurrentTurn(transcription);
 
-            if (isGeminiResponseInFlight) {
-                // A continuation supersedes the answer being written right now:
-                // when it lands it must overwrite that window, not open a new one.
-                pendingInterviewerTranscript = turn.text;
-                pendingReplacesLast = turn.isContinuation;
-                console.log(
-                    turn.isContinuation
-                        ? '[TurnGate] Interviewer still talking — will re-answer the full question in place'
-                        : '[TurnGate] Queued interviewer transcript while response is in-flight'
-                );
-                sendToRenderer('update-status', 'Listening...');
-                return;
-            }
+                if (isGeminiResponseInFlight) {
+                    // A continuation supersedes the answer being written right now:
+                    // when it lands it must overwrite that window, not open a new one.
+                    pendingInterviewerTranscript = turn.text;
+                    pendingReplacesLast = turn.isContinuation;
+                    console.log(
+                        turn.isContinuation
+                            ? '[TurnGate] Interviewer still talking â€” will re-answer the full question in place'
+                            : '[TurnGate] Queued interviewer transcript while response is in-flight'
+                    );
+                    sendToRenderer('update-status', 'Listening...');
+                    return;
+                }
 
-            sendToRenderer('update-status', 'Processing...');
-            sendToGemini(turn.text, { replaceLast: turn.isContinuation });
-        });
+                sendToRenderer('update-status', 'Processing...');
+                sendToGemini(turn.text, { replaceLast: turn.isContinuation });
+            },
+            managedSession ? (audio, lang) => gatewayTranscribe(managedSession, audio, 'audio/wav', lang) : null
+        );
         providerSessionRef.stopSTT = () => speechStt.stopSpeechSTT();
         providerSessionRef.current = null;
         sendToRenderer('update-status', 'Listening...');
-        console.log(`[Init] Groq Whisper STT started — ${describeLlmConfig()} will handle responses`);
+        console.log(`[Init] Groq Whisper STT started â€” ${describeLlmConfig()} will handle responses`);
         return { success: true };
     });
 
@@ -2530,7 +2384,7 @@ function setupProviderRuntimeIpcHandlers(providerSessionRef, { assertSessionAllo
         ensureStringWithinLimit(data, 131_072, 'Audio chunk');
         ensureStringWithinLimit(mimeType || '', 100, 'Audio MIME type');
 
-        // Azure STT path — push audio to speech-to-text buffer
+        // Azure STT path â€” push audio to speech-to-text buffer
         if (speechStt.isSpeechSTTActive()) {
             speechStt.pushAudio(data);
             return { success: true };
@@ -2548,7 +2402,7 @@ function setupProviderRuntimeIpcHandlers(providerSessionRef, { assertSessionAllo
         ensureStringWithinLimit(data, 131_072, 'Audio chunk');
         ensureStringWithinLimit(mimeType || '', 100, 'Audio MIME type');
 
-        // Azure STT path — mic audio also goes to speech-to-text buffer
+        // Azure STT path â€” mic audio also goes to speech-to-text buffer
         if (speechStt.isSpeechSTTActive()) {
             speechStt.pushAudio(data);
             return { success: true };
@@ -2613,7 +2467,7 @@ function setupProviderRuntimeIpcHandlers(providerSessionRef, { assertSessionAllo
         }
         const safeText = ensureStringWithinLimit(text, 32_000, 'Text message').trim();
 
-        // Resolve the active profile — prefer the passed-in profile, then
+        // Resolve the active profile â€” prefer the passed-in profile, then
         // fall back to the current session profile, then to 'exam' for typed
         // input (a better default than 'interview' which asks for context).
         const resolvedProfile = profile || currentProfile || 'exam';

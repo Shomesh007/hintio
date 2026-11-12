@@ -59,3 +59,7 @@ The desktop is distributed under GPL-3.0. See [LICENSE](LICENSE).
 ## Paid access lifecycle
 
 Paid checkout now provisions licenses and hashed app access tokens atomically. Renewals retain keys and paid time; account management supports end-of-cycle monthly cancellation and captured-payment proof recovery. Live policy: INR 2,049 monthly or INR 14,000 per 365 prepaid days. See [billing audit](packaging/store/BILLING-AUDIT.md). Live and isolated Test-mode webhooks are enabled. Actual monthly/yearly Test-mode captures, signed renewal delivery, key recovery and cancellation retention are verified. The 12 November renewal fix uses the paid invoice period and is deployed server-side; no desktop update is required. See [Razorpay verification](packaging/store/RAZORPAY-SANDBOX.md). Store certification and signed installed-runtime checks remain pending.
+
+## Managed runtime security (1.0.6)
+
+Managed GPT and speech use a scoped, revocable server-side gateway. Company provider keys are no longer delivered to the app. Legacy versions receive an update-required response; public 1.0.4 is incompatible. The unsigned 1.0.6 Store candidate is prepared, not published. See [security review](packaging/store/SECURITY-REVIEW.md) for tests, key rotation and remaining gates.

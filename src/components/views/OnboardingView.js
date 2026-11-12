@@ -442,8 +442,8 @@ export class OnboardingView extends LitElement {
                             this.privacyAccepted = e.target.checked;
                         }}
                     />
-                    I agree to sending my selected session context to the configured cloud providers and will only capture content I am authorized to
-                    share. I can withdraw this consent in Settings.</label
+                    I agree to sending my selected session context through Hintio’s Supabase gateway to OpenAI for answers and Groq for transcription.
+                    I will only capture content I am authorized to share. I can withdraw this consent in Settings.</label
                 >
                 <div class="actions">
                     <button

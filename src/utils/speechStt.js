@@ -3,6 +3,7 @@
 let onTranscriptCallback = null;
 let isStarted = false;
 let groqApiKey = null;
+let managedTranscribe = null;
 let language = 'en-US';
 
 // Accumulated 16kHz mono 16-bit PCM, kept as chunks and joined once at flush.
@@ -23,13 +24,13 @@ let lastEmittedSeq = -1;
 const SILENCE_TIMEOUT_MS = 350;
 
 // Someone three seconds into a long, multi-part question pauses to think, and a
-// 350ms tolerance cuts them off mid-question — the transcript splits and the
+// 350ms tolerance cuts them off mid-question â€” the transcript splits and the
 // candidate gets two separate answers for one thing that was asked. Past this
 // point, wait longer before deciding they have finished.
 const LONG_UTTERANCE_MS = 2500;
 const SILENCE_TIMEOUT_LONG_MS = 900;
 
-const MIN_AUDIO_BYTES = 16000 * 2 * 0.2; // 200ms — "Why?" and "Big-O?" are real questions
+const MIN_AUDIO_BYTES = 16000 * 2 * 0.2; // 200ms â€” "Why?" and "Big-O?" are real questions
 const MAX_AUDIO_BYTES = 16000 * 2 * 30; // 30s hard cap on buffered audio
 
 // A long question must still be sent even if silence is never detected, which
@@ -37,7 +38,7 @@ const MAX_AUDIO_BYTES = 16000 * 2 * 30; // 30s hard cap on buffered audio
 const MAX_UTTERANCE_MS = 15_000;
 
 // Starting point for the silence threshold. It is replaced by a measured noise
-// floor once calibration has enough samples — a fixed value fails completely in
+// floor once calibration has enough samples â€” a fixed value fails completely in
 // a noisy room, where RMS never drops below it and nothing is ever flushed.
 const DEFAULT_SILENCE_RMS_THRESHOLD = 250;
 const NOISE_FLOOR_SAMPLES = 20; // ~2s at 100ms chunks
@@ -106,6 +107,7 @@ async function flushAndTranscribe() {
     const chunkCount = speechChunkCount;
     const transcriptCallback = onTranscriptCallback;
     const requestApiKey = groqApiKey;
+    const requestTransport = managedTranscribe;
     const requestLanguage = language;
     speechStartedAt = 0;
     speechChunkCount = 0;
@@ -130,12 +132,14 @@ async function flushAndTranscribe() {
         formData.append('language', requestLanguage.split('-')[0]); // 'en' from 'en-US'
         formData.append('response_format', 'text');
 
-        const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${requestApiKey}` },
-            body: formData,
-            signal: AbortSignal.timeout(STT_TIMEOUT_MS),
-        });
+        const response = requestTransport
+            ? new Response(await requestTransport(wavBuffer, requestLanguage))
+            : await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+                  method: 'POST',
+                  headers: { Authorization: `Bearer ${requestApiKey}` },
+                  body: formData,
+                  signal: AbortSignal.timeout(STT_TIMEOUT_MS),
+              });
 
         if (!response.ok) {
             const errText = await response.text();
@@ -203,10 +207,11 @@ function calibrateNoiseFloor(rms) {
     console.log(`[GroqSTT] Noise floor calibrated: floor=${floor} threshold=${silenceThreshold}`);
 }
 
-function startSpeechSTT(apiKey, lang, onTranscript) {
+function startSpeechSTT(apiKey, lang, onTranscript, transport = null) {
     if (isStarted) stopSpeechSTT();
+    managedTranscribe = transport;
 
-    if (!apiKey || apiKey.trim() === '') {
+    if ((!apiKey || apiKey.trim() === '') && !transport) {
         console.error('[GroqSTT] Cannot start - Groq API key is empty');
         return;
     }
@@ -252,12 +257,12 @@ function pushAudio(base64PcmData) {
                 console.log('[GroqSTT] Speech detected');
 
                 // Guarantee the utterance is sent even if silence never
-                // registers — otherwise constant room noise means no flush and
+                // registers â€” otherwise constant room noise means no flush and
                 // no answer, forever.
                 if (!maxUtteranceTimer) {
                     maxUtteranceTimer = setTimeout(() => {
                         maxUtteranceTimer = null;
-                        console.log('[GroqSTT] Max utterance reached — flushing without silence');
+                        console.log('[GroqSTT] Max utterance reached â€” flushing without silence');
                         void flushAndTranscribe();
                     }, MAX_UTTERANCE_MS);
                 }
@@ -273,7 +278,7 @@ function pushAudio(base64PcmData) {
             pcmChunks.push(resampled);
             pcmLength += resampled.length;
 
-            // Cap buffer to avoid unbounded growth — drop from the front.
+            // Cap buffer to avoid unbounded growth â€” drop from the front.
             while (pcmLength > MAX_AUDIO_BYTES && pcmChunks.length > 1) {
                 pcmLength -= pcmChunks.shift().length;
             }
@@ -309,6 +314,8 @@ function stopSpeechSTT() {
     speechChunkCount = 0;
     isStarted = false;
     onTranscriptCallback = null;
+    managedTranscribe = null;
+    groqApiKey = null;
     console.log('[GroqSTT] Stopped');
 }
 

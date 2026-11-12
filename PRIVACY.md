@@ -48,3 +48,7 @@ First-run onboarding explains cloud processing and requires affirmative acknowle
 Cloud consent is required before session initialization and credit consumption. Withdraw it in Settings > Privacy & Data or use Stop & withdraw consent during a live session. Withdrawal stops the session, retains records and returns to onboarding; it does not retract already-sent provider data.
 
 AI responses are labelled and can be inaccurate. Reporting and feedback prepare an email draft to admin@builtbygsv.in. Review and redact response excerpts before sending. Opening a draft does not submit a report. Never include access tokens, provider keys or private third-party content.
+
+## Managed gateway (1.0.6)
+
+Managed context passes through Hintio’s Supabase-hosted gateway to OpenAI for answers and Groq for transcription. This can include selected audio, transcripts, screenshots and supplied document context. Company provider keys stay server-side. Gateway code stores session hashes and access/rate counters, not request content. Infrastructure and AI providers process requests under their own terms. Google sign-in remains enabled; unused email/password and anonymous sign-in are disabled.

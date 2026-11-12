@@ -75,8 +75,8 @@ module.exports = {
         ...(storeBuild
             ? {
                   afterCopy: [
-                      (appPath, electronVersion, platform, arch, done) => {
-                          fs.writeFile(path.join(appPath, 'distribution.json'), JSON.stringify({ channel: 'microsoft-store' }), done);
+                      async ({ buildPath }) => {
+                          await fs.promises.writeFile(path.join(buildPath, 'distribution.json'), JSON.stringify({ channel: 'microsoft-store' }));
                       },
                   ],
               }

@@ -366,6 +366,11 @@ async function requestChatCompletion({
     // those would double their (much larger) cost for no benefit.
     hedgeDelayMs = live ? HEDGE_DELAY_MS : 0,
 }) {
+    const managed = providers.find(entry => typeof entry.transport === 'function');
+    if (managed) {
+        const response = await managed.transport({ messages, stream, maxTokens, live, deeper, timeoutMs });
+        return { response, provider: 'openai', model: managed.model, keyIndex: 0, attempts: 1, modelFallbacks: 0 };
+    }
     let lastError = null;
 
     for (const entry of providers) {

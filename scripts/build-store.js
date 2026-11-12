@@ -8,7 +8,7 @@ try {
     identityFromEnv(process.env, validation);
     const env = { ...process.env, HINTIO_DISTRIBUTION: 'store', HINTIO_STORE_VALIDATION: validation ? '1' : '0' };
     const root = path.resolve(__dirname, '..');
-    const previous = path.join(root, 'out', 'make', 'msix', 'x64', 'Hintio.msix');
+    const previous = path.join(root, 'out', 'make', 'msix', 'x64', 'Hintio-win32-x64-' + require('../package.json').version + '.msix');
     if (fs.existsSync(previous)) {
         if (fs.realpathSync(previous) !== previous || !fs.statSync(previous).isFile()) throw new Error('Unexpected MSIX output path');
         const digest = crypto.createHash('sha256').update(fs.readFileSync(previous)).digest('hex');
