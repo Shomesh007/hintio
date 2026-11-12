@@ -12,11 +12,11 @@ Cloud providers can receive audio or transcripts, screenshots, resume text, and 
 
 The desktop stores configuration, credentials, preferences, shortcuts, and history under `hintio-config`:
 
-| OS | Folder |
-| --- | --- |
+| OS      | Folder                                        |
+| ------- | --------------------------------------------- |
 | Windows | `%USERPROFILE%/AppData/Roaming/hintio-config` |
-| macOS | `~/Library/Application Support/hintio-config` |
-| Linux | `~/.config/hintio-config` |
+| macOS   | `~/Library/Application Support/hintio-config` |
+| Linux   | `~/.config/hintio-config`                     |
 
 The current storage implementation writes JSON files. It does **not** implement encrypted-at-rest storage for these files. Protect your user account, backups, and disk accordingly. History can include responses, transcripts, and screen analyses. Exported records are separate copies.
 
@@ -36,3 +36,7 @@ The website uses Google sign-in through its authentication service and Razorpay 
 ## Questions and requests
 
 Email **admin@builtbygsv.in** or contact **+91 8438365095**. Describe whether the request concerns desktop records, website access, or a connected provider. Do not attach private session content or credentials.
+
+## Managed gateway (1.0.6)
+
+Managed context passes through Hintio’s Supabase-hosted gateway to OpenAI for answers and Groq for transcription. This can include selected audio, transcripts, screenshots and supplied document context. Company provider keys stay server-side. Gateway code stores session hashes and access/rate counters, not request content. Infrastructure and AI providers process requests under their own terms. Google sign-in remains enabled; unused email/password and anonymous sign-in are disabled.

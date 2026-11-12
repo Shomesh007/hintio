@@ -1099,7 +1099,10 @@ function Info({ type }: { type: 'privacy' | 'terms' }) {
                             <dt>Cloud AI</dt>
                             <dd>
                                 Session context sent to a cloud provider can include audio or transcripts, screenshots, resume text, and custom
-                                instructions. The selected provider's terms apply to its processing.
+                                instructions. In managed mode, this context passes through Hintio’s Supabase-hosted gateway to OpenAI for answers and
+                                Groq for speech transcription. Company provider keys remain on the server. The gateway stores hashed session
+                                credentials and access/rate counters; it does not store request content. Infrastructure and AI providers process
+                                requests under their own terms.
                             </dd>
                         </div>
                         <div>

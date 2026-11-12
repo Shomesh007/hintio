@@ -26,7 +26,7 @@ The current desktop entry screen uses an access token. Provider integrations in 
 4. Set your AI context and choose audio and screen-capture settings.
 5. Start a session. Open Help & Contact for the shortcuts configured on your device.
 
-If the overlay blocks clicks, use **Ctrl+M** to toggle click-through or **Ctrl+\** to hide it on Windows. Shortcuts can be rebound. Click-through changes mouse behavior; it does not control screen-sharing visibility.
+If the overlay blocks clicks, use **Ctrl+M** to toggle click-through or *_Ctrl+\*_ to hide it on Windows. Shortcuts can be rebound. Click-through changes mouse behavior; it does not control screen-sharing visibility.
 
 Windows is the currently linked downloadable build. macOS and Linux code paths exist, but this repository does not promise tested installers for those platforms.
 
@@ -45,12 +45,12 @@ billing uses isolated tables and keys that cannot unlock production access.
 
 ## Repository layout
 
-| Location | Contents |
-| --- | --- |
-| [`main`](https://github.com/Shomesh007/hintio/tree/main) | React/TypeScript website, account and access flows, public product pages |
+| Location                                                       | Contents                                                                  |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| [`main`](https://github.com/Shomesh007/hintio/tree/main)       | React/TypeScript website, account and access flows, public product pages  |
 | [`desktop`](https://github.com/Shomesh007/hintio/tree/desktop) | Maintained Electron desktop source, including contact and privacy updates |
-| [`v1.0.2`](https://github.com/Shomesh007/hintio/tree/v1.0.2) | Original desktop release source snapshot |
-| [Releases](https://github.com/Shomesh007/hintio/releases) | Distributed Windows installer |
+| [`v1.0.2`](https://github.com/Shomesh007/hintio/tree/v1.0.2)   | Original desktop release source snapshot                                  |
+| [Releases](https://github.com/Shomesh007/hintio/releases)      | Distributed Windows installer                                             |
 
 The current Windows installer is `v1.0.4`, built from the maintained desktop source. The original `v1.0.2` tag and installer remain available for rollback.
 
@@ -89,3 +89,7 @@ Email **admin@builtbygsv.in** or call / WhatsApp **+91 8438365095**. Do not send
 ## License
 
 The desktop source includes its GPL-3.0 license on the desktop branch. Consult the license files applicable to the source you use; distribution of an installer does not grant separate rights to third-party services or assets.
+
+## Security migration
+
+The 1.0.6 managed runtime uses a scoped Supabase gateway. Applied security migrations and source are included under supabase/. The legacy resolver requires an update for session starts. Full dependency audits are clean. Historical provider-key rotation and secure-client distribution remain release gates; public 1.0.4 is incompatible.
