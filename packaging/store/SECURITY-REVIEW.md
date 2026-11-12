@@ -16,7 +16,7 @@
 
 ## Evidence
 
-71 desktop tests; 73 JavaScript syntax checks; strict gateway TypeScript; 99 website tests, website TypeScript and production build. Live GPT marker, streamed response, synthetic speech and public-logo vision passed. Closed-session reuse returned 403. Invalid credentials, remote image URLs and excess output limits are rejected. Real database rollback tests cover idempotency, last-credit operation, cross-license replay, exhaustion, revocation, expiry, daily limit and privileges. Billing and sandbox isolation tests rerun successfully.
+72 desktop tests; 73 JavaScript syntax checks; strict gateway TypeScript; 99 website tests, website TypeScript and production build. Live GPT marker, streamed response, synthetic speech and public-logo vision passed. Closed-session reuse returned 403. Invalid credentials, remote image URLs and excess output limits are rejected. Real database rollback tests cover idempotency, last-credit operation, cross-license replay, exhaustion, revocation, expiry, daily limit and privileges. Billing and sandbox isolation tests rerun successfully.
 
 Evidence is retained under `out/security-review-2026-11-12/`. Three temporary QA session credits were used: the first exposed a limiter configuration mismatch; subsequent live requests passed. The QA token is blocked and expired; no customer credit or real-money payment was used.
 

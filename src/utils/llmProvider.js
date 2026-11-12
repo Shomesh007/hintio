@@ -369,6 +369,12 @@ async function requestChatCompletion({
     const managed = providers.find(entry => typeof entry.transport === 'function');
     if (managed) {
         const response = await managed.transport({ messages, stream, maxTokens, live, deeper, timeoutMs });
+        if (!response.ok) {
+            const payload = await response.json().catch(() => ({}));
+            const error = new Error(typeof payload.error === 'string' ? payload.error.slice(0, 300) : 'Hintio managed service unavailable.');
+            error.status = response.status;
+            throw error;
+        }
         return { response, provider: 'openai', model: managed.model, keyIndex: 0, attempts: 1, modelFallbacks: 0 };
     }
     let lastError = null;

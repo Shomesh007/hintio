@@ -133,3 +133,18 @@ test('managed transport bypasses all local key pools and preserves streaming res
     assert.equal(result.provider, 'openai');
     assert.equal(await result.response.text(), 'data: [DONE]\n\n');
 });
+
+test('managed expiry errors do not ask customers to replace company provider keys', async () => {
+    await assert.rejects(
+        requestChatCompletion({
+            providers: [
+                {
+                    provider: PROVIDERS.openai,
+                    transport: async () => Response.json({ error: 'Session expired. Start a new session.' }, { status: 403 }),
+                },
+            ],
+            messages: [{ role: 'user', content: 'Hi' }],
+        }),
+        error => error.status === 403 && error.message === 'Session expired. Start a new session.'
+    );
+});

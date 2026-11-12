@@ -35,4 +35,4 @@ Live GPT and synthetic speech checks passed. Provider setup is validated before 
 
 ## Current security and billing status (12 November)
 
-Earlier deferred-webhook and audit notes above are superseded by verified payment/renewal/cancellation delivery, 99 website tests, 71 desktop tests, zero-vulnerability full npm audits, restricted RPCs and the managed gateway. See [current security review](SECURITY-REVIEW.md). Key rotation, active-credential renewal approval, secure-client distribution and Microsoft gates remain explicit.
+Earlier deferred-webhook and audit notes above are superseded by verified payment/renewal/cancellation delivery, 99 website tests, 72 desktop tests, zero-vulnerability full npm audits, restricted RPCs and the managed gateway. See [current security review](SECURITY-REVIEW.md). Key rotation, active-credential renewal approval, secure-client distribution and Microsoft gates remain explicit.
