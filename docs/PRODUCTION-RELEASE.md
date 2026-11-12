@@ -27,3 +27,9 @@ This is a browser identifier, not hardware attestation. Clearing browser data, a
 74 desktop tests, 50 resolver checks, website trial/billing/download tests, SQL rollback tests and real released-1.0.4 GPT/synthetic-speech tests cover the change. QA entitlements are blocked after tests. The customer key, paid expiry and usage are not changed by QA.
 
 The original 1.0.4 installer remains unsigned and was blocked by this PC's Windows Application Control. Backend compatibility cannot fix installer trust. The website discloses this before purchase; Microsoft approval and Store-signed native tests remain separate gates.
+
+## Separate test prerelease and provider-isolation work
+
+At the owner's request in a separate chat, v1.0.6-preview.1 is published only for friend testing, with prerelease=true and latest=false. Production, purchase links and minimum supported version remain 1.0.4. The candidate binaries are unchanged.
+
+The owner also assigned a separate coordinated chat to isolate trial OpenAI/Groq credentials and provider restrictions. That chat owns resolver credential-routing changes after v18. Account/IP/browser guards do not isolate provider credentials by themselves. Until that follow-up ships, the legacy v18 trial path uses the previously approved company credentials; after fail-closed isolated routing is deployed, new trial starts require the dedicated trial credentials. Do not claim provider isolation is configured merely because this release-policy work is complete.

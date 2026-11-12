@@ -36,7 +36,7 @@ See [DEVELOPMENT.md](docs/DEVELOPMENT.md) for prerequisites, source layout, pack
 
 ## Update notifications (staged in 1.0.5)
 
-The preserved 1.0.6 candidate supports browser-based update notices for manual builds and Microsoft Store update paths for Store builds. It remains unpublished; public downloads stay on 1.0.4. See [the update guide](docs/UPDATES.md) for policy controls, verification, and Windows trust limitations.
+The preserved 1.0.6 candidate supports browser-based update notices for manual builds and Microsoft Store update paths for Store builds. Public downloads stay on 1.0.4; 1.0.6 is available only as the test prerelease v1.0.6-preview.1. See [the update guide](docs/UPDATES.md) for policy controls, verification, and Windows trust limitations.
 
 ## Microsoft Store preparation
 
