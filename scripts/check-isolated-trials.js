@@ -106,19 +106,22 @@ async function main() {
         headers: { authorization: 'Bearer ' + trial.openaiApiKeys[0] },
         signal: AbortSignal.timeout(30000),
     });
-    assert.equal(files.status, 403);
+    stage = 'trial OpenAI restricted endpoints HTTP ' + files.status;
+    assert([401, 403].includes(files.status));
     await files.body?.cancel();
     report.openaiFilesDenied = true;
+    report.openaiFilesDenialStatus = files.status;
     stage = 'trial Groq model restriction';
     const blocked = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: { authorization: 'Bearer ' + trial.groqApiKey, 'content-type': 'application/json' },
-        body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: 'Hi' }], max_tokens: 1 }),
+        body: JSON.stringify({ model: 'openai/gpt-oss-20b', messages: [{ role: 'user', content: 'Hi' }], max_tokens: 1 }),
         signal: AbortSignal.timeout(30000),
     });
     assert.equal(blocked.status, 403);
     await blocked.body?.cancel();
     report.groqChatModelDenied = true;
+    report.groqChatDenialStatus = blocked.status;
     stage = 'remaining trial starts';
     for (let expected = 2; expected <= 3; expected++) {
         const r = await call(qa.trialToken, true);

@@ -1,6 +1,6 @@
 # Temporary 1.0.4 trial credential isolation
 
-Status: implementation and local tests prepared on 12 November 2026. NOT deployed or enabled until dedicated provider credentials and provider-side settings are verified. Production public release is 1.0.4. The 1.0.6-preview.1 prerelease remains test-only.
+Status: ACTIVE on 12 November 2026. Resolver v24 routes eligible 1.0.4 trials to isolated, expiring provider credentials after live verification. Production public release is 1.0.4. The 1.0.6-preview.1 prerelease remains test-only.
 
 ## Ownership and compatibility
 
@@ -49,3 +49,11 @@ No promise is made that direct-to-provider 1.0.4 can prevent all outside use. Is
 ## Pilot credential handling
 
 An initial Groq key display was accidentally captured in the local UI proof screenshot and this chat. The local screenshot was deleted with owner approval. The owner explicitly instructed that the existing key must not be revoked or replaced. Preserve that decision and record the residual exposure: a copied key can still use the restricted project until native expiry, subject to provider caps. Do not describe this as a restored secret or complete prevention of outside use. No paid provider credentials were rotated or changed by this setup.
+
+## Activation verification - 12 November 2026
+
+Resolver v24 was deployed with the shared helper and explicit pinned import map. Both provider key names and both cutoff names were verified as saved in Supabase. OpenAI native expiry is 2026-11-19T16:06:22Z (19 November, 21:36:22 IST); its key has only api.model.chat_completions.request permission. The effective trial issuance cutoff is the earlier Groq server cutoff, 2026-11-18T00:00:00Z. New starts stop when less than sixteen minutes remain. Replace the trial credentials and verified cutoffs before that point to keep trials available.
+
+Live checks passed using the actual released 1.0.4 resolver consumer and image request builder: three trial starts, fourth start refused; fifteen-minute sessions; GPT-6 Luna chat; synthetic speech recognition; synthetic screen verification code read with medium reasoning; OpenAI files endpoint denied (401); a currently supported Groq chat model denied (403); trial and paid credentials distinct; paid QA start preserved. No image-generation or Files permission is needed for screenshot input sent through Chat Completions. Expired/missing/malformed configuration and no-credit-consumption failures were verified locally rather than changing live provider expiry or draining quotas.
+
+The real customer remained active with unchanged expiry, allowance and usage count (19). Both synthetic QA tokens were blocked after testing; their no-password synthetic account was banned. No customer sessions were consumed. Full verification: 78 desktop tests, 125 website tests, 63 resolver scenarios, strict helper type check and JavaScript syntax checks. Provider quota exhaustion and future native expiry have not been forced in production.
