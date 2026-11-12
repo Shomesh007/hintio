@@ -1,6 +1,7 @@
 // Public production is 1.0.4 until Store release. Paid and claimed three-session trial access use the legacy contract.
 // @ts-nocheck
 import { createClient } from 'npm:@supabase/supabase-js@2.99.1';
+import { selectTrialCredentials, TrialCredentialError } from '../_shared/trialCredentials.ts';
 const cors = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'authorization,apikey,content-type,x-client-intent,x-runtime-secret',
@@ -180,9 +181,11 @@ Deno.serve(async req => {
         let row = oneRow(resolved.data);
         if (!row) return reply({ error: 'Invalid, expired or exhausted access', secretsIssued: false }, 403);
         if (!(await confirmedEligibility(client, row))) return upgrade();
-        // Canonical company OpenAI singular env wins; only its first key is exposed.
-        const openai = firstKey(Deno.env.get('HINTIO_MANAGED_OPENAI_API_KEY'));
-        const groq = await speechKey(client, row);
+        const trial = productionTrial(row);
+        // Never call the company/row/template fallback for a trial.
+        const trialKeys = trial ? selectTrialCredentials(name => Deno.env.get(name), [String(row.groq_api_key || '')]) : null;
+        const openai = trialKeys ? trialKeys.openai : firstKey(Deno.env.get('HINTIO_MANAGED_OPENAI_API_KEY'));
+        const groq = trialKeys ? trialKeys.groq : await speechKey(client, row);
         if (!openai || !groq)
             return reply({ error: 'Managed provider configuration unavailable. No session credit consumed.', secretsIssued: false }, 503);
         if (!(await limit('legacy-start:' + tokenHash, 5, 600))) return reply({ error: 'Too many session starts', secretsIssued: false }, 429);
@@ -192,7 +195,7 @@ Deno.serve(async req => {
         if (!row || !(await confirmedEligibility(client, row))) return upgrade(); // Recheck opt-in/expiry after atomic consumption.
         const deadline =
             productionPaid(row) || productionTrial(row) ? Date.parse(row.expires_at) : Date.parse(row.metadata.legacyDesktopCompatibilityUntil);
-        const remaining = Math.min(Date.parse(row.expires_at), deadline) - Date.now();
+        const remaining = Math.min(Date.parse(row.expires_at), deadline, trialKeys?.expiresAt || Infinity) - Date.now();
         if (remaining <= 0) return upgrade();
         // UI convenience only: raw vendor credentials are NOT revocable/quotable by this UI timer.
         const metadata = {
@@ -208,7 +211,7 @@ Deno.serve(async req => {
                 llmProvider: 'openai',
                 providerConfiguration: { openaiConfigured: true, groqConfigured: true, geminiConfigured: false },
                 openaiApiKeys: [openai],
-                openaiModel: (Deno.env.get('HINTIO_MANAGED_OPENAI_MODEL') || 'gpt-5.6-luna').trim(),
+                openaiModel: trialKeys ? trialKeys.model : (Deno.env.get('HINTIO_MANAGED_OPENAI_MODEL') || 'gpt-5.6-luna').trim(),
                 groqApiKey: groq,
                 geminiApiKey: '',
                 geminiApiKeys: [],
@@ -225,7 +228,8 @@ Deno.serve(async req => {
                 secretsIssued: true,
             },
         });
-    } catch {
+    } catch (error) {
+        if (error instanceof TrialCredentialError) return reply({ error: error.message, code: error.code, secretsIssued: false }, 503);
         return reply({ error: 'Invalid request or unavailable access service', secretsIssued: false }, 503);
     }
 });
