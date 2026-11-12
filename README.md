@@ -30,6 +30,19 @@ If the overlay blocks clicks, use **Ctrl+M** to toggle click-through or **Ctrl+\
 
 Windows is the currently linked downloadable build. macOS and Linux code paths exist, but this repository does not promise tested installers for those platforms.
 
+## Access and billing
+
+Monthly access costs INR 2,049 and renews monthly until cancelled. Yearly access is
+INR 14,000 for 365 prepaid days, with manual renewal and no automatic yearly charge.
+Use [Manage my billing](https://www.hintio.tech/access#billing) to cancel monthly renewal
+at the end of the paid cycle. Cancellation retains access until its paid expiry.
+Retrieve purchased access using the same Google account used at checkout.
+
+The backend verifies captured payments and their paid invoices, provisions app access
+atomically, and retains the key across renewals. The November 2026 renewal repair is
+server-side and does not require reinstalling the desktop app. Razorpay Test-mode
+billing uses isolated tables and keys that cannot unlock production access.
+
 ## Repository layout
 
 | Location | Contents |

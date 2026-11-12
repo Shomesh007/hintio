@@ -17,6 +17,15 @@ Deno.serve(async (req: Request) => {
                 if (Object.hasOwn(data,field)) check[field]=data[field];
             checks.push(check);
         }
+        if (/^\/v1\/invoices(?:\/inv_[A-Za-z0-9]+)?$/.test(route) || /^\/v1\/payments\/pay_[A-Za-z0-9]+$/.test(route)) {
+            const data=await response.clone().json();
+            for(const entity of data.items || [data]) {
+                const check: Record<string, unknown>={httpStatus:response.status,entity:route.includes('/invoices')?'invoice':'payment'};
+                for(const field of ['id','status','payment_id','invoice_id','subscription_id','amount','amount_paid','amount_due','currency','created_at','paid_at','billing_start','billing_end','captured','error_code','error_reason','error_step'])
+                    if(Object.hasOwn(entity,field)) check[field]=entity[field];
+                checks.push(check);
+            }
+        }
         return response;
     };
     const response=await createSandboxBillingService(admin,env,observedFetch).manage(req);

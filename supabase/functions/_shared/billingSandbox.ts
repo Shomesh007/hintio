@@ -42,5 +42,5 @@ export function sandboxEnv(env: (name: string) => string | undefined) {
     };
 }
 export function createSandboxBillingService(admin: any, env: (name: string) => string | undefined, fetcher?: typeof fetch) {
-    return createBillingService({ admin: sandboxAdmin(admin), env: sandboxEnv(env), fetcher });
+    return createBillingService({ admin: sandboxAdmin(admin), env: sandboxEnv(env), fetcher, mode: 'test' });
 }

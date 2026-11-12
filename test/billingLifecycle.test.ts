@@ -35,6 +35,8 @@ function setup(o: any = {}) {
         payment_id: 'pay_example',
         status: 'paid',
         amount_due: 0,
+        amount: TERMS.monthlyAmount,
+        currency: 'INR',
         amount_paid: TERMS.monthlyAmount,
         paid_at: start,
         billing_start: start,
@@ -44,7 +46,7 @@ function setup(o: any = {}) {
     const order = { id: 'order_example', amount: payment.amount, currency: 'INR', notes, ...o.order };
     const env = (n: string) =>
         ({
-            RAZORPAY_KEY_ID: 'rzp_test_fake',
+            RAZORPAY_KEY_ID: o.keyId || 'rzp_live_fake',
             RAZORPAY_KEY_SECRET: 'test-secret',
             RAZORPAY_WEBHOOK_SECRET: 'webhook-secret',
             RAZORPAY_MONTHLY_PLAN_ID: 'plan_verified',
@@ -425,4 +427,56 @@ test('automatic recovery proof is still bound to the signed-in owner and selecte
     assert.equal((await s.service.recover(s.req({ plan: 'yearly', paymentId: 'pay_example' }))).status, 403);
     const t = setup();
     assert.equal((await t.service.recover(t.req({ plan: 'monthly', paymentId: 'pay_example' }))).status, 400);
+});
+
+
+test('captured early renewal uses its paid invoice period even after the subscription advances', async () => {
+    const s=setup({plan:'monthly',payment:{invoice_id:'inv_example'},
+        invoice:{billing_start:start+30*86400,billing_end:start+61*86400},
+        sub:{current_start:start+61*86400,current_end:start+90*86400}});
+    assert.equal((await s.issue()).status,200);
+    const grant=s.calls.find(x=>x.rpc==='record_billing_payment').args.p;
+    assert.equal(grant.period_start,new Date((start+30*86400)*1000).toISOString());
+    assert.equal(grant.period_end,new Date((start+61*86400)*1000).toISOString());
+});
+test('retrying an old captured invoice cannot grant the later mutable subscription period', async () => {
+    const s=setup({plan:'monthly',payment:{invoice_id:'inv_example'},sub:{current_start:start+90*86400,current_end:start+120*86400}});
+    assert.equal((await s.issue()).status,200);
+    assert.equal(s.calls.find(x=>x.rpc==='record_billing_payment').args.p.period_end,new Date((start+30*86400)*1000).toISOString());
+});
+test('missing invoice dates retry without guessing dates or granting access', async () => {
+    for(const invoice of [{billing_start:null},{billing_end:undefined}]) {
+        const s=setup({plan:'monthly',payment:{invoice_id:'inv_example'},invoice});
+        assert.equal((await s.issue()).status,202);
+        assert.equal(s.calls.some(x=>x.rpc==='record_billing_payment'),false);
+        assert.equal((await s.webhook({event:'subscription.charged',payload:{payment:{entity:{id:'pay_example'}}}})).status,503);
+        assert.equal(s.rows.billing_webhook_events.length,0);
+    }
+});
+test('a subscription payment without a settled invoice cannot use current subscription dates', async () => {
+    const s=setup({plan:'monthly',payment:{subscription_id:'sub_example'}});
+    assert.equal((await s.issue()).status,202);
+    assert.equal(s.calls.some(x=>x.rpc==='record_billing_payment'),false);
+});
+test('invoice identity, total, paid total and currency must match the captured payment', async () => {
+    for(const invoice of [{id:'inv_other'},{amount:1},{amount_paid:1},{currency:'USD'}]) {
+        const s=setup({plan:'monthly',payment:{invoice_id:'inv_example'},invoice});
+        assert.equal((await s.issue()).status,409);
+        assert.equal(s.calls.some(x=>x.rpc==='record_billing_payment'),false);
+    }
+});
+test('early-renewal support still rejects invalid periods and fabricated future payment times', async () => {
+    for(const invoice of [{billing_end:start+40*86400},{billing_start:start+0.5},{paid_at:start+86400}]) {
+        const s=setup({plan:'monthly',payment:{invoice_id:'inv_example'},invoice});
+        assert.equal((await s.issue()).status,invoice.paid_at ? 400 : 409);
+        assert.equal(s.calls.some(x=>x.rpc==='record_billing_payment'),false);
+    }
+});
+
+
+test('production billing refuses Test-mode credentials before contacting Razorpay', async () => {
+    const s=setup({keyId:'rzp_test_wrongenvironment'});
+    assert.equal((await s.service.checkout(s.req({plan:'yearly'}))).status,503);
+    assert.equal(s.calls.some(x=>x.route),false);
+    assert.equal(s.calls.some(x=>x.rpc==='record_billing_payment'),false);
 });

@@ -20,7 +20,7 @@ export class BillingError extends Error {
     }
 }
 type Entity = Record<string, any>;
-type Dependencies = { admin: any; env: (name: string) => string | undefined; fetcher?: typeof fetch; now?: () => number };
+type Dependencies = { admin: any; env: (name: string) => string | undefined; fetcher?: typeof fetch; now?: () => number; mode?: 'live' | 'test' };
 const iso = (seconds: number) => new Date(seconds * 1000).toISOString();
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const allowedOrigins = new Set(['https://www.hintio.tech', 'https://hintio.tech', 'http://localhost:3000', 'http://localhost:5174']);
@@ -36,7 +36,7 @@ export function secureEqual(a: string, b: string) {
     for (let i = 0; i < a.length; i++) difference |= a.toLowerCase().charCodeAt(i) ^ b.toLowerCase().charCodeAt(i);
     return difference === 0;
 }
-export function createBillingService({ admin, env, fetcher = fetch, now = Date.now }: Dependencies) {
+export function createBillingService({ admin, env, fetcher = fetch, now = Date.now, mode = 'live' }: Dependencies) {
     const json = (req: Request, data: unknown, status = 200) => {
         const origin = req.headers.get('origin') || '';
         return new Response(JSON.stringify(data), {
@@ -65,6 +65,8 @@ export function createBillingService({ admin, env, fetcher = fetch, now = Date.n
         const id = env('RAZORPAY_KEY_ID'),
             secret = env('RAZORPAY_KEY_SECRET');
         if (!id || !secret) throw new BillingError('Payment service is not configured. Contact support.', 503);
+        if (!id.startsWith(mode === 'live' ? 'rzp_live_' : 'rzp_test_'))
+            throw new BillingError('Payment service environment mismatch. Contact support.', 503);
         const response = await fetcher('https://api.razorpay.com/v1/' + route, {
             method,
             headers: { Authorization: 'Basic ' + btoa(id + ':' + secret), 'Content-Type': 'application/json' },
@@ -116,8 +118,13 @@ export function createBillingService({ admin, env, fetcher = fetch, now = Date.n
         if (claim?.orderId && payment.order_id !== claim.orderId) throw new BillingError('Order mismatch');
         if (subscription && (plan !== 'monthly' || subscription.plan_id !== env('RAZORPAY_MONTHLY_PLAN_ID') || subscription.quantity !== 1))
             throw new BillingError('Subscription plan mismatch');
-        if (invoice && (invoice.payment_id !== payment.id || invoice.status !== 'paid' || invoice.amount_due !== 0))
+        if (subscription && !invoice) throw new BillingError('Subscription invoice is still processing.', 202);
+        if (invoice && (invoice.id !== payment.invoice_id || invoice.payment_id !== payment.id))
+            throw new BillingError('Invoice payment reference mismatch', 409);
+        if (invoice && (invoice.status !== 'paid' || invoice.amount_due !== 0))
             throw new BillingError('Invoice is not fully paid', 202);
+        if (invoice && (invoice.amount !== payment.amount || invoice.amount_paid !== payment.amount || invoice.currency !== payment.currency))
+            throw new BillingError('Invoice amount or currency mismatch', 409);
         if (order && order.currency !== payment.currency) throw new BillingError('Order currency mismatch');
         const expected = plan === 'monthly' ? TERMS.monthlyAmount : TERMS.yearlyAmount;
         if (
@@ -131,15 +138,19 @@ export function createBillingService({ admin, env, fetcher = fetch, now = Date.n
         let start = paidAt,
             end = start + 365 * 86400;
         if (subscription) {
-            start = Number(invoice?.billing_start || subscription.current_start);
-            end = Number(invoice?.billing_end || subscription.current_end);
+            // A captured renewal can pay for a future period; subscription.current_* is mutable.
+            // Only this payment's verified paid invoice defines the purchased access period.
+            if (invoice?.billing_start == null || invoice?.billing_end == null)
+                throw new BillingError('Invoice billing dates are still processing.', 202);
+            start = Number(invoice.billing_start);
+            end = Number(invoice.billing_end);
             if (
-                !Number.isFinite(start) ||
-                !Number.isFinite(end) ||
+                !Number.isSafeInteger(start) ||
+                !Number.isSafeInteger(end) ||
+                start < 1500000000 ||
+                end > 8640000000000 ||
                 end <= start ||
-                end - start > 32 * 86400 ||
-                paidAt < start - 7 * 86400 ||
-                paidAt > end
+                end - start > 32 * 86400
             )
                 throw new BillingError('Billing period requires support review.', 409);
         } else if (plan === 'monthly') end = start + 30 * 86400; // previously created prepaid monthly orders only
