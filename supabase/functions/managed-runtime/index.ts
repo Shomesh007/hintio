@@ -134,13 +134,19 @@ Deno.serve(async (req: Request) => {
             if (r.error) throw new Error('limiter');
             return r.data === true;
         }
-        const openai = (
-            ['HINTIO_MANAGED_OPENAI_API_KEYS', 'HINTIO_MANAGED_OPENAI_API_KEY', 'OPENAI_API_KEYS', 'OPENAI_API_KEY']
-                .map(k => (Deno.env.get(k) || '').trim())
-                .find(Boolean) || ''
-        )
+        const openaiCredentialSource =
+            ['HINTIO_MANAGED_OPENAI_API_KEY', 'HINTIO_MANAGED_OPENAI_API_KEYS', 'OPENAI_API_KEY', 'OPENAI_API_KEYS'].find(k =>
+                (Deno.env.get(k) || '').trim()
+            ) || '';
+        const openai = (openaiCredentialSource ? Deno.env.get(openaiCredentialSource) || '' : '')
+            .trim()
             .split(/[\s,;]+/)
             .filter(Boolean);
+        const groqCredentialSource = (Deno.env.get('HINTIO_MANAGED_GROQ_API_KEY') || '').trim()
+            ? 'HINTIO_MANAGED_GROQ_API_KEY'
+            : (Deno.env.get('GROQ_API_KEY') || '').trim()
+              ? 'GROQ_API_KEY'
+              : 'legacy-managed-configuration';
         const model = (Deno.env.get('HINTIO_MANAGED_OPENAI_MODEL') || 'gpt-5.6-luna').trim();
         if (p.operation === 'status' || p.operation === 'session') {
             if (!(await limit('gateway-auth-ip:' + (await hash(ip)), 45, 60)) || !(await limit('gateway-auth:' + (await hash(credential)), 12, 300)))
@@ -159,7 +165,7 @@ Deno.serve(async (req: Request) => {
                     data: {
                         providerMode: 'managed',
                         llmProvider: 'openai',
-                        providerConfiguration: { openaiConfigured: true, groqConfigured: true },
+                        providerConfiguration: { openaiConfigured: true, groqConfigured: true, openaiCredentialSource, groqCredentialSource },
                         openaiModel: model,
                         expiresAt: row.expires_at,
                         maxInterviews: row.max_interviews,

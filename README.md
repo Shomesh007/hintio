@@ -93,3 +93,5 @@ The desktop source includes its GPL-3.0 license on the desktop branch. Consult t
 ## Security migration
 
 The 1.0.6 managed runtime uses a scoped Supabase gateway. Applied security migrations and source are included under supabase/. The legacy resolver requires an update for session starts. Full dependency audits are clean. Historical provider-key rotation and secure-client distribution remain release gates; public 1.0.4 is incompatible.
+
+Paid-session renewal was owner-approved and applied on 12 November (migration 20261112020902). Active paid credentials renew within paid expiry, with an eight-hour idle timeout and unchanged request limits. Managed-runtime v5 prefers canonical rotation secret names. Provider replacement/revocation and sandbox webhook-secret separation are still pending owner actions.
