@@ -35,14 +35,30 @@ Razorpay until the cycle ends, according to Razorpay's documented lifecycle.
 Yearly access is 365 days without automatic renewal.
 No test keys appeared in production licenses.
 
-## Remaining renewal test
-The Test-mode dashboard's Charge this now > Charge as success was attempted twice.
-Both attempts reported "Charge attempt failed. A retry is scheduled."
-Two new invoices were issued and the subscription billing period advanced, but paid_count
-remained 1 and neither renewal payment was captured. Hintio did not extend access on unpaid invoices.
-Do not report successful provider renewal as verified. Preserve paid access and investigate
-with Razorpay merchant support, using the references in out/razorpay-e2e-2026-11-11.
-Do not weaken captured-payment or invoice verification to make the simulator appear to pass.
+## Renewal fix verified on 12 November 2026
+The earlier retry message was not the final capture result: one renewal captured later.
+Hintio rejected its webhook because an arbitrary seven-day prepayment check did not
+allow accelerated Test-mode billing periods. It also used mutable subscription dates
+as an invoice-date fallback.
+
+The deployed fix takes the period exclusively from the matching fully paid invoice.
+It verifies invoice/payment identities, captured status, amount, currency, canonical
+account ownership, plan and bounded monthly period. Missing dates retry without an
+access grant. Future payment timestamps remain rejected. Production rejects Test keys,
+and the isolated sandbox rejects live keys.
+
+The previously rejected captured renewal recovered onto the same license and key.
+A fresh Test-mode purchase and renewal then produced two captured INR 2,049 payments
+for one license. Five signed purchase/renewal deliveries returned HTTP 200. No manual
+recovery ran during the fresh renewal. Recovery retained the same key after reload;
+end-of-cycle cancellation disabled renewal while preserving the renewed paid expiry.
+No test keys appeared in production. No real funds or customer subscriptions were used.
+
+99 website tests, 70 desktop tests, 69 desktop JavaScript syntax checks, TypeScript,
+the production website build and both real SQL rollback suites passed. Live function
+versions: checkout 18, issuer 13, recovery 14, management 8 and webhook 16.
+This is a server-side repair; installed clients do not require an update for it.
+Detailed evidence and rollback source: out/renewal-fix-2026-11-12/.
 
 ## Independent release limitations
 Live webhook configuration is saved, but no real-money live charge was made in this QA.

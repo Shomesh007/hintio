@@ -6,7 +6,7 @@ The findings below describe the original baseline. The deployed lifecycle fix no
 
 Account-management and payment-reference repair UI is tested. End-of-cycle cancellation requires an explicit confirmation and retains paid access. No customer was charged or cancelled during testing. Two older unlinked records contain no payment references; they require captured-payment proof, not automatic activation.
 
-Razorpay had no live webhook configured. Its URL and 11 lifecycle events are prepared, but the owner explicitly deferred secret entry and creation. Automatic delivery and a real Razorpay Test-mode captured payment remain release gates. Read-time reconciliation supplements webhooks without replacing them.
+Both live and isolated Test-mode webhooks are now enabled with 11 lifecycle events. Actual monthly/yearly Test-mode payments and five signed purchase/renewal deliveries are verified. On 12 November, an early-renewal rejection was fixed by using the matching paid invoice period, retaining the same key and checking amount, currency, owner and capture proof. Read-time reconciliation supplements webhooks without replacing them. No real-money live charge was made.
 
 ## Historical baseline (before remediation)
 
@@ -30,7 +30,7 @@ Razorpay had no live webhook configured. Its URL and 11 lifecycle events are pre
 5. Verify session/count/time/daily limits from live entitlements. The app uses metadata time limits and applies 15 minutes to three-session tokens; this does not establish paid-plan limits.
 6. Replace draft purchase disclosure with the verified price, renewal, cancellation, taxes and usage terms before submission. No billing changes were deployed by this audit.
 
-This report is a release blocker list, not a successful payment end-to-end test.
+The historical baseline above records the original blockers. Current end-to-end Test-mode results are documented in RAZORPAY-SANDBOX.md and the dated out/renewal-fix-2026-11-12 verification report.
 
 ## Provider integration
 
