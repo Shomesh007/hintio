@@ -80,6 +80,14 @@
         {
             "source": "/contact/",
             "destination": "/"
+        },
+        {
+            "source": "/pricing",
+            "destination": "/"
+        },
+        {
+            "source": "/pricing/",
+            "destination": "/"
         }
     ],
     "headers": [

@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import { shortcuts, profiles, platformKeys, type ShortcutGroup } from './shortcutData';
 import './marketing.css';
-import BillingManager from './BillingManager';
+import PricingPage from './PricingPage';
 import { supabase } from '../lib/supabase';
 import { completeBillingReturn } from '../lib/billingAccount';
 
@@ -38,7 +38,7 @@ interface Props {
     onMacDownload: () => void;
     checkoutLoading: boolean;
 }
-type Page = '/' | '/workflows' | '/shortcuts' | '/get-started' | '/access' | '/privacy' | '/terms' | '/contact';
+type Page = '/' | '/workflows' | '/shortcuts' | '/get-started' | '/access' | '/pricing' | '/privacy' | '/terms' | '/contact';
 const support = 'https://wa.me/918438365095';
 const supportEmail = 'admin@builtbygsv.in';
 const titles: Record<Page, string> = {
@@ -46,7 +46,8 @@ const titles: Record<Page, string> = {
     '/workflows': 'Workflows',
     '/shortcuts': 'Keyboard shortcuts',
     '/get-started': 'Getting started',
-    '/access': 'Desktop access',
+    '/access': 'Pricing & desktop access',
+    '/pricing': 'Pricing & desktop access',
     '/contact': 'Contact Hintio',
     '/privacy': 'Privacy & data',
     '/terms': 'Access information',
@@ -306,7 +307,7 @@ function Home({ onDownload, go }: Pick<Props, 'onDownload'> & { go: (page: Page)
                     </h1>
                     <p>Stay with the conversation. Hintio brings real-time voice and screen context to your desktop.</p>
                     <div className="hero-actions">
-                        <Button tone="ink" onClick={() => go('/access')}>
+                        <Button tone="ink" onClick={() => go('/pricing')}>
                             Get your access key <ArrowUpRight size={19} />
                         </Button>
                         <Button tone="outline" onClick={() => go('/workflows')}>
@@ -431,7 +432,7 @@ function Home({ onDownload, go }: Pick<Props, 'onDownload'> & { go: (page: Page)
                     </h2>
                     <p>Get the app, choose your access, and make room for clearer thinking.</p>
                     <div className="hero-actions">
-                        <Button onClick={() => go('/access')}>
+                        <Button onClick={() => go('/pricing')}>
                             Explore desktop access <ArrowUpRight size={18} />
                         </Button>
                         <Button tone="outline" onClick={onDownload}>
@@ -555,7 +556,7 @@ function Workflows({ go }: { go: (page: Page) => void }) {
                 title="Find your flow with Hintio."
                 action="Explore shortcuts"
                 onClick={() => go('/shortcuts')}
-                secondary={() => go('/access')}
+                secondary={() => go('/pricing')}
             />
         </>
     );
@@ -899,119 +900,8 @@ function GetStarted({ onDownload, go }: Pick<Props, 'onDownload'> & { go: (page:
                 title="Open Hintio. Keep your flow."
                 action="View all shortcuts"
                 onClick={() => go('/shortcuts')}
-                secondary={() => go('/access')}
+                secondary={() => go('/pricing')}
             />
-        </>
-    );
-}
-function Access({ onDownload, onUpgrade, onRecover, onMacDownload, checkoutLoading }: Props) {
-    const [plan, setPlan] = useState<'monthly' | 'yearly'>('monthly');
-    return (
-        <>
-            <section className="wrap access-page page-hero">
-                <div>
-                    <span className="eyebrow">HINTIO DESKTOP ACCESS</span>
-                    <h1>
-                        One key.
-                        <br />
-                        <mark>A clearer next step.</mark>
-                    </h1>
-                    <p>Bring real-time voice and screen context into your conversations. Choose the access that fits your plans.</p>
-                    <div className="access-plan-toggle" aria-label="Billing plan">
-                        {(['monthly', 'yearly'] as const).map(p => (
-                            <button key={p} onClick={() => setPlan(p)} aria-pressed={plan === p}>
-                                {p === 'monthly' ? 'Monthly' : 'Yearly'}
-                            </button>
-                        ))}
-                    </div>
-                    <p className="small-copy">
-                        Monthly: ₹2,049, recurring monthly until cancelled (up to 120 cycles). Yearly: ₹14,000 once for 365 days, without automatic
-                        renewal. Charges are in INR; review the final checkout before authorizing payment.
-                    </p>
-                    <div className="access-download">
-                        <Monitor />
-                        <div>
-                            <strong>Windows production · v1.0.4</strong>
-                            <button onClick={onDownload}>
-                                Download for Windows <ArrowUpRight size={15} />
-                            </button>
-                        </div>
-                    </div>
-                    <p className="small-copy">
-                        Start with three free sessions of up to 15 minutes each. One trial per Google account, public IP and browser identifier.
-                        Monthly and yearly access also work with 1.0.4.
-                    </p>
-                    <p className="small-copy">
-                        Windows 1.0.4 is unsigned. Smart App Control can block installation. Confirm the app opens on your PC before purchasing; the
-                        Store release is pending.
-                    </p>
-                    <button className="text-link" onClick={onMacDownload}>
-                        Looking for Mac? <ArrowUpRight size={16} />
-                    </button>
-                </div>
-                <div className="access-ticket">
-                    <div className="ticket-top">
-                        <KeyRound />
-                        <span>{plan === 'monthly' ? 'MONTHLY' : 'YEARLY'} DESKTOP ACCESS</span>
-                    </div>
-                    <h2>{plan === 'monthly' ? 'Monthly Pro.' : 'Yearly Pro.'}</h2>
-                    <p>
-                        <strong>{plan === 'monthly' ? '₹2,049 / month' : '₹14,000 / 365 days'}</strong>
-                    </p>
-                    <p>
-                        {plan === 'monthly'
-                            ? 'Renews monthly. Cancel future renewal below; retain the current paid period.'
-                            : 'Prepaid access. Renew manually; remaining paid time is retained.'}
-                    </p>
-                    <ul>
-                        {[
-                            'Live voice context',
-                            'On-demand screen analysis',
-                            'Seven session profiles',
-                            'Resume and custom context',
-                            'Session history with copy and save',
-                            'Customizable keyboard shortcuts',
-                        ].map(feature => (
-                            <li key={feature}>
-                                <Check size={18} />
-                                {feature}
-                            </li>
-                        ))}
-                    </ul>
-                    <Button tone="ink" disabled={checkoutLoading} onClick={() => onUpgrade(plan)}>
-                        {checkoutLoading ? 'Opening checkout…' : 'Get your access key'}
-                        <ArrowUpRight size={19} />
-                    </Button>
-                    <button className="access-recover" onClick={() => onRecover(plan)}>
-                        Already paid? Retrieve my key <ArrowRight size={15} />
-                    </button>
-                    <small>
-                        Sign in with Google. Access is issued after a full captured payment. No purchased session quota or fixed active-session
-                        duration. Service-protection limits and provider/network availability apply.
-                    </small>
-                </div>
-            </section>
-            <section className="dark-section">
-                <div className="wrap purchase-steps">
-                    <div>
-                        <span>01</span>
-                        <h3>Choose your access.</h3>
-                        <p>Choose monthly or yearly desktop access.</p>
-                    </div>
-                    <div>
-                        <span>02</span>
-                        <h3>Review and pay.</h3>
-                        <p>Confirm the final amount and terms in Razorpay.</p>
-                    </div>
-                    <div>
-                        <span>03</span>
-                        <h3>Copy your key.</h3>
-                        <p>Download the app and paste the key to start your session.</p>
-                    </div>
-                </div>
-            </section>
-            <BillingManager />
-            <FAQ />
         </>
     );
 }
@@ -1267,7 +1157,7 @@ export default function MarketingSite(props: Props) {
         ['/workflows', 'Workflows'],
         ['/shortcuts', 'Shortcuts'],
         ['/get-started', 'Get started'],
-        ['/access', 'Access'],
+        ['/pricing', 'Pricing'],
         ['/contact', 'Contact'],
     ];
     return (
@@ -1287,7 +1177,7 @@ export default function MarketingSite(props: Props) {
                             </a>
                         ))}
                     </nav>
-                    <Button onClick={props.onDownload}>
+                    <Button onClick={() => go('/pricing')}>
                         Download for Windows <ArrowUpRight size={17} />
                     </Button>
                     <button
@@ -1311,8 +1201,8 @@ export default function MarketingSite(props: Props) {
                     <GetStarted onDownload={props.onDownload} go={go} />
                 ) : page === '/contact' ? (
                     <Contact />
-                ) : page === '/access' ? (
-                    <Access {...props} />
+                ) : page === '/access' || page === '/pricing' ? (
+                    <PricingPage {...props} />
                 ) : (
                     <Info type={page === '/privacy' ? 'privacy' : 'terms'} />
                 )}

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-12 — Pricing page
+
+- Added `/pricing` with ₹0 free trial, ₹2,049 monthly and ₹14,000 yearly options.
+- The header Download button now opens pricing; existing-key downloads remain direct and stay on Windows 1.0.4.
+- Kept trial claiming, selected-plan checkout, key recovery and billing management connected to their existing flows. `/access` remains supported.
+- Refined the navy, off-white and lime design with responsive plan surfaces and clear renewal/installation disclosures.
+
 ## Paid access lifecycle — 2026-11-10
 
 - Deploy atomic captured-payment provisioning for licenses, hashed app tokens and provider metadata.
@@ -8,7 +15,6 @@
 - Add authenticated billing management, end-of-cycle cancellation confirmation and payment-proof recovery.
 - Prevent stale purchase intents during billing sign-in and duplicate active monthly purchases.
 - Live webhook setup is prepared but deferred by the owner; automatic event delivery remains unverified.
-
 
 ## 1.0.4 — provider routing fix
 

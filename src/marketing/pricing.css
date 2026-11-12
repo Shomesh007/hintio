@@ -1,0 +1,485 @@
+.pricing-page {
+    padding-top: 58px;
+    padding-bottom: 38px;
+}
+.pricing-intro {
+    text-align: center;
+    margin: 0 auto 58px;
+}
+.pricing-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 11px;
+    font-weight: 750;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+}
+.pricing-kicker i {
+    width: 8px;
+    height: 8px;
+    background: var(--acid);
+    box-shadow: 0 0 0 1px #10162512;
+}
+.hintio-site .pricing-intro h1 {
+    font-size: clamp(36px, 4.15vw, 60px);
+    letter-spacing: -0.055em;
+    margin: 16px 0;
+    line-height: 1.13;
+}
+.pricing-intro h1 span {
+    color: #59647b;
+}
+.pricing-intro > p {
+    font-size: 17px;
+}
+.pricing-stage {
+    display: grid;
+    grid-template-columns: 1fr 1.08fr 1fr;
+    gap: 18px;
+    align-items: stretch;
+}
+.plan-panel {
+    min-width: 0;
+    border: 1px solid #cfd5e1;
+    border-radius: 19px;
+    padding: 29px 27px 24px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+.plan-trial {
+    background: #e9edf7;
+    border-color: transparent;
+}
+.plan-yearly {
+    background: #ffffffa6;
+}
+.plan-monthly {
+    background: var(--ink);
+    color: #f5f7fc;
+    border-color: var(--ink);
+    margin-top: -25px;
+    box-shadow: 0 12px 28px #1016250c;
+}
+.plan-label {
+    min-height: 19px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 650;
+    letter-spacing: 0.025em;
+}
+.plan-monthly .plan-label {
+    color: #bbc3d5;
+}
+.hintio-site .plan-panel h2 {
+    font-size: 25px;
+    letter-spacing: -0.04em;
+    margin: 16px 0 25px;
+}
+.plan-price {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 7px;
+}
+.plan-price strong {
+    font-size: clamp(38px, 3.75vw, 55px);
+    font-weight: 750;
+    letter-spacing: -0.065em;
+    line-height: 1;
+    font-variant-numeric: lining-nums;
+}
+.plan-price > span {
+    font-size: 13px;
+    color: var(--muted);
+    white-space: nowrap;
+}
+.plan-monthly .plan-price > span {
+    color: #a9b4cd;
+}
+.hintio-site .plan-description {
+    margin-top: 21px;
+    margin-bottom: 25px;
+    font-size: 13px;
+    line-height: 1.7;
+    min-height: 44px;
+}
+.hintio-site .plan-monthly p {
+    color: #c0c9dc;
+}
+.plan-action {
+    width: 100%;
+    min-height: 49px;
+    padding: 13px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px !important;
+    font-weight: 750 !important;
+    border-radius: 9px;
+    transition:
+        background 0.15s,
+        transform 0.15s;
+}
+.plan-action:hover:not(:disabled) {
+    transform: translateY(-2px);
+}
+.plan-action-outline {
+    background: transparent;
+    border: 1px solid #919bab;
+    color: var(--ink);
+}
+.plan-action-outline:hover:not(:disabled) {
+    background: #dce2ef;
+}
+.plan-action-lime {
+    background: var(--acid);
+    color: var(--ink);
+    border: 1px solid var(--acid);
+}
+.plan-action-lime:hover:not(:disabled) {
+    background: #e5ff4f;
+}
+.plan-features {
+    list-style: none;
+    margin: 24px 0 18px;
+    padding: 22px 0 0;
+    border-top: 1px solid #1016251a;
+    display: grid;
+    gap: 13px;
+    font-size: 12px;
+}
+.plan-features li {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+}
+.plan-features svg {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: #65738e;
+}
+.plan-monthly .plan-features {
+    border-color: #ffffff25;
+}
+.plan-monthly .plan-features svg {
+    color: var(--acid);
+}
+.hintio-site .plan-footnote {
+    font-size: 10px;
+    line-height: 1.7;
+    margin-top: auto;
+    padding-top: 8px;
+}
+.plan-recover {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    text-align: left;
+    margin-top: 14px;
+    padding: 0;
+    color: inherit;
+    background: none;
+    border: 0;
+    font-size: 10px !important;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+.plan-year-saving {
+    background: #e5efbc;
+    color: #3e4a1b;
+    border-radius: 4px;
+    padding: 3px 6px;
+    font-size: 9px;
+}
+.plan-assistant {
+    height: 29px;
+    background: #212a3a;
+    border: 1px solid #ffffff21;
+    border-radius: 9px;
+    display: flex;
+    gap: 13px;
+    align-items: center;
+    padding: 0 11px;
+    margin-bottom: 8px;
+}
+.plan-assistant-brand {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 700;
+}
+.plan-assistant-brand > i {
+    width: 7px;
+    height: 7px;
+    background: var(--acid);
+    box-shadow: 4px -4px 0 var(--acid);
+    margin: 4px 4px 0 0;
+}
+.plan-assistant-wave {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    margin-left: auto;
+}
+.plan-assistant-wave i {
+    width: 3px;
+    border-radius: 2px;
+    background: var(--acid);
+}
+.plan-assistant-status {
+    display: none;
+}
+.pricing-shared {
+    margin-top: 28px;
+    padding: 24px 28px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border: 1px solid #d4dbe8;
+    border-radius: 14px;
+}
+.pricing-shared > div {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding-inline: 20px;
+    border-left: 1px solid #d4dbe8;
+}
+.pricing-shared > div:first-child {
+    border: 0;
+    padding-left: 0;
+}
+.pricing-shared svg {
+    width: 22px;
+    flex-shrink: 0;
+    stroke-width: 1.5;
+}
+.pricing-shared strong {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+}
+.pricing-shared small {
+    display: block;
+    color: var(--muted);
+    font-size: 11px;
+    margin-top: 3px;
+}
+.pricing-existing {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 9px;
+    font-size: 12px;
+    padding: 26px 0;
+    color: var(--muted);
+}
+.pricing-existing a {
+    color: var(--ink);
+    display: inline-flex;
+    gap: 5px;
+    align-items: center;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+.pricing-existing button {
+    border: 0;
+    background: none;
+    color: var(--muted);
+    padding: 3px 0 3px 18px;
+    font-size: 11px;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+.pricing-compatibility {
+    border-top: 1px solid #d9deea;
+    padding-top: 19px;
+    display: grid;
+    grid-template-columns: 170px 1fr;
+    gap: 20px;
+}
+.pricing-compatibility strong {
+    font-size: 12px;
+}
+.hintio-site .pricing-compatibility p {
+    font-size: 11px;
+    line-height: 1.7;
+    max-width: 900px;
+}
+.pricing-questions {
+    display: grid;
+    grid-template-columns: 0.85fr 1.4fr;
+    gap: 75px;
+    padding-top: 65px;
+    padding-bottom: 65px;
+}
+.hintio-site .pricing-questions h2 {
+    font-size: 36px;
+    margin: 17px 0;
+}
+.pricing-questions > div > p {
+    font-size: 14px;
+}
+.pricing-answers details {
+    border-bottom: 1px solid #d2d9e5;
+    padding: 18px 0;
+}
+.pricing-answers details:first-child {
+    border-top: 1px solid #d2d9e5;
+}
+.pricing-answers summary {
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 650;
+    padding-right: 20px;
+}
+.hintio-site .pricing-answers p {
+    font-size: 13px;
+    padding: 13px 16px 0 0;
+}
+.pricing-answers a {
+    text-decoration: underline;
+}
+@media (min-width: 1500px) {
+    .pricing-page,
+    .pricing-questions {
+        max-width: 1280px;
+    }
+}
+@media (max-width: 1100px) {
+    .plan-panel {
+        padding: 24px 20px;
+    }
+    .plan-price strong {
+        font-size: 40px;
+    }
+    .plan-label {
+        font-size: 9px;
+    }
+    .pricing-shared {
+        padding: 22px 18px;
+    }
+    .pricing-shared > div {
+        padding-inline: 14px;
+        gap: 10px;
+    }
+}
+@media (max-width: 800px) {
+    .pricing-page {
+        padding-top: 40px;
+    }
+    .pricing-intro {
+        margin-bottom: 32px;
+    }
+    .pricing-intro > p {
+        font-size: 15px;
+        max-width: 340px;
+        margin: auto;
+    }
+    .pricing-stage {
+        grid-template-columns: 1fr;
+        gap: 18px;
+        max-width: 510px;
+        margin: auto;
+    }
+    .plan-monthly {
+        margin-top: 0;
+    }
+    .plan-panel {
+        padding: 27px;
+    }
+    .plan-price strong {
+        font-size: 49px;
+    }
+    .plan-description {
+        min-height: 0;
+    }
+    .plan-label {
+        font-size: 11px;
+    }
+    .plan-features {
+        font-size: 13px;
+    }
+    .hintio-site .plan-footnote {
+        font-size: 11px;
+    }
+    .plan-recover {
+        font-size: 11px !important;
+    }
+    .plan-assistant-status {
+        display: inline;
+        font-size: 9px;
+        color: #b7c2d8;
+    }
+    .pricing-shared {
+        grid-template-columns: 1fr;
+        gap: 19px;
+        max-width: 510px;
+        margin-inline: auto;
+    }
+    .pricing-shared > div {
+        border: 0;
+        padding: 0;
+    }
+    .pricing-shared strong {
+        font-size: 14px;
+    }
+    .pricing-shared small {
+        font-size: 12px;
+    }
+    .pricing-compatibility {
+        grid-template-columns: 1fr;
+        gap: 7px;
+    }
+    .pricing-questions {
+        grid-template-columns: 1fr;
+        gap: 24px;
+        padding-top: 35px;
+        padding-bottom: 35px;
+    }
+    .hintio-site .pricing-questions h2 br {
+        display: none;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .plan-action {
+        transition: none;
+    }
+    .plan-action:hover:not(:disabled) {
+        transform: none;
+    }
+}
+
+@media (min-width: 801px) {
+    .hintio-site .plan-monthly h2 {
+        margin-top: 4px;
+    }
+}
+@media (max-width: 800px) {
+    .plan-assistant {
+        height: 37px;
+        margin-bottom: 20px;
+    }
+}
+
+.hintio-site .plan-signin {
+    font-size: 10px;
+    text-align: center;
+    margin: 9px 0 0;
+    color: var(--muted);
+}
+.hintio-site .plan-monthly .plan-signin {
+    color: #b7c2d8;
+}
