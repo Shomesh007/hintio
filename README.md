@@ -92,6 +92,6 @@ The desktop source includes its GPL-3.0 license on the desktop branch. Consult t
 
 ## Security migration
 
-The 1.0.6 managed runtime uses a scoped Supabase gateway. Applied security migrations and source are included under supabase/. The legacy resolver requires an update for session starts. Full dependency audits are clean. Historical provider-key rotation and secure-client distribution remain release gates; public 1.0.4 is incompatible.
+Public production remains 1.0.4, including purchased-key downloads. Three-session trials and verified monthly/yearly keys use the restored legacy contract. Trial issuance is protected server-side by Google sign-in and keyed IP/browser bindings; repeat trial claims cannot create a second trial on a bound network or browser. Existing trial keys remain recoverable. Public downloads are pinned in src/lib/productionRelease.ts. The 1.0.6 source and server-only gateway remain preserved for Microsoft Store approval and signed tests; they are not the public installer. The unsigned 1.0.4 installer may be blocked by Windows Application Control, so users should verify it opens before purchase.
 
 Paid-session renewal was owner-approved and applied on 12 November (migration 20261112020902). Active paid credentials renew within paid expiry, with an eight-hour idle timeout and unchanged request limits. Managed-runtime v5 prefers canonical rotation secret names. Provider replacement/revocation and sandbox webhook-secret separation are still pending owner actions.

@@ -752,7 +752,7 @@ function GetStarted({ onDownload, go }: Pick<Props, 'onDownload'> & { go: (page:
                     <Monitor />
                     <div>
                         <h3>Hintio for Windows</h3>
-                        <p>Install the complete release package.</p>
+                        <p>Version 1.0.4 · Try three free sessions, up to 15 minutes each.</p>
                     </div>
                     <Button onClick={onDownload}>
                         Download desktop app <ArrowUpRight size={19} />
@@ -931,12 +931,20 @@ function Access({ onDownload, onUpgrade, onRecover, onMacDownload, checkoutLoadi
                     <div className="access-download">
                         <Monitor />
                         <div>
-                            <strong>Already have your key?</strong>
+                            <strong>Windows production · v1.0.4</strong>
                             <button onClick={onDownload}>
                                 Download for Windows <ArrowUpRight size={15} />
                             </button>
                         </div>
                     </div>
+                    <p className="small-copy">
+                        Start with three free sessions of up to 15 minutes each. One trial per Google account, public IP and browser identifier.
+                        Monthly and yearly access also work with 1.0.4.
+                    </p>
+                    <p className="small-copy">
+                        Windows 1.0.4 is unsigned. Smart App Control can block installation. Confirm the app opens on your PC before purchasing; the
+                        Store release is pending.
+                    </p>
                     <button className="text-link" onClick={onMacDownload}>
                         Looking for Mac? <ArrowUpRight size={16} />
                     </button>
@@ -1086,6 +1094,12 @@ function Info({ type }: { type: 'privacy' | 'terms' }) {
                     </div>
                     <h2>01 / What enters a session</h2>
                     <p>
+                        Free trials use a random identifier saved in this browser and keyed hashes of your public IP and that identifier to limit
+                        repeat trials. We do not store the raw IP or a hardware fingerprint in the trial eligibility table. These bindings remain
+                        while the associated account is retained; browser/network changes can affect eligibility. People sharing a public IP may need
+                        support.
+                    </p>
+                    <p>
                         Your audio mode can use speaker output, microphone input, both, or no audio. Screen analysis uses the screen content you
                         choose to capture. Resume text, your domain, and custom instructions can also become session context.
                     </p>
@@ -1099,10 +1113,10 @@ function Info({ type }: { type: 'privacy' | 'terms' }) {
                             <dt>Cloud AI</dt>
                             <dd>
                                 Session context sent to a cloud provider can include audio or transcripts, screenshots, resume text, and custom
-                                instructions. In managed mode, this context passes through Hintio’s Supabase-hosted gateway to OpenAI for answers and
-                                Groq for speech transcription. Company provider keys remain on the server. The gateway stores hashed session
-                                credentials and access/rate counters; it does not store request content. Infrastructure and AI providers process
-                                requests under their own terms.
+                                instructions. The current Windows 1.0.4 release validates paid access through Hintio and then connects directly to
+                                OpenAI for answers and Groq for speech transcription using company credentials delivered to the app. The upcoming
+                                Microsoft Store client uses a server gateway that keeps company provider keys on the server. Infrastructure and AI
+                                providers process requests under their own terms.
                             </dd>
                         </div>
                         <div>
@@ -1182,9 +1196,10 @@ function Info({ type }: { type: 'privacy' | 'terms' }) {
                     </p>
                     <p>
                         Yearly access is ₹14,000 prepaid for 365 days, without automatic renewal. Manual yearly renewal retains remaining verified
-                        paid time. Paid access has no purchased session quota or fixed active-session duration. Service-protection limits apply: 40
-                        chat requests per minute, 120 speech requests per minute, 180 total per minute and 10,000 managed AI requests per rolling 24
-                        hours per license. Connectivity and provider availability also apply.
+                        paid time. Paid access has no purchased session quota or fixed active-session duration. Version 1.0.4 uses direct provider
+                        connections with provider and abuse-protection limits. The upcoming gateway client applies 40 chat, 120 speech and 180 total
+                        requests per minute, plus 10,000 managed AI requests per rolling 24 hours per license. Connectivity and provider availability
+                        apply.
                     </p>
                     <p>
                         Cancellation stops future billing and does not itself request a refund. Contact admin@builtbygsv.in for refund requests and

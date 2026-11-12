@@ -16,6 +16,8 @@ import {
     CHECKOUT_TIMEOUT_MS,
 } from './lib/checkoutReliability';
 import MarketingSite from './marketing/MarketingSite';
+import { productionRelease } from './lib/productionRelease';
+import { getTrialDeviceId } from './lib/trialDevice';
 import './marketing/account-dialogs.css';
 
 declare global {
@@ -35,8 +37,7 @@ import {
 } from './marketing/AccountDialogs';
 
 export default function App() {
-    const windowsDownloadUrl =
-        import.meta.env.VITE_WINDOWS_DOWNLOAD_URL || 'https://github.com/Shomesh007/hintio/releases/download/v1.0.4/Hintio-1.0.4.Setup.exe';
+    const windowsDownloadUrl = productionRelease.windowsDownloadUrl;
     const defaultSupabaseUrl = 'https://vsybqtunyuanxspxhzue.supabase.co';
     const supabaseFunctionsBaseUrl = import.meta.env.VITE_SUPABASE_URL || defaultSupabaseUrl;
     const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -696,27 +697,7 @@ export default function App() {
                     return;
                 }
 
-                debugLog('continueIntent -> download flow, requesting trial key');
-                const { data: keyData, error: keyError } = await supabase.rpc('claim_three_usage_trial_key');
-                debugLog('claim_three_usage_trial_key response', {
-                    hasKeyData: Boolean(keyData),
-                    keyError: keyError?.message ?? null,
-                    isNew: keyData?.is_new ?? null,
-                    hasAccessKey: Boolean(keyData?.access_key),
-                });
-
-                if (keyError || !keyData?.access_key) {
-                    setAuthError(keyError?.message ?? 'Could not fetch free trial key.');
-                    setIsAuthModalOpen(true);
-                    return;
-                }
-
-                if (keyData.is_new) {
-                    setTrialKey(String(keyData.access_key));
-                    setIsTrialModalOpen(true);
-                } else {
-                    triggerDownload();
-                }
+                await claimTrialAndDownload();
             };
 
             const { data, error: postAuthSessionError } = await withDeadline(signal => abortable(supabase.auth.getSession(), signal));
@@ -836,31 +817,54 @@ export default function App() {
         window.location.assign(oauthData.url);
     };
 
-    const handleDownloadClick = async () => {
-        setAuthError(null);
-        setAuthIntent('download');
-        debugLog('handleDownloadClick called');
-
+    const claimTrialAndDownload = async () => {
         if (!supabase) {
-            debugLog('handleDownloadClick blocked: supabase not configured', { missingSupabaseEnvVars });
-            setAuthError(`Supabase is not configured. Missing: ${missingSupabaseEnvVars.join(', ')}`);
+            setAuthError('Sign-in is not configured. Please contact support.');
             setIsAuthModalOpen(true);
             return;
         }
-
-        const { data, error } = await supabase.auth.getSession();
-        debugLog('handleDownloadClick getSession result', {
-            hasSession: Boolean(data.session),
-            sessionError: error?.message ?? null,
-            userId: data.session?.user?.id ?? null,
-        });
-
-        if (data.session) {
-            triggerDownload();
+        try {
+            const deviceId = getTrialDeviceId(window.localStorage);
+            const { data, error } = await withDeadline(signal => supabase.functions.invoke('claim-trial-access', { body: { deviceId }, signal }));
+            if (error || !data?.access_key) {
+                let message = 'Could not retrieve your trial key. Please retry.';
+                const context = (error as { context?: Response } | null)?.context;
+                if (context instanceof Response) {
+                    const detail = await context
+                        .clone()
+                        .json()
+                        .catch(() => null);
+                    if (typeof detail?.error === 'string') message = detail.error;
+                }
+                throw new Error(message);
+            }
+            setTrialKey(String(data.access_key));
+            setIsKeyCopied(false);
+            setIsAuthModalOpen(false);
+            setIsTrialModalOpen(true);
+        } catch (error) {
+            setAuthError(error instanceof Error ? error.message : 'Could not retrieve your trial key. Please retry.');
+            setIsAuthModalOpen(true);
+        }
+    };
+    const handleDownloadClick = async () => {
+        setAuthError(null);
+        setAuthIntent('download');
+        if (!supabase) {
+            setAuthError('Sign-in is not configured. Please contact support.');
+            setIsAuthModalOpen(true);
             return;
         }
-
-        debugLog('No session, opening auth modal for download flow');
+        const { data, error } = await supabase.auth.getSession();
+        if (error) {
+            setAuthError('Could not check sign-in. Please retry.');
+            setIsAuthModalOpen(true);
+            return;
+        }
+        if (data.session) {
+            await claimTrialAndDownload();
+            return;
+        }
         setIsAuthModalOpen(true);
     };
 
