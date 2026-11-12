@@ -2,12 +2,12 @@
 
 ## Implemented and verified
 
-- Managed OpenAI chat, screenshots, streaming and Groq speech now use `managed-runtime`. Company provider keys stay server-side; the renderer never receives the scoped gateway credential.
+- Managed OpenAI chat, screenshots, streaming and Groq speech now use `managed-runtime`. For the new gateway client, company provider keys stay server-side; the renderer never receives the scoped gateway credential. The temporary 1.0.4 exception below uses direct provider access.
 - Session credentials are HMAC-derived from a random request UUID and license; only SHA-256 hashes are stored. Starts lock the entitlement row and are idempotent, including the final trial credit.
 - Every provider request rechecks active license status, paid expiry and session expiry. Session close revokes access. Trial sessions expire within 15 minutes; active paid credentials renew to eight hours after each authorized request, bounded by the paid expiry.
 - Fixed provider URLs and models; remote screenshot URLs rejected; JSON/audio/text/image/output bounds; provider errors sanitized; no request-content logging or persistence in gateway code.
 - Database-enforced limits: authentication attempts, IP session burst, 180 total requests/minute/license, 40 chat requests/minute, 120 speech requests/minute and 10,000 requests/rolling 24 hours. These are technical abuse controls, not additional purchased session credits.
-- Legacy `resolve-provider-secrets` rejects consuming/internal requests with HTTP 426 and never returns provider keys. Version 1.0.6 is required for managed sessions; the public 1.0.4 installer is incompatible with this secure protocol.
+- Resolver v16 rejects internal bypass and unflagged consuming requests. On 12 November 2026 the owner explicitly approved a temporary exception for one existing paid 1.0.4 customer through their unchanged 7 December expiry. This old client receives one OpenAI key and a Groq key for direct calls. Copied keys can bypass gateway quotas and remain usable until revoked at the providers; removing the exception only stops new issuance. New clients still use the server-only gateway. See [compatibility incident and rollback](../../docs/LEGACY-1.0.4-COMPATIBILITY.md).
 - Legacy trial status/logging/mutation RPCs are service-only. Settings and subscription helpers use SECURITY INVOKER with ownership policies. Trial claims retain their public signed-in contract through a private implementation with anonymous-account rejection and a per-user lock.
 - Supabase anonymous sign-in disabled. Owner explicitly approved disabling unused email/password sign-in; Google remains enabled. Zero password users existed at review.
 - Fresh advisor scan: 15 exposed SECURITY DEFINER function warnings and four anonymous-policy warnings cleared. Eleven no-policy INFO findings intentionally deny browser access to private billing/session data. Leaked-password protection remains a paid-plan warning but email/password authentication is disabled.
@@ -27,7 +27,7 @@ Version 1.0.6 validation MSIX passes package/source checks. It is unsigned with 
 1. Replace the historical company OpenAI and Groq keys in Supabase Secrets, verify the replacements through the gateway, then revoke old keys at the providers. Older clients could receive those keys; stopping future delivery does not invalidate old copies. Do not paste secrets into chat.
 2. Owner-approved active paid-credential renewal is deployed and verified. Paid sessions retain an eight-hour idle timeout bounded by paid expiry; authorization does not consume another credit. Trial lifetime, revocation and request limits remain unchanged.
 3. Microsoft business approval, reserved identity, final Store package/submission declarations, private reviewer entitlement, WACK and Store-signed installed capture/update/restart/uninstall tests.
-4. Distribute the secure client before directing customers to start sessions. The existing public 1.0.4 download cannot use the new gateway. Do not describe the unsigned validation MSIX as a supported public installation.
+4. Distribute the secure client before onboarding new gateway customers. The existing public 1.0.4 download cannot use the new gateway; the explicitly opted-in existing customer temporarily uses the old direct-provider contract. Do not describe the unsigned validation MSIX as a supported public installation.
 
 The two older unlinked licenses still require verified payment proof through existing recovery/support; they must not be silently activated.
 
@@ -46,3 +46,7 @@ Provider replacements and old-key revocation await owner sign-in/entry. The Supa
 ## Owner decision — work deferred
 
 The owner explicitly deferred key replacements on 12 November and asked to continue other Store preparation. This includes historical provider-key replacement/revocation and the outstanding sandbox signing-secret separation. No replacement, revocation, or secret-value entry was performed. Paid-session renewal remains deployed and verified. Current Microsoft business verification was rechecked: Pending, with email and employment Verified; Finish account setup is disabled.
+
+## Public 1.0.4 production exception (12 November 2026)
+
+The owner subsequently approved 1.0.4 as production for paid customers and free trials until Store rollout. Resolver v18 now supports active matched monthly/yearly billing records and claimed three-session trials, plus the original customer exception. This supersedes the single-customer-only scope above. The server-only 1.0.6 gateway is preserved, but 1.0.4 delivers company credentials directly, with the revocation/quota limitations documented above. Trial issuance has a separate verified-Google Edge endpoint and service-only atomic IP/browser bindings. Ordinary users cannot call the old direct claim RPC or modify entitlement/abuse metadata. Public IP/browser hashes are private; the website explains shared-IP and browser-reset limitations. See [production release policy](../../docs/PRODUCTION-RELEASE.md).

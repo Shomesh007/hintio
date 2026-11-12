@@ -36,7 +36,7 @@ See [DEVELOPMENT.md](docs/DEVELOPMENT.md) for prerequisites, source layout, pack
 
 ## Update notifications (staged in 1.0.5)
 
-The local 1.0.5 build shows optional/required update notices and opens the official Windows installer in your browser. It does not download, apply, or restart itself. It is not published yet. See [the update guide](docs/UPDATES.md) for policy controls, verification, and Windows trust limitations.
+The preserved 1.0.6 candidate supports browser-based update notices for manual builds and Microsoft Store update paths for Store builds. It remains unpublished; public downloads stay on 1.0.4. See [the update guide](docs/UPDATES.md) for policy controls, verification, and Windows trust limitations.
 
 ## Microsoft Store preparation
 
@@ -60,6 +60,10 @@ The desktop is distributed under GPL-3.0. See [LICENSE](LICENSE).
 
 Paid checkout now provisions licenses and hashed app access tokens atomically. Renewals retain keys and paid time; account management supports end-of-cycle monthly cancellation and captured-payment proof recovery. Live policy: INR 2,049 monthly or INR 14,000 per 365 prepaid days. See [billing audit](packaging/store/BILLING-AUDIT.md). Live and isolated Test-mode webhooks are enabled. Actual monthly/yearly Test-mode captures, signed renewal delivery, key recovery and cancellation retention are verified. The 12 November renewal fix uses the paid invoice period and is deployed server-side; no desktop update is required. See [Razorpay verification](packaging/store/RAZORPAY-SANDBOX.md). Store certification and signed installed-runtime checks remain pending.
 
-## Managed runtime security (1.0.6)
+## Production and Microsoft Store candidate
 
-Managed GPT and speech use a scoped, revocable server-side gateway. Company provider keys are no longer delivered to the app. Legacy versions receive an update-required response; public 1.0.4 is incompatible. The unsigned 1.0.6 Store candidate is prepared, not published. See [security review](packaging/store/SECURITY-REVIEW.md) for tests, key rotation and remaining gates.
+Public production is **1.0.4**. All public and purchase downloads use the original 1.0.4 installer. Free trials provide three sessions, up to 15 minutes each, with one trial per Google account, public IP and persistent browser identifier. Monthly and yearly purchases work on 1.0.4 through the compatibility resolver.
+
+The maintained source/package version remains **1.0.6**, preserved for Microsoft Store approval and signed-release tests. Its server-only gateway, source and final artifacts have not been removed or published as the production installer. See [release policy](docs/PRODUCTION-RELEASE.md) and [security review](packaging/store/SECURITY-REVIEW.md).
+
+1.0.4 uses direct OpenAI/Groq connections with company credentials delivered to the app. Copied credentials can bypass app limits until revoked at the providers; the Store candidate keeps credentials server-side. The unsigned 1.0.4 installer can still be blocked by Windows Application Control: verify installation before buying. No security-setting changes are required or recommended by this project.

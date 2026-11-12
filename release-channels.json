@@ -1,0 +1,7 @@
+{
+    "productionVersion": "1.0.4",
+    "productionWindowsInstaller": "https://github.com/Shomesh007/hintio/releases/download/v1.0.4/Hintio-1.0.4.Setup.exe",
+    "storeCandidateVersion": "1.0.6",
+    "storeCandidatePublished": false,
+    "freeTrialsEnabled": true
+}
