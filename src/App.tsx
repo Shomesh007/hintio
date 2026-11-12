@@ -88,7 +88,8 @@ export default function App() {
             );
         const frame = requestAnimationFrame(() => getControls()[0]?.focus());
         const onKeyDown = (event: KeyboardEvent) => {
-            if (event.key === 'Escape' && !isTrialModalOpen) {
+            if (event.key === 'Escape') {
+                setIsTrialModalOpen(false);
                 setIsAuthModalOpen(false);
                 setIsMacModalOpen(false);
                 setIsPaymentModalOpen(false);
@@ -914,6 +915,7 @@ export default function App() {
                 trialKey={trialKey}
                 onCopy={handleCopyTrialKey}
                 onDone={downloadAfterTrialKey}
+                onClose={() => setIsTrialModalOpen(false)}
                 isCopied={isKeyCopied}
             />
 

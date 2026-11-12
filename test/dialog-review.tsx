@@ -53,6 +53,7 @@ function Review() {
             />
             <TrialKeyModal
                 isOpen={state === 'trial'}
+                onClose={close}
                 trialKey="DEMO-KEY-NOT-VALID"
                 isCopied={copied}
                 onCopy={() => {

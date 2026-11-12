@@ -1,3 +1,6 @@
+import fs from 'node:fs';
+import vm from 'node:vm';
+import ts from 'typescript';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createElement } from 'react';
@@ -79,9 +82,62 @@ test('a pending sign-in disables the sign-in action', () => {
 });
 test('trial key copy confirmation is announced and its continuation remains available', () => {
     const markup = renderToStaticMarkup(
-        createElement(TrialKeyModal, { isOpen: true, trialKey: 'DEMO-KEY-NOT-VALID', onCopy: noop, onDone: noop, isCopied: true })
+        createElement(TrialKeyModal, { isOpen: true, trialKey: 'DEMO-KEY-NOT-VALID', onCopy: noop, onDone: noop, onClose: noop, isCopied: true })
     );
     assert.match(markup, /aria-live="polite"/);
     assert.match(markup, /Key copied/);
     assert.match(markup, /Continue to download/);
+});
+
+test('trial dialog exposes close and back controls without forcing a download', () => {
+    const markup = renderToStaticMarkup(
+        createElement(TrialKeyModal, { isOpen: true, trialKey: 'DEMO-KEY-NOT-VALID', onCopy: noop, onDone: noop, onClose: noop, isCopied: false })
+    );
+    assert.match(markup, /aria-label="Close dialog"/);
+    assert.match(markup, /Back to plans/);
+    assert.match(markup, /retrieve it again/);
+    assert.doesNotMatch(markup, /shown once/);
+});
+
+test('dismissing the trial forwards only the close action', () => {
+    let closed = 0,
+        downloaded = 0;
+    const dialog = TrialKeyModal({
+        isOpen: true,
+        trialKey: 'DEMO-KEY-NOT-VALID',
+        onCopy: noop,
+        onDone: () => downloaded++,
+        onClose: () => closed++,
+        isCopied: false,
+    });
+    dialog.props.onClose();
+    assert.equal(closed, 1);
+    assert.equal(downloaded, 0);
+});
+
+test('the actual App Escape handler dismisses an open trial without downloading', () => {
+    const source = fs.readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
+    const parsed = ts.createSourceFile('App.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+    let handler: ts.VariableDeclaration | undefined;
+    function find(node: ts.Node) {
+        if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.name.text === 'onKeyDown') handler = node;
+        ts.forEachChild(node, find);
+    }
+    find(parsed);
+    assert(handler);
+    const code = ts.transpileModule(`const handler=${handler.initializer!.getText(parsed)};handler;`, {
+        compilerOptions: { target: ts.ScriptTarget.ES2022 },
+    }).outputText;
+    let trialOpen = true;
+    const onKeyDown = vm.runInNewContext(code, {
+        isTrialModalOpen: true,
+        setIsTrialModalOpen: (open: boolean) => (trialOpen = open),
+        setIsAuthModalOpen: noop,
+        setIsMacModalOpen: noop,
+        setIsPaymentModalOpen: noop,
+        setIsPaidLicenseModalOpen: noop,
+        setIsPendingLicenseOpen: noop,
+    });
+    onKeyDown({ key: 'Escape' });
+    assert.equal(trialOpen, false);
 });

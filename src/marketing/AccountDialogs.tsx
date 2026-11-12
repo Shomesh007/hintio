@@ -66,7 +66,7 @@ function DialogFrame({
                             <span className="account-header-label">{label}</span>
                             {onClose && (
                                 <button className="account-close" onClick={onClose} aria-label="Close dialog">
-                                    <X size={18} />
+                                    <X size={20} />
                                 </button>
                             )}
                         </header>
@@ -204,17 +204,20 @@ export function TrialKeyModal({
     trialKey,
     onCopy,
     onDone,
+    onClose,
     isCopied,
 }: {
     isOpen: boolean;
     trialKey: string;
     onCopy: () => void;
     onDone: () => void;
+    onClose: () => void;
     isCopied: boolean;
 }) {
     return (
         <DialogFrame
             open={isOpen}
+            onClose={onClose}
             label="TRIAL ACCESS"
             tone="key"
             title="Your first three sessions."
@@ -227,9 +230,14 @@ export function TrialKeyModal({
             }
         >
             <AccessKey value={trialKey} isCopied={isCopied} onCopy={onCopy} label="TRIAL KEY" />
-            <p className="account-key-note">This key is shown once. Copy it somewhere you can find it again.</p>
+            <p className="account-key-note">
+                Save your key for later. You can retrieve it again using “Try Hintio free” with the same Google account.
+            </p>
             <button className="account-primary" onClick={onDone}>
                 Continue to download <Download size={18} />
+            </button>
+            <button className="account-dismiss" onClick={onClose}>
+                Back to plans
             </button>
         </DialogFrame>
     );

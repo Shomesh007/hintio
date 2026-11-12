@@ -32,9 +32,12 @@
     max-height: calc(100dvh - 48px);
 }
 .account-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
     display: flex;
     align-items: center;
-    padding: 22px 28px;
+    padding: 16px 28px;
     gap: 18px;
     background: #101625;
     color: #f5f7fc;
@@ -61,14 +64,14 @@
     margin-left: auto;
 }
 .account-close {
-    width: 28px;
-    height: 28px;
+    width: 44px;
+    height: 44px;
     display: grid;
     place-items: center;
-    color: #c5cbd7;
-    background: transparent;
-    border: 0;
-    border-radius: 5px;
+    color: #f5f7fc;
+    background: #ffffff10;
+    border: 1px solid #ffffff30;
+    border-radius: 9px;
     cursor: pointer;
     flex-shrink: 0;
 }
@@ -600,4 +603,27 @@
     .account-footer {
         font-size: 11px;
     }
+}
+
+.account-dismiss {
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    margin-top: 8px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: #5b667c;
+    cursor: pointer;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+}
+.account-dismiss:hover {
+    background: #10162508;
+    color: #101625;
+}
+.account-dismiss:focus-visible {
+    outline: 2px solid #101625;
+    outline-offset: 2px;
 }
