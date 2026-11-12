@@ -147,7 +147,7 @@ Deno.serve(async (req: Request) => {
             : (Deno.env.get('GROQ_API_KEY') || '').trim()
               ? 'GROQ_API_KEY'
               : 'legacy-managed-configuration';
-        const model = (Deno.env.get('HINTIO_MANAGED_OPENAI_MODEL') || 'gpt-5.6-luna').trim();
+        const model = (Deno.env.get('HINTIO_MANAGED_OPENAI_MODEL') || 'gpt-6-luna').trim();
         if (p.operation === 'status' || p.operation === 'session') {
             if (!(await limit('gateway-auth-ip:' + (await hash(ip)), 45, 60)) || !(await limit('gateway-auth:' + (await hash(credential)), 12, 300)))
                 return json({ error: 'Too many attempts' }, 429);
