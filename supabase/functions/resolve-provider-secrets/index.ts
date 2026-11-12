@@ -211,7 +211,7 @@ Deno.serve(async req => {
                 llmProvider: 'openai',
                 providerConfiguration: { openaiConfigured: true, groqConfigured: true, geminiConfigured: false },
                 openaiApiKeys: [openai],
-                openaiModel: trialKeys ? trialKeys.model : (Deno.env.get('HINTIO_MANAGED_OPENAI_MODEL') || 'gpt-5.6-luna').trim(),
+                openaiModel: trialKeys ? trialKeys.model : (Deno.env.get('HINTIO_MANAGED_OPENAI_MODEL') || 'gpt-6-luna').trim(),
                 groqApiKey: groq,
                 geminiApiKey: '',
                 geminiApiKeys: [],
