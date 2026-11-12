@@ -326,7 +326,7 @@ function noConsume(h) {
         ['expired', new Date(Date.now() - 1000).toISOString()],
         ['too short', new Date(Date.now() + 300000).toISOString()],
         ['unbounded', 'invalid'],
-        ['too long', new Date(Date.now() + 7 * 86400000).toISOString()],
+        ['too long', new Date(Date.now() + 8 * 86400000).toISOString()],
     ])
         await test('trial expiry ' + name + ' is rejected without paid fallback', async () => {
             const h = harness({ row: trialRow, trialClaimed: true, env: { HINTIO_TRIAL_OPENAI_KEY_EXPIRES_AT: value } }),
@@ -335,6 +335,18 @@ function noConsume(h) {
             noSecrets(r);
             noConsume(h);
         });
+    await test('owner approved seven day trial credential window works', async () => {
+        const expires = new Date(Date.now() + 7 * 86400000 - 60000).toISOString();
+        const h = harness({
+                row: trialRow,
+                trialClaimed: true,
+                env: { HINTIO_TRIAL_OPENAI_KEY_EXPIRES_AT: expires, HINTIO_TRIAL_GROQ_KEY_EXPIRES_AT: expires },
+            }),
+            r = await h.invoke();
+        assert.equal(r.status, 200);
+        assert.equal(r.body.data.openaiModel, 'gpt-6-luna');
+        assert.equal(r.body.data.metadata.sessionTimeoutMs, 900000);
+    });
     await test('unclaimed trial cannot receive company credentials', async () => {
         const h = harness({ row: trialRow }),
             r = await h.invoke();

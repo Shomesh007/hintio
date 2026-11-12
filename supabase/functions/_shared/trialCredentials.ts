@@ -8,7 +8,7 @@ export class TrialCredentialError extends Error {
 }
 const SESSION_MS = 15 * 60 * 1000;
 const START_BUFFER_MS = 60 * 1000;
-const MAX_CREDENTIAL_TTL_MS = 24 * 60 * 60 * 1000;
+const MAX_CREDENTIAL_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 function singleKey(value: string | undefined): string {
     const key = (value || '').trim();
     if (!key || /[\s,;]/.test(key)) throw new TrialCredentialError();
@@ -37,7 +37,7 @@ export function selectTrialCredentials(env: Environment, additionalPaidKeys: rea
     if (paid.includes(openai) || paid.includes(groq) || openai === groq) throw new TrialCredentialError();
     const openaiExpiry = expiry(env('HINTIO_TRIAL_OPENAI_KEY_EXPIRES_AT'), now);
     const groqExpiry = expiry(env('HINTIO_TRIAL_GROQ_KEY_EXPIRES_AT'), now);
-    const model = (env('HINTIO_TRIAL_OPENAI_MODEL') || 'gpt-5.6-luna').trim();
+    const model = (env('HINTIO_TRIAL_OPENAI_MODEL') || 'gpt-6-luna').trim();
     if (!/^[a-zA-Z0-9._:-]{1,100}$/.test(model)) throw new TrialCredentialError();
     return { openai, groq, model, expiresAt: Math.min(openaiExpiry, groqExpiry), sessionTimeoutMs: SESSION_MS };
 }
