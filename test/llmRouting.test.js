@@ -148,3 +148,24 @@ test('managed expiry errors do not ask customers to replace company provider key
         error => error.status === 403 && error.message === 'Session expired. Start a new session.'
     );
 });
+
+for (const effort of ['none', 'low', 'medium']) {
+    test('GPT-6 Luna preserves ' + effort + ' reasoning without unsupported temperature', () => {
+        const { buildChatBody } = require('../src/utils/llmProvider');
+        const body = buildChatBody(PROVIDERS.openai, {
+            model: 'gpt-6-luna',
+            messages: [{ role: 'user', content: 'Synthetic compatibility check' }],
+            temperature: 0.1,
+            maxTokens: 600,
+            reasoningEffort: effort,
+        });
+        assert.equal(body.model, 'gpt-6-luna');
+        assert.equal(body.reasoning_effort, effort);
+        assert.equal(body.max_completion_tokens, 600);
+        assert.equal('temperature' in body, false);
+    });
+}
+test('older OpenAI models retain their existing sampling setting', () => {
+    const { buildChatBody } = require('../src/utils/llmProvider');
+    assert.equal(buildChatBody(PROVIDERS.openai, { model: 'gpt-5-mini', temperature: 1 }).temperature, 1);
+});

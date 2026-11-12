@@ -35,9 +35,9 @@ const PROVIDERS = {
         baseUrl: 'https://api.openai.com/v1',
         // GPT-5 family rejects `max_tokens` outright.
         maxTokensParam: 'max_completion_tokens',
-        defaultModel: 'gpt-5.6-luna',
-        // Ordered by measured TTFT; falling back also gets faster.
-        fallbackChain: ['gpt-5.6-luna', 'gpt-5-mini', 'gpt-4o-mini'],
+        defaultModel: 'gpt-6-luna',
+        // GPT-6 Luna is primary; retain the established fallback models.
+        fallbackChain: ['gpt-6-luna', 'gpt-5-mini', 'gpt-4o-mini'],
         envKeys: ['OPENAI_API_KEYS', 'OPENAI_API_KEY'],
         envModel: 'OPENAI_MODEL',
 
@@ -113,7 +113,10 @@ function buildHeaders(apiKey) {
 }
 
 function buildChatBody(provider, { model, messages, stream = false, temperature = 1, maxTokens, reasoningEffort } = {}) {
-    const body = { model, messages: [{ role: 'system', content: CONTENT_SAFETY_POLICY }, ...(messages || [])], stream: Boolean(stream), temperature };
+    const body = { model, messages: [{ role: 'system', content: CONTENT_SAFETY_POLICY }, ...(messages || [])], stream: Boolean(stream) };
+    // GPT-6 Luna rejects non-default sampling values with reasoning enabled.
+    // Omit the parameter for this model rather than silently falling back.
+    if (!(provider.id === 'openai' && /^gpt-6-luna(?:$|-)/i.test(String(model || '')))) body.temperature = temperature;
 
     if (Number.isFinite(maxTokens) && maxTokens > 0) {
         body[provider.maxTokensParam] = maxTokens;
