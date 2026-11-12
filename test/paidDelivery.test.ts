@@ -6,6 +6,7 @@ import ts from 'typescript';
 import { readPendingLicense, rememberPendingLicense, forgetPendingLicense } from '../src/lib/pendingLicense';
 import {
     REQUEST_TIMEOUT_MS,
+    LICENSE_LOOKUP_TIMEOUT_MS,
     CHECKOUT_TIMEOUT_MS,
     KEY_RECOVERY_TIMEOUT_MS,
     withDeadline,
@@ -233,4 +234,34 @@ test('a key arriving at 60 seconds is delivered automatically after tab reload w
     assert.equal(reloaded.values.PaidLicensePlan, 'monthly');
     assert.equal(issues, 1);
     assert.equal(fake.storage.size, 0);
+});
+
+test('the actual paid-key lookup gives the SDK the full reconciliation timeout', async () => {
+    const lookup = app
+        .body!.statements.filter(ts.isVariableStatement)
+        .flatMap(node => [...node.declarationList.declarations])
+        .find(node => ts.isIdentifier(node.name) && node.name.text === 'fetchPaidLicenseKey')!;
+    const code = ts.transpileModule(`const lookup=${lookup.initializer!.getText(parsed)};lookup;`, {
+        compilerOptions: { target: ts.ScriptTarget.ES2022 },
+    }).outputText;
+    let calls = 0;
+    const fetchKey = vm.runInNewContext(code, {
+        supabase: {
+            functions: {
+                invoke: async (name: string, options: { timeout: number; body: { plan: string }; signal: AbortSignal }) => {
+                    calls++;
+                    assert.equal(name, 'get-my-license');
+                    assert.equal(options.timeout, LICENSE_LOOKUP_TIMEOUT_MS);
+                    assert.equal(options.signal.aborted, false);
+                    return { data: { licenseKey: 'DEMO-LOOKUP-KEY', plan: options.body.plan }, error: null };
+                },
+            },
+        },
+        recoverLicenseKeyAutomatically,
+        LICENSE_LOOKUP_TIMEOUT_MS,
+        pendingPaymentReference: () => undefined,
+        window: { localStorage: {}, sessionStorage: {} },
+    });
+    assert.equal(await fetchKey('yearly', new AbortController().signal), 'DEMO-LOOKUP-KEY');
+    assert.equal(calls, 1);
 });

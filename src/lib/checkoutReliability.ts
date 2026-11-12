@@ -1,4 +1,6 @@
 export const REQUEST_TIMEOUT_MS = 8_000;
+// License reconciliation can require several provider reads; keep the UI nonblocking while allowing network margin.
+export const LICENSE_LOOKUP_TIMEOUT_MS = 30_000;
 export const CHECKOUT_TIMEOUT_MS = 15_000;
 // Key recovery runs in its own visible panel, without blocking checkout or downloading.
 export const KEY_RECOVERY_TIMEOUT_MS = 30_000;
@@ -143,7 +145,7 @@ export async function recoverLicenseKeyAutomatically(
     let attempt = 0;
     while (!signal.aborted) {
         try {
-            const { data, error } = await withDeadline(requestSignal => invoke(plan, requestSignal), REQUEST_TIMEOUT_MS, signal);
+            const { data, error } = await withDeadline(requestSignal => invoke(plan, requestSignal), LICENSE_LOOKUP_TIMEOUT_MS, signal);
             if (!error && typeof data?.licenseKey === 'string' && data.licenseKey && data.plan === plan) return data.licenseKey;
         } catch {
             signal.throwIfAborted();

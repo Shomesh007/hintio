@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-12 — Pricing flow verification and recovery
+
+- Verified real Google OAuth, trial delivery, Test-mode monthly/yearly payments, key delivery/recovery and a full stable-installer download.
+- Give license reconciliation a bounded 30-second request window without slowing checkout or blocking the page.
+- Added opt-in local-only payment testing using the same pricing UI and isolated sandbox handlers. Production builds cannot enable it.
+- See `docs/PRICING-FLOW-QA-2026-11-12.md` for outcomes and test limitations.
+
 ## 2026-11-12 — Pricing page
 
 - Added `/pricing` with ₹0 free trial, ₹2,049 monthly and ₹14,000 yearly options.

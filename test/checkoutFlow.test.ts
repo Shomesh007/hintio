@@ -30,6 +30,7 @@ function setup(options: { stalledSession?: boolean; stalledScript?: boolean; del
     const lock = { current: false };
     const payload = { data: { keyId: 'DEMO-KEY', orderId: 'DEMO-ORDER', amount: 12345, currency: 'INR', mode: 'order' }, error: null };
     const context = {
+        billingTestMode: false,
         checkoutInFlightRef: lock,
         pendingLicense: options.pendingLicense ? { plan: 'monthly', reference: 'DEMO-PAID' } : null,
         setIsPendingLicenseOpen: (value: boolean) => {

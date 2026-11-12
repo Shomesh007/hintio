@@ -35,7 +35,7 @@ test('automatically delivers a five-minute delayed key, retries offline errors, 
     assert.equal(checks.length, count);
 });
 
-test('an eight-second stalled lookup aborts before the next request and recovery continues', async t => {
+test('a stalled thirty-second lookup aborts before the next request and recovery continues', async t => {
     t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 0 });
     let calls = 0;
     let stalledSignal: AbortSignal | undefined;
@@ -54,6 +54,8 @@ test('an eight-second stalled lookup aborts before the next request and recovery
         controller.signal
     );
     await advance(t, 8000);
+    assert.equal(stalledSignal?.aborted, false);
+    await advance(t, 22000);
     assert.equal(stalledSignal?.aborted, true);
     assert.equal(calls, 1);
     await advance(t, 3000);
@@ -102,4 +104,26 @@ test('unmount aborts the active lookup immediately and cannot deliver a late res
     assert.equal(requestSignal?.aborted, true);
     finish({ data: { licenseKey: 'LATE-RESULT', plan: 'monthly' }, error: null });
     await advance(t, 60_000);
+});
+
+test('a valid twelve-second reconciliation delivers its key without being repeatedly aborted', async t => {
+    t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 0 });
+    let calls = 0;
+    let lookupSignal: AbortSignal | undefined;
+    const controller = new AbortController();
+    const result = recoverLicenseKeyAutomatically(
+        'monthly',
+        (plan, signal) => {
+            calls++;
+            lookupSignal = signal;
+            return new Promise(resolve => setTimeout(() => resolve({ data: { licenseKey: 'DEMO-SLOW-VERIFIED-KEY', plan }, error: null }), 12000));
+        },
+        controller.signal
+    );
+    await advance(t, 9000);
+    assert.equal(lookupSignal?.aborted, false);
+    assert.equal(calls, 1);
+    await advance(t, 4000);
+    assert.equal(await result, 'DEMO-SLOW-VERIFIED-KEY');
+    assert.equal(calls, 1);
 });

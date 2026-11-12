@@ -4,7 +4,8 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { supabase, missingSupabaseEnvVars } from './lib/supabase';
+import { supabase, missingSupabaseEnvVars, billingTestMode } from './lib/supabase';
+import { billingTestUrl, checkoutMatchesEnvironment } from './lib/billingTestRouting';
 import { readPendingLicense, rememberPendingLicense, forgetPendingLicense, pendingPaymentReference, type PendingLicense } from './lib/pendingLicense';
 import {
     abortable,
@@ -13,6 +14,7 @@ import {
     continueAfterSignIn,
     recoverLicenseKeyAutomatically,
     REQUEST_TIMEOUT_MS,
+    LICENSE_LOOKUP_TIMEOUT_MS,
     CHECKOUT_TIMEOUT_MS,
 } from './lib/checkoutReliability';
 import MarketingSite from './marketing/MarketingSite';
@@ -188,7 +190,7 @@ export default function App() {
                 client.functions.invoke('get-my-license', {
                     body: { plan: requestedPlan, paymentId: pendingPaymentReference(requestedPlan, window.localStorage, window.sessionStorage) },
                     signal,
-                    timeout: REQUEST_TIMEOUT_MS,
+                    timeout: LICENSE_LOOKUP_TIMEOUT_MS,
                 }),
             signal
         );
@@ -423,16 +425,23 @@ export default function App() {
                         };
                     }
 
-                    const response = await fetch(`${supabaseFunctionsBaseUrl}/functions/v1/create-razorpay-checkout`, {
-                        method: 'POST',
-                        signal,
-                        headers: {
-                            'Content-Type': 'application/json',
-                            apikey: supabaseAnonKey,
-                            Authorization: `Bearer ${accessToken}`,
-                        },
-                        body: JSON.stringify({ plan }),
-                    });
+                    const response = await fetch(
+                        billingTestUrl(
+                            `${supabaseFunctionsBaseUrl}/functions/v1/create-razorpay-checkout`,
+                            billingTestMode,
+                            supabaseFunctionsBaseUrl
+                        ),
+                        {
+                            method: 'POST',
+                            signal,
+                            headers: {
+                                'Content-Type': 'application/json',
+                                apikey: supabaseAnonKey,
+                                Authorization: `Bearer ${accessToken}`,
+                            },
+                            body: JSON.stringify({ plan }),
+                        }
+                    );
 
                     const bodyText = await abortable(response.text(), signal);
                     let parsedBody: Record<string, unknown> | null = null;
@@ -564,7 +573,7 @@ export default function App() {
                     })
                 );
 
-                if (checkoutError || !checkoutData?.keyId) {
+                if (checkoutError || !checkoutData?.keyId || (billingTestMode && !checkoutMatchesEnvironment(checkoutData.keyId, true))) {
                     debugLog('Checkout blocked: function returned error or missing keyId');
                     setIsCheckoutLoading(false);
                     setIsPaymentModalOpen(true);
