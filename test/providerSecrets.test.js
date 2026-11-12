@@ -5,7 +5,14 @@ const fs = require('node:fs'),
     { execFileSync } = require('node:child_process');
 const source = fs
     .readFileSync(require('node:path').join(__dirname, '../supabase/functions/resolve-provider-secrets/index.ts'), 'utf8')
-    .replace(/^import .*;\r?\n/m, '');
+    .replace(/^import .*;\r?\n/gm, '');
+const helperSource = require('node:module')
+    .stripTypeScriptTypes(fs.readFileSync(require('node:path').join(__dirname, '../supabase/functions/_shared/trialCredentials.ts'), 'utf8'), {
+        mode: 'transform',
+    })
+    .replace(/^export /gm, '');
+const helperContext = { Date, Error };
+vm.runInNewContext(helperSource + '\nglobalThis.trialPolicy = {selectTrialCredentials,TrialCredentialError};', helperContext);
 const token = 'SKI-test_customer_license_1234567890';
 const future = new Date(Date.now() + 28 * 86400000).toISOString(),
     deadline = new Date(Date.now() + 7 * 86400000).toISOString();
@@ -27,6 +34,10 @@ function harness(options = {}) {
             SUPABASE_SERVICE_ROLE_KEY: 'test-service-role',
             SUPABASE_ANON_KEY: 'test-anon',
             HINTIO_MANAGED_OPENAI_API_KEY: 'test-openai-first,test-openai-second',
+            HINTIO_TRIAL_OPENAI_API_KEY: 'test-isolated-trial-openai',
+            HINTIO_TRIAL_GROQ_API_KEY: 'test-isolated-trial-groq',
+            HINTIO_TRIAL_OPENAI_KEY_EXPIRES_AT: new Date(Date.now() + 3600000).toISOString(),
+            HINTIO_TRIAL_GROQ_KEY_EXPIRES_AT: new Date(Date.now() + 3600000).toISOString(),
             ...options.env,
         };
     let handler;
@@ -112,6 +123,7 @@ function harness(options = {}) {
         AbortSignal,
         crypto: webcrypto,
         Date,
+        ...helperContext.trialPolicy,
         createClient: () => client,
         Deno: { env: { get: k => env[k] }, serve: f => (handler = f) },
         fetch: async (url, init) => {
@@ -163,6 +175,7 @@ function noSecrets(result) {
     assert(!s.includes('test-openai'));
     assert(!s.includes('test-managed'));
     assert(!s.includes('test-fallback'));
+    assert(!s.includes('test-isolated-trial'));
     assert.equal(result.body.secretsIssued ?? result.body.data?.secretsIssued, false);
 }
 function noConsume(h) {
@@ -259,6 +272,69 @@ function noConsume(h) {
         assert.equal(r.body.data.metadata.sessionTimeoutMs, 900000);
         assert.equal(r.body.data.interviewsUsed, 1);
     });
+    await test('trial receives only isolated credentials and never queries paid template', async () => {
+        const h = harness({ row: trialRow, trialClaimed: true }),
+            r = await h.invoke();
+        assert.equal(r.status, 200);
+        assert.deepEqual(r.body.data.openaiApiKeys, ['test-isolated-trial-openai']);
+        assert.equal(r.body.data.groqApiKey, 'test-isolated-trial-groq');
+        assert.equal(h.filters.length, 0);
+    });
+    for (const field of [
+        'HINTIO_TRIAL_OPENAI_API_KEY',
+        'HINTIO_TRIAL_GROQ_API_KEY',
+        'HINTIO_TRIAL_OPENAI_KEY_EXPIRES_AT',
+        'HINTIO_TRIAL_GROQ_KEY_EXPIRES_AT',
+    ])
+        await test('missing ' + field + ' fails closed before consuming trial credit', async () => {
+            const h = harness({ row: trialRow, trialClaimed: true, env: { [field]: '' } }),
+                r = await h.invoke();
+            assert.equal(r.status, 503);
+            assert.equal(r.body.code, 'TRIAL_CREDENTIALS_UNAVAILABLE');
+            noSecrets(r);
+            noConsume(h);
+        });
+    await test('paid path works with every trial setting absent', async () => {
+        const h = harness({
+                env: {
+                    HINTIO_TRIAL_OPENAI_API_KEY: '',
+                    HINTIO_TRIAL_GROQ_API_KEY: '',
+                    HINTIO_TRIAL_OPENAI_KEY_EXPIRES_AT: '',
+                    HINTIO_TRIAL_GROQ_KEY_EXPIRES_AT: '',
+                },
+            }),
+            r = await h.invoke();
+        assert.equal(r.status, 200);
+        assert.deepEqual(r.body.data.openaiApiKeys, ['test-openai-first']);
+        assert.equal(r.body.data.groqApiKey, 'test-managed-row-groq');
+    });
+    await test('trial cannot reuse paid OpenAI key', async () => {
+        const h = harness({ row: trialRow, trialClaimed: true, env: { HINTIO_TRIAL_OPENAI_API_KEY: 'test-openai-first' } }),
+            r = await h.invoke();
+        assert.equal(r.status, 503);
+        noSecrets(r);
+        noConsume(h);
+    });
+    await test('trial cannot reuse paid row Groq key', async () => {
+        const h = harness({ row: trialRow, trialClaimed: true, env: { HINTIO_TRIAL_GROQ_API_KEY: 'test-managed-row-groq' } }),
+            r = await h.invoke();
+        assert.equal(r.status, 503);
+        noSecrets(r);
+        noConsume(h);
+    });
+    for (const [name, value] of [
+        ['expired', new Date(Date.now() - 1000).toISOString()],
+        ['too short', new Date(Date.now() + 300000).toISOString()],
+        ['unbounded', 'invalid'],
+        ['too long', new Date(Date.now() + 7 * 86400000).toISOString()],
+    ])
+        await test('trial expiry ' + name + ' is rejected without paid fallback', async () => {
+            const h = harness({ row: trialRow, trialClaimed: true, env: { HINTIO_TRIAL_OPENAI_KEY_EXPIRES_AT: value } }),
+                r = await h.invoke();
+            assert.equal(r.status, 503);
+            noSecrets(r);
+            noConsume(h);
+        });
     await test('unclaimed trial cannot receive company credentials', async () => {
         const h = harness({ row: trialRow }),
             r = await h.invoke();
