@@ -4,7 +4,7 @@
 
 - Managed OpenAI chat, screenshots, streaming and Groq speech now use `managed-runtime`. Company provider keys stay server-side; the renderer never receives the scoped gateway credential.
 - Session credentials are HMAC-derived from a random request UUID and license; only SHA-256 hashes are stored. Starts lock the entitlement row and are idempotent, including the final trial credit.
-- Every provider request rechecks active license status, paid expiry and session expiry. Session close revokes access. Trial sessions expire within 15 minutes; paid credentials currently expire within eight hours or the paid expiry, whichever is sooner.
+- Every provider request rechecks active license status, paid expiry and session expiry. Session close revokes access. Trial sessions expire within 15 minutes; active paid credentials renew to eight hours after each authorized request, bounded by the paid expiry.
 - Fixed provider URLs and models; remote screenshot URLs rejected; JSON/audio/text/image/output bounds; provider errors sanitized; no request-content logging or persistence in gateway code.
 - Database-enforced limits: authentication attempts, IP session burst, 180 total requests/minute/license, 40 chat requests/minute, 120 speech requests/minute and 10,000 requests/rolling 24 hours. These are technical abuse controls, not additional purchased session credits.
 - Legacy `resolve-provider-secrets` rejects consuming/internal requests with HTTP 426 and never returns provider keys. Version 1.0.6 is required for managed sessions; the public 1.0.4 installer is incompatible with this secure protocol.
@@ -16,7 +16,7 @@
 
 ## Evidence
 
-72 desktop tests; 73 JavaScript syntax checks; strict gateway TypeScript; 99 website tests, website TypeScript and production build. Live GPT marker, streamed response, synthetic speech and public-logo vision passed. Closed-session reuse returned 403. Invalid credentials, remote image URLs and excess output limits are rejected. Real database rollback tests cover idempotency, last-credit operation, cross-license replay, exhaustion, revocation, expiry, daily limit and privileges. Billing and sandbox isolation tests rerun successfully.
+74 desktop tests; 73 JavaScript syntax checks; strict gateway TypeScript; 99 website tests, website TypeScript and production build. Live GPT marker, streamed response, synthetic speech and public-logo vision passed. Closed-session reuse returned 403. Invalid credentials, remote image URLs and excess output limits are rejected. Real database rollback tests cover idempotency, last-credit operation, cross-license replay, exhaustion, revocation, expiry, daily limit and privileges. Billing and sandbox isolation tests rerun successfully.
 
 Evidence is retained under `out/security-review-2026-11-12/`. Three temporary QA session credits were used: the first exposed a limiter configuration mismatch; subsequent live requests passed. The QA token is blocked and expired; no customer credit or real-money payment was used.
 
@@ -25,7 +25,7 @@ Version 1.0.6 validation MSIX passes package/source checks. It is unsigned with 
 ## Owner actions and release gates
 
 1. Replace the historical company OpenAI and Groq keys in Supabase Secrets, verify the replacements through the gateway, then revoke old keys at the providers. Older clients could receive those keys; stopping future delivery does not invalidate old copies. Do not paste secrets into chat.
-2. Automatic renewal of an active paid gateway credential is prepared but NOT deployed pending explicit approval. The published paid terms have no fixed session-duration cap; the current credential lifetime requires a new session after eight hours. Any approved renewal must retain paid expiry and all request limits.
+2. Owner-approved active paid-credential renewal is deployed and verified. Paid sessions retain an eight-hour idle timeout bounded by paid expiry; authorization does not consume another credit. Trial lifetime, revocation and request limits remain unchanged.
 3. Microsoft business approval, reserved identity, final Store package/submission declarations, private reviewer entitlement, WACK and Store-signed installed capture/update/restart/uninstall tests.
 4. Distribute the secure client before directing customers to start sessions. The existing public 1.0.4 download cannot use the new gateway. Do not describe the unsigned validation MSIX as a supported public installation.
 
@@ -36,3 +36,9 @@ The two older unlinked licenses still require verified payment proof through exi
 - [Supabase function permissions](https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable)
 - [Supabase password protection](https://supabase.com/docs/guides/auth/password-security)
 - [OpenAI server-side authentication](https://developers.openai.com/api/reference/overview)
+
+## Rotation follow-up (12 November)
+
+Owner-approved paid-session idle renewal applied as migration 20261112020902. Renewal, paid-expiry bounds, no extra credits, trial timeout, revocation and request-budget rollback tests passed. Managed-runtime v5 prefers the canonical replacement secret names; its status response identifies only the selected secret names, never values. 74 desktop tests and strict gateway compilation pass. The 1.0.6 desktop package does not need rebuilding for these server changes.
+
+Provider replacements and old-key revocation await owner sign-in/entry. The Supabase secrets list also shows equal live/test Razorpay webhook signing-secret digests; separate sandbox signing-secret rotation remains required. No signing-secret values were read. Store readiness must not be claimed until these owner actions are verified.

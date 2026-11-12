@@ -2,6 +2,7 @@ const fs = require('node:fs'),
     assert = require('node:assert/strict'),
     { randomUUID } = require('node:crypto');
 async function main() {
+    if (!process.argv.includes('--allow-live-providers')) throw new Error('Use --allow-live-providers with an isolated QA license.');
     const qa = JSON.parse(fs.readFileSync(0, 'utf8'));
     const config = require('../src/utils/supabaseConfig');
     const url = config.url + '/functions/v1/managed-runtime';
@@ -17,6 +18,11 @@ async function main() {
     const status = await call(qa.qa_token, { operation: 'status' });
     assert.equal(status.status, 200, status.text);
     assert.ok(!/sk-|gsk_|groqApiKey|openaiApiKeys|geminiApiKey/.test(status.text));
+    const selectedSources = JSON.parse(status.text).data.providerConfiguration;
+    if (process.argv.includes('--require-rotated-secrets')) {
+        assert.equal(selectedSources.openaiCredentialSource, 'HINTIO_MANAGED_OPENAI_API_KEY');
+        assert.equal(selectedSources.groqCredentialSource, 'HINTIO_MANAGED_GROQ_API_KEY');
+    }
     const requestId = randomUUID();
     const start = await call(qa.qa_token, { operation: 'session', requestId });
     assert.equal(start.status, 200, start.text);
@@ -66,6 +72,10 @@ async function main() {
     });
     assert.equal(speech.status, 200, speech.text);
     assert.match(speech.text, /quality\s+check/i);
+    const closed = await call(session.gatewayToken, { operation: 'close' });
+    assert.equal(closed.status, 200, closed.text);
+    const revoked = await call(session.gatewayToken, { operation: 'chat', messages: [{ role: 'user', content: 'Hi' }] });
+    assert.equal(revoked.status, 403, revoked.text);
     const proof = {
         status: 'passed',
         provider: 'OpenAI',
@@ -75,9 +85,14 @@ async function main() {
         syntheticSpeechRecognized: true,
         idempotentSessionCredential: true,
         providerKeysReturned: false,
+        openaiCredentialSource: selectedSources.openaiCredentialSource,
+        groqCredentialSource: selectedSources.groqCredentialSource,
+        sessionCloseVerified: true,
         negativeChecks: checks,
     };
-    fs.writeFileSync('out/security-review-2026-11-12/LIVE-GATEWAY.json', JSON.stringify(proof, null, 2));
+    const reportPath = process.env.HINTIO_QA_REPORT_PATH || 'out/security-review-2026-11-12/LIVE-GATEWAY.json';
+    fs.mkdirSync(require('node:path').dirname(reportPath), { recursive: true });
+    fs.writeFileSync(reportPath, JSON.stringify(proof, null, 2));
     console.log(JSON.stringify(proof, null, 2));
 }
 main().catch(e => {

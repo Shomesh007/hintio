@@ -48,6 +48,7 @@ function runtime(opts = {}) {
                         SUPABASE_URL: 'https://example.invalid',
                         SUPABASE_SERVICE_ROLE_KEY: 'SERVER_ROLE_SECRET',
                         HINTIO_MANAGED_OPENAI_API_KEY: 'SERVER_OPENAI_SECRET',
+                        ...opts.env,
                     })[k],
             },
             serve: fn => (handler = fn),
@@ -161,4 +162,24 @@ test('oversized text and audio are rejected', async () => {
 test('raw license cannot be used as a provider session', async () => {
     const r = runtime();
     assert.equal((await r.request({ operation: 'chat', messages: [] }, 'SKI-security-test-license')).status, 401);
+});
+
+test('rotated canonical OpenAI secret takes priority over a legacy plural setting', async () => {
+    const r = runtime({ env: { HINTIO_MANAGED_OPENAI_API_KEYS: 'LEGACY_PLURAL_SECRET' } });
+    const response = await r.request({ operation: 'chat', messages: [{ role: 'user', content: 'Hi' }] });
+    assert.equal(response.status, 200);
+    assert.equal(r.calls.find(x => x[0] === 'fetch')[2].headers.Authorization, 'Bearer SERVER_OPENAI_SECRET');
+    const status = await r.request({ operation: 'status' }, 'SKI-security-test-license');
+    assert.equal((await status.json()).data.providerConfiguration.openaiCredentialSource, 'HINTIO_MANAGED_OPENAI_API_KEY');
+});
+test('rotated Groq secret overrides legacy database speech configuration', async () => {
+    const r = runtime({ env: { HINTIO_MANAGED_GROQ_API_KEY: 'NEW_SERVER_SPEECH_SECRET' } });
+    const response = await r.request({
+        operation: 'transcribe',
+        audio: Buffer.from('synthetic-audio').toString('base64'),
+        mimeType: 'audio/wav',
+        language: 'en',
+    });
+    assert.equal(response.status, 200);
+    assert.equal(r.calls.find(x => x[0] === 'fetch')[2].headers.Authorization, 'Bearer NEW_SERVER_SPEECH_SECRET');
 });
