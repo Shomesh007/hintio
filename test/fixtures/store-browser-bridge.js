@@ -38,10 +38,16 @@ window.electronAPI = {
         return { success: true };
     },
 };
-const updates = { channel: 'microsoft-store', currentVersion: '1.0.5', required: false, available: false, phase: 'managed' };
+const updates = {
+    channel: 'microsoft-store',
+    currentVersion: window.syntheticAppVersion || '1.0.6',
+    required: false,
+    available: false,
+    phase: 'managed',
+};
 window.hintio = {
     isMacOS: false,
-    getVersion: async () => '1.0.5',
+    getVersion: async () => updates.currentVersion,
     refreshPreferencesCache: async () => {},
     storage: {
         getConfig: async () => ({ ...state.config }),

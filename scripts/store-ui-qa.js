@@ -5,13 +5,15 @@ const fs = require('node:fs'),
 const { chromium } = require('playwright');
 const { parseDocument } = require('../src/utils/documentImport');
 const root = path.resolve(__dirname, '..'),
-    output = path.join(root, 'out', 'store-listing-1.0.5');
+    output = path.join(root, 'out', 'store-listing-' + require('../package.json').version);
 async function main() {
     fs.mkdirSync(output, { recursive: true });
     const parsed = await parseDocument(path.join(root, 'test', 'fixtures', 'resume-synthetic.docx'));
     const bridge =
         'window.syntheticDocument=' +
         JSON.stringify(parsed) +
+        ';window.syntheticAppVersion=' +
+        JSON.stringify(require('../package.json').version) +
         ';\n' +
         fs.readFileSync(path.join(root, 'test/fixtures/store-browser-bridge.js'), 'utf8');
     const html = fs.readFileSync(path.join(root, 'src/index.html'), 'utf8').replace('src="utils/renderer.js"', 'src="/qa-bridge.js"');
@@ -62,7 +64,7 @@ async function main() {
                 capture: 'Actual app components in browser with test-only native bridge and synthetic data',
             });
         }
-        await shot('01-home.png', 'Enter your access token to start a session. Paid access is required.');
+        await shot('01-home.png', 'Enter a valid access token to start a cloud session. Internet access is required.');
         await page.getByRole('button', { name: 'Start Session', exact: true }).click();
         assert.equal(await page.evaluate(() => uiTestState.calls.some(c => c[0] === 'initialize')), false);
         await page.getByPlaceholder('Enter access token', { exact: true }).fill('SKI-synthetic-store-qa-token');
@@ -115,6 +117,13 @@ async function main() {
             await app.updateComplete;
         });
         await shot('05-assistant.png', 'AI-generated responses include a reporting control. Synthetic example content shown.');
+        const reportTypography = await page.getByRole('button', { name: 'Report response by email', exact: true }).evaluate(element => ({
+            fontFamily: getComputedStyle(element).fontFamily,
+            parentFont: getComputedStyle(element.parentElement).fontFamily,
+            fontToken: getComputedStyle(element).getPropertyValue('--font'),
+            fontSize: getComputedStyle(element).fontSize,
+        }));
+        fs.writeFileSync(path.join(output, 'REPORT-TYPOGRAPHY.json'), JSON.stringify(reportTypography, null, 2));
         await page.getByRole('button', { name: 'Report response by email', exact: true }).click();
         const reportUrl = await page.evaluate(() => uiTestState.calls.filter(c => c[0] === 'open-external').at(-1)?.[1]);
         assert.ok(reportUrl.startsWith('mailto:admin@builtbygsv.in?'));
@@ -154,6 +163,7 @@ async function main() {
             path.join(output, 'UI-TEST-RESULTS.json'),
             JSON.stringify(
                 {
+                    appVersion: await page.evaluate(() => window.hintio.getVersion()),
                     realAppComponents: true,
                     nativeBridge: 'test double; not installed-runtime verification',
                     network: 'all non-localhost requests blocked',

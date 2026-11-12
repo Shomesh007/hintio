@@ -11,7 +11,7 @@ Status: local preparation only. The validation MSIX is unsigned, uses a validati
 
 ## Build
 
-`npm run make:store:validation` builds an unsigned validation-only MSIX, checks its archive, and writes `out/store-validation-1.0.5/` with SHA-256 checksums and a report. Microsoft MakeAppx performs semantic manifest validation; no /nv switch is used.
+`npm run make:store:validation` builds an unsigned validation-only MSIX, checks its archive, and writes `out/store-validation-1.0.6/` with SHA-256 checksums and a report. Microsoft MakeAppx performs semantic manifest validation; no /nv switch is used.
 
 For the final unsigned Store submission set the following environment variables to the actual Partner Center values, then run `npm run make:store`:
 
@@ -22,7 +22,7 @@ $env:HINTIO_STORE_PUBLISHER_DISPLAY_NAME = '<PublisherDisplayName>'
 npm run make:store
 ```
 
-Output: `out/store-submission-1.0.5/`. Identity values are public metadata; do not put passwords, government ID documents, signing keys, provider keys or access tokens in the source or submission metadata. The fourth version component is reserved as zero for Store submission; increment the app version for subsequent releases.
+Output: `out/store-submission-1.0.6/`. Identity values are public metadata; do not put passwords, government ID documents, signing keys, provider keys or access tokens in the source or submission metadata. The fourth version component is reserved as zero for Store submission; increment the app version for subsequent releases.
 
 The Store build is full-trust x64 desktop software with internetClient, microphone, and runFullTrust declarations. runFullTrust is required for Electron desktop window, shortcut, and capture APIs; it does not request administrator elevation. Explain this capability during submission. The build adds no startup task, service or driver. Screen/audio capture is user-initiated. Store builds skip Squirrel startup registration cleanup and open the Store Downloads page for updates; they do not fetch the GitHub EXE version policy.
 
@@ -63,8 +63,12 @@ No self-signed certificate, developer-mode change, application-control bypass, o
 
 Run `npm run test:store-ui` with `HINTIO_TEST_CHROMIUM` pointing to an existing Chrome executable, then `npm run prepare:store-listing`. Output includes actual-component screenshots, captions, listing text, reviewer notes, policy matrix and a 300px tile. Native bridges are test doubles; screenshots do not establish installed runtime behavior.
 
-Live billing policy is INR 2,049 monthly and INR 14,000 per 365 prepaid days. Atomic provisioning, renewal/refund SQL and account/cancellation UI checks passed. The website privacy and purchase disclosures are published. Owner deferred live webhook setup; signed event delivery and a real captured Test-mode checkout remain gates. Policy review is evidence, not a guarantee of Microsoft approval.
+Live billing policy is INR 2,049 monthly and INR 14,000 per 365 prepaid days. Atomic provisioning, renewal/refund SQL and account/cancellation UI checks passed. The website privacy and purchase disclosures are published. Live and isolated Test-mode webhooks are enabled; actual Test-mode monthly/yearly capture, signed renewal and cancellation-retention checks passed. No real-money customer payment was used. Policy review is evidence, not a guarantee of Microsoft approval.
 
 ## Paid lifecycle remediation
 
-See packaging/store/BILLING-AUDIT.md and website docs/WEBSITE_OPERATIONS.md. Captured payments now create/link app tokens atomically; renewals retain keys; processed refunds update corresponding paid time. Price policy is INR 2,049 recurring monthly and INR 14,000 per 365 prepaid days. Account management includes explicit end-of-cycle cancellation and verified payment-reference repair. Owner deferred Razorpay webhook creation; automatic delivery and real Test-mode capture remain unverified. Keep these release gates visible in Partner Center notes.
+See packaging/store/BILLING-AUDIT.md and website docs/WEBSITE_OPERATIONS.md. Captured payments now create/link app tokens atomically; renewals retain keys; processed refunds update corresponding paid time. Price policy is INR 2,049 recurring monthly and INR 14,000 per 365 prepaid days. Account management includes explicit end-of-cycle cancellation and verified payment-reference repair. Automatic Test-mode delivery and captured payments are verified. Historical provider-key rotation and separation of live/test webhook signing secrets are owner-deferred; keep these decisions distinct from completed billing tests.
+
+## Current submission bundle
+
+Versioned listing materials and the step-by-step submission/Store-signed test record are generated under out/store-listing-1.0.6/. See packaging/store/STORE-SUBMISSION-CHECKLIST.md. Microsoft business verification was rechecked on 12 November: email and employment Verified, business Pending, Finish disabled. Final identity and Store submission remain gated by that review. Provider-key replacements and sandbox signing-secret separation are explicitly owner-deferred; they are not completed security checks.

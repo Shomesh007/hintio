@@ -42,3 +42,7 @@ The two older unlinked licenses still require verified payment proof through exi
 Owner-approved paid-session idle renewal applied as migration 20261112020902. Renewal, paid-expiry bounds, no extra credits, trial timeout, revocation and request-budget rollback tests passed. Managed-runtime v5 prefers the canonical replacement secret names; its status response identifies only the selected secret names, never values. 74 desktop tests and strict gateway compilation pass. The 1.0.6 desktop package does not need rebuilding for these server changes.
 
 Provider replacements and old-key revocation await owner sign-in/entry. The Supabase secrets list also shows equal live/test Razorpay webhook signing-secret digests; separate sandbox signing-secret rotation remains required. No signing-secret values were read. Store readiness must not be claimed until these owner actions are verified.
+
+## Owner decision — work deferred
+
+The owner explicitly deferred key replacements on 12 November and asked to continue other Store preparation. This includes historical provider-key replacement/revocation and the outstanding sandbox signing-secret separation. No replacement, revocation, or secret-value entry was performed. Paid-session renewal remains deployed and verified. Current Microsoft business verification was rechecked: Pending, with email and employment Verified; Finish account setup is disabled.

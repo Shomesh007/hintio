@@ -2,7 +2,7 @@
     "status": "draft-not-submitted",
     "displayName": "Hintio",
     "suggestedCategory": "Productivity",
-    "description": "Hintio is a desktop AI assistant for authorized questions, meetings and learning. Choose screen and audio context, add resume text or custom instructions, and review contextual AI-generated responses in an adjustable overlay.\n\nImport PDF or DOCX context, review session history and export records. Choose speaker, microphone, combined or no-audio modes. Stop capture and withdraw cloud consent from the live session or privacy controls. Only capture and share material you are authorized to use.\n\nAI responses may be inaccurate. Review important answers before relying on them. Report response by email prepares a draft: review and redact it before sending.\n\nFree installation; paid service access and a valid access token are required. Internet is required for cloud sessions. India pricing: INR 2,049 per recurring monthly cycle (up to 120 cycles), or INR 14,000 prepaid for 365 days without automatic renewal. Cancel monthly renewal through Manage my billing on the Access page; the current paid period remains available. Paid access has no fixed session time, daily or session-count limit; network and provider availability apply. Review the final INR charge before authorizing payment.\n\nThe Store build encrypts local records using AES-256-GCM with a Windows-protected key. Exports may be unencrypted. Cloud processing is subject to provider terms. Updates are managed by Microsoft Store. Screen-sharing behavior depends on the capture tool; invisibility is not guaranteed.",
+    "description": "Hintio is a desktop AI assistant for authorized questions, meetings and learning. Choose screen and audio context, add resume text or custom instructions, and review contextual AI-generated responses in an adjustable overlay.\n\nImport PDF or DOCX context, review session history and export records. Choose speaker, microphone, combined or no-audio modes. Stop capture and withdraw cloud consent from the live session or privacy controls. Only capture and share material you are authorized to use.\n\nAI responses may be inaccurate. Review important answers before relying on them. Report response by email prepares a draft: review and redact it before sending.\n\nFree installation; a valid access token is required. Website trial access, when available, includes three sessions of up to 15 minutes each. Continued service access requires a paid plan. Internet is required for cloud sessions. India pricing: INR 2,049 per recurring monthly cycle (up to 120 cycles), or INR 14,000 prepaid for 365 days without automatic renewal. Cancel monthly renewal through Manage my billing on the Access page; the current paid period remains available. Paid access has no purchased session-count quota or fixed active-session duration. Service-protection limits apply, including 10,000 managed AI requests per rolling 24 hours; provider and network availability also apply. Review the final INR charge before authorizing payment.\n\nThe Store build encrypts local records using AES-256-GCM with a Windows-protected key. Exports may be unencrypted. Cloud processing is subject to provider terms. Updates are managed by Microsoft Store. Screen-sharing behavior depends on the capture tool; invisibility is not guaranteed.",
     "features": [
         "Selectable speaker, microphone, combined and no-audio session modes",
         "Screen analysis and document context",
@@ -26,8 +26,8 @@
         "Complete service pricing disclosure, age ratings and availability before submission",
         "Publish matching privacy information.",
         "Complete live generative AI declaration and IARC questionnaire.",
-        "Finish deferred live webhook setup and verify signed delivered events.",
-        "Complete an authorized Razorpay Test-mode captured-payment end-to-end check; no customer charge or cancellation was used for testing."
+        "Provide a Store-identified package and verify Store-delivered behavior before release; browser component tests do not replace native tests.",
+        "Declare Razorpay as the secure third-party purchase/subscription API in Partner Center."
     ],
     "identity": "pending actual Partner Center reservation",
     "screenshotStatus": "Five actual-component 1600x1000 PNG captures using test-only native bridges and synthetic content. Installed Store runtime unverified.",
@@ -46,16 +46,20 @@
         "livePriceVerified": true,
         "renewal": "Monthly recurring, up to 120 cycles. Yearly prepaid for 365 days with manual renewal that retains remaining paid time.",
         "cancellation": "Authenticated Access page -> Manage my billing -> Cancel monthly renewal -> explicit end-of-cycle confirmation. Uninstalling does not cancel billing.",
-        "usageLimits": "No fixed paid-session time, session-count or daily cap. Provider/network availability and abuse controls apply.",
-        "submissionBlockedUntilVerified": true,
+        "usageLimits": "No purchased paid-session quota or fixed active-session duration. Service-protection limits: 40 chat requests/minute, 120 speech requests/minute, 180 total/minute and 10,000 total requests per rolling 24 hours per license. Provider/network availability applies.",
+        "submissionBlockedUntilVerified": false,
         "monthlyLivePlanVerified": true,
         "monthlyPlanId": "plan_SRiBHkkKQcRnBV",
         "monthlyBillingCycle": "Once a month",
         "yearlyLivePriceVerified": true,
         "entitlementIssue": "Fixed with atomic license/token provisioning and an idempotent payment ledger. Two older records have no payment proof and are not automatically activated.",
         "yearlyPriceSource": "Live checkout policy and tested order request: 1400000 paise; no real charge performed",
-        "webhookStatus": "No live webhook existed. Setup prepared but explicitly deferred by owner; automatic delivery unverified.",
-        "realCapturedPaymentEndToEndTested": false
+        "webhookStatus": "Live and isolated Test-mode webhooks enabled; actual Test-mode purchase and renewal deliveries verified. Sandbox/live signing-secret separation is owner-deferred.",
+        "realCapturedPaymentEndToEndTested": true,
+        "billingVerificationComplete": true,
+        "capturedPaymentTestEnvironment": "Razorpay Test mode only; no real-money charge",
+        "trial": "Website trial access, when available: three sessions, up to 15 minutes each. A valid trial token is required.",
+        "transactionProvider": "Razorpay hosted checkout; app does not collect raw card numbers."
     },
     "systemRequirements": {
         "architecture": "x64",
@@ -63,5 +67,10 @@
         "internet": "Required for cloud sessions and access validation",
         "access": "Valid paid access token",
         "microphone": "Optional, for microphone-enabled modes"
-    }
+    },
+    "preparationVersion": "1.0.6",
+    "ownerDeferredSecurityActions": [
+        "Historical OpenAI/Groq credential replacement and revocation",
+        "Separate live and sandbox Razorpay webhook signing secrets"
+    ]
 }
