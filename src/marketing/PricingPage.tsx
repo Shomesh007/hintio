@@ -23,7 +23,7 @@ function AssistantStrip() {
                 ))}
             </span>
             <Monitor size={17} />
-            <span className="plan-assistant-status">Ready when you are</span>
+            <span className="plan-assistant-status">Voice + screenshots</span>
         </div>
     );
 }
@@ -37,14 +37,14 @@ export default function PricingPage({ onDownload, onUpgrade, onRecover, onMacDow
                         <i /> HINTIO DESKTOP ACCESS
                     </span>
                     <h1 id="pricing-title">
-                        Good answers. <span>Your pace.</span>
+                        Choose your <span>Hintio plan.</span>
                     </h1>
-                    <p>Start with three free sessions. Choose more time when you need it.</p>
+                    <p>Get a key for the Windows app. Every plan includes voice, screenshot and typed-question assistance.</p>
                 </header>
                 <div className="pricing-stage" aria-label="Choose your Hintio plan">
                     <article className="plan-panel plan-trial" aria-labelledby="trial-title">
                         <div className="plan-label">
-                            <span>Start here</span>
+                            <span>Try the core features</span>
                             <span>No card needed</span>
                         </div>
                         <h2 id="trial-title">Free trial</h2>
@@ -53,8 +53,9 @@ export default function PricingPage({ onDownload, onUpgrade, onRecover, onMacDow
                             <span>to try Hintio</span>
                         </div>
                         <p className="plan-description">
-                            Three real sessions.
-                            <br />A little room to find your flow.
+                            Test voice and screen assistance.
+                            <br />
+                            Three sessions, no payment card.
                         </p>
                         <button className="plan-action plan-action-outline" onClick={onDownload}>
                             Try Hintio free <ArrowUpRight size={18} />
@@ -80,7 +81,7 @@ export default function PricingPage({ onDownload, onUpgrade, onRecover, onMacDow
                     <article className="plan-panel plan-monthly" aria-labelledby="monthly-title">
                         <AssistantStrip />
                         <div className="plan-label">
-                            <span>Make it part of your day</span>
+                            <span>Monthly subscription</span>
                         </div>
                         <h2 id="monthly-title">Monthly</h2>
                         <div className="plan-price">
@@ -88,9 +89,9 @@ export default function PricingPage({ onDownload, onUpgrade, onRecover, onMacDow
                             <span>/ month</span>
                         </div>
                         <p className="plan-description">
-                            For the conversations coming up.
+                            Use voice and screen assistance.
                             <br />
-                            Stay flexible, month by month.
+                            Renews monthly until cancelled.
                         </p>
                         <button className="plan-action plan-action-lime" disabled={checkoutLoading} onClick={() => onUpgrade('monthly')}>
                             {checkoutLoading ? 'Opening checkout…' : 'Choose monthly'}
@@ -100,15 +101,15 @@ export default function PricingPage({ onDownload, onUpgrade, onRecover, onMacDow
                         <ul className="plan-features">
                             <li>
                                 <Check />
-                                All desktop assistant features
+                                Voice, screenshots & typed questions
                             </li>
                             <li>
                                 <Check />
-                                No purchased session-count cap
+                                No fixed number of sessions
                             </li>
                             <li>
                                 <Check />
-                                Keep access through your paid period
+                                Cancel future renewal anytime
                             </li>
                         </ul>
                         <p className="plan-footnote">
@@ -120,7 +121,7 @@ export default function PricingPage({ onDownload, onUpgrade, onRecover, onMacDow
                     </article>
                     <article className="plan-panel plan-yearly" aria-labelledby="yearly-title">
                         <div className="plan-label">
-                            <span>A longer view</span>
+                            <span>Yearly prepaid access</span>
                             <span className="plan-year-saving">Save ₹10,588*</span>
                         </div>
                         <h2 id="yearly-title">Yearly</h2>
@@ -129,9 +130,9 @@ export default function PricingPage({ onDownload, onUpgrade, onRecover, onMacDow
                             <span>/ year</span>
                         </div>
                         <p className="plan-description">
-                            One decision. A year of access.
+                            The same assistant, paid yearly.
                             <br />
-                            Make room for what comes next.
+                            365 days. No automatic renewal.
                         </p>
                         <button className="plan-action plan-action-outline" disabled={checkoutLoading} onClick={() => onUpgrade('yearly')}>
                             {checkoutLoading ? 'Opening checkout…' : 'Choose yearly'}
@@ -141,7 +142,7 @@ export default function PricingPage({ onDownload, onUpgrade, onRecover, onMacDow
                         <ul className="plan-features">
                             <li>
                                 <Check />
-                                All desktop assistant features
+                                Voice, screenshots & typed questions
                             </li>
                             <li>
                                 <Check />
@@ -164,8 +165,8 @@ export default function PricingPage({ onDownload, onUpgrade, onRecover, onMacDow
                     <div>
                         <Mic />
                         <span>
-                            <strong>Live voice context</strong>
-                            <small>Follow the conversation.</small>
+                            <strong>Voice transcription</strong>
+                            <small>Turn selected audio into AI replies.</small>
                         </span>
                     </div>
                     <div>
@@ -178,7 +179,7 @@ export default function PricingPage({ onDownload, onUpgrade, onRecover, onMacDow
                     <div>
                         <Layers />
                         <span>
-                            <strong>Your session context</strong>
+                            <strong>Resume & instructions</strong>
                             <small>Bring your resume and instructions.</small>
                         </span>
                     </div>
@@ -203,11 +204,11 @@ export default function PricingPage({ onDownload, onUpgrade, onRecover, onMacDow
                 <div>
                     <span className="pricing-kicker">A FEW USEFUL DETAILS</span>
                     <h2 id="pricing-questions-title">
-                        Know what
+                        Plan details
                         <br />
-                        you’re choosing.
+                        before you pay.
                     </h2>
-                    <p>Clear terms, before you start.</p>
+                    <p>How keys, renewal and recovery work.</p>
                 </div>
                 <div className="pricing-answers">
                     <details>
@@ -231,7 +232,7 @@ export default function PricingPage({ onDownload, onUpgrade, onRecover, onMacDow
                     <details>
                         <summary>Are paid sessions limited?</summary>
                         <p>
-                            Paid access has no purchased session-count cap or fixed active-session duration. Service-protection limits, provider
+                            Paid access has no fixed number of sessions or fixed active-session duration. Service-protection limits, provider
                             availability and network conditions still apply. Each free trial session lasts up to 15 minutes, with three sessions in
                             total.
                         </p>

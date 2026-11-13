@@ -42,15 +42,15 @@ type Page = '/' | '/workflows' | '/shortcuts' | '/get-started' | '/access' | '/p
 const support = 'https://wa.me/918438365095';
 const supportEmail = 'admin@builtbygsv.in';
 const titles: Record<Page, string> = {
-    '/': 'Good answers. Right on cue.',
-    '/workflows': 'Workflows',
+    '/': 'AI help for calls & screenshots',
+    '/workflows': 'Voice, screenshots & session context',
     '/shortcuts': 'Keyboard shortcuts',
     '/get-started': 'Getting started',
     '/access': 'Pricing & desktop access',
     '/pricing': 'Pricing & desktop access',
     '/contact': 'Contact Hintio',
     '/privacy': 'Privacy & data',
-    '/terms': 'Access information',
+    '/terms': 'Billing & access terms',
 };
 function currentPage(): Page {
     const path = window.location.pathname.replace(/\/$/, '') || '/';
@@ -153,15 +153,15 @@ function LivePreview({ compact = false, screen = false }: { compact?: boolean; s
                     <div className="listening">
                         <i /> Listening to the conversation
                     </div>
-                    <h3>{screen ? 'Can you walk through what is on the screen?' : 'How would you explain a difficult trade-off?'}</h3>
+                    <h3>{screen ? 'Why is this request failing?' : 'How should we handle API timeouts?'}</h3>
                     <ul>
-                        <li>{screen ? 'Identify the important details.' : 'Start with the goal.'}</li>
-                        <li>{screen ? 'Connect the information across screens.' : 'Compare the options.'}</li>
-                        <li>{screen ? 'Explain the next step.' : 'Explain your decision.'}</li>
+                        <li>{screen ? 'Check the status and response body.' : 'Set a deadline for each request.'}</li>
+                        <li>{screen ? 'Verify the request parameters.' : 'Retry safe operations with backoff.'}</li>
+                        <li>{screen ? 'Add timeout and error handling.' : 'Show the user how to retry.'}</li>
                     </ul>
                     <div className="preview-input">
                         <span>Ask a follow-up…</span>
-                        <kbd>Ctrl + Enter</kbd>
+                        <kbd>Ctrl + Alt + Enter</kbd>
                     </div>
                 </div>
             </div>
@@ -191,7 +191,7 @@ function ContextPreview() {
                 <label>
                     Custom instructions<span className="textarea-look">Focus on accessibility and system design.</span>
                 </label>
-                <p>Context is included when your session starts.</p>
+                <p>These details guide the AI’s responses.</p>
             </div>
         </DesktopWindow>
     );
@@ -219,13 +219,13 @@ function HistoryPreview() {
                         <Copy size={14} />
                         <Download size={14} />
                     </div>
-                    <h4>How would you explain a trade-off?</h4>
+                    <h4>How should we handle API timeouts?</h4>
                     <p>
-                        Start with the goal and constraints.
+                        Set a deadline for each request.
                         <br />
-                        Compare the options with clear trade-offs.
+                        Retry safe operations with backoff.
                         <br />
-                        Explain your decision and expected impact.
+                        Tell the user how to retry.
                     </p>
                 </div>
             </div>
@@ -262,16 +262,16 @@ function ScreenshotStack() {
 function FAQ({ items }: { items?: [string, string][] }) {
     const faqs: [string, string][] = items ?? [
         [
-            'How do I activate my key?',
-            'Open Hintio, paste the complete access key, and choose Start Session. Once validated, you go straight to the assistant. There is no voice calibration step.',
+            'What does Hintio do?',
+            'Hintio is a Windows desktop AI assistant. It transcribes the audio you select, analyzes screenshots you capture, and answers typed questions in a movable overlay. Use it to draft replies, understand code or discuss a document.',
         ],
         [
             'Which desktop platform can I download?',
-            'The Windows installer is available from this site. The Mac download currently opens the existing availability notice.',
+            'The current download is for Windows. There is no Mac installer available here. The unsigned Windows release can be blocked by Smart App Control; check that it opens on your PC before buying access.',
         ],
         [
             'When does my access expire?',
-            'Each key has an expiry timestamp and a session allowance. Your key must be active, unexpired, and have sessions remaining. A manually issued 28-day key starts when it is issued.',
+            'The free trial has three sessions of up to 15 minutes each and expires after 30 days. Monthly access renews until cancelled. Yearly access is prepaid for 365 days. Paid plans have no fixed session-count allowance; your key must remain active and unexpired.',
         ],
         [
             'Can I customize the shortcuts?',
@@ -280,8 +280,8 @@ function FAQ({ items }: { items?: [string, string][] }) {
     ];
     return (
         <section className="hi-faq wrap">
-            <div className="section-label">A FEW GOOD QUESTIONS</div>
-            <h2>Before you jump in.</h2>
+            <div className="section-label">HOW HINTIO WORKS</div>
+            <h2>Before you install.</h2>
             {faqs.map(([question, answer]) => (
                 <details key={question}>
                     <summary>
@@ -299,16 +299,19 @@ function Home({ onDownload, go }: Pick<Props, 'onDownload'> & { go: (page: Page)
         <>
             <section className="hi-hero wrap">
                 <div className="hero-copy">
-                    <span className="eyebrow">YOUR DESKTOP + AI</span>
+                    <span className="eyebrow">AI VOICE & SCREEN ASSISTANT</span>
                     <h1>
-                        Good answers.
+                        AI help for
                         <br />
-                        <mark>Right on cue.</mark>
+                        <mark>calls & screens.</mark>
                     </h1>
-                    <p>Stay with the conversation. Hintio brings real-time voice and screen context to your desktop.</p>
+                    <p>
+                        Choose call audio or capture a screenshot. Hintio uses AI to suggest replies, explain code and answer questions in a movable
+                        Windows desktop window.
+                    </p>
                     <div className="hero-actions">
                         <Button tone="ink" onClick={() => go('/pricing')}>
-                            Get your access key <ArrowUpRight size={19} />
+                            View plans & free trial <ArrowUpRight size={19} />
                         </Button>
                         <Button tone="outline" onClick={() => go('/workflows')}>
                             <Play size={16} /> See how it works
@@ -328,7 +331,7 @@ function Home({ onDownload, go }: Pick<Props, 'onDownload'> & { go: (page: Page)
                                 <i />
                                 Live transcript
                             </strong>
-                            <span>…so the main trade-off is speed versus accuracy…</span>
+                            <span>…how should we handle an API request that times out?</span>
                         </div>
                         <Waveform />
                     </div>
@@ -338,16 +341,16 @@ function Home({ onDownload, go }: Pick<Props, 'onDownload'> & { go: (page: Page)
             <section className="feature-band">
                 <div className="wrap">
                     <h2>
-                        Small window.
+                        Select audio.
                         <br />
-                        Clearer thinking.
+                        Get AI replies.
                     </h2>
                     <div>
                         <Mic />
                         <strong>
                             Live
                             <br />
-                            voice context
+                            transcription
                         </strong>
                     </div>
                     <div>
@@ -355,28 +358,31 @@ function Home({ onDownload, go }: Pick<Props, 'onDownload'> & { go: (page: Page)
                         <strong>
                             Screen
                             <br />
-                            understanding
+                            analysis
                         </strong>
                     </div>
                     <div>
                         <KeyRound />
                         <strong>
-                            Instant
+                            Copy your
                             <br />
-                            key activation
+                            access key
                         </strong>
                     </div>
                 </div>
             </section>
             <section className="product-story wrap">
                 <div>
-                    <span className="section-label">BUILT FOR THE LIVE MOMENT</span>
+                    <span className="section-label">RESUME + SESSION INSTRUCTIONS</span>
                     <h2>
-                        Keep the context.
+                        Add your resume.
                         <br />
-                        Find the words.
+                        Guide the answer.
                     </h2>
-                    <p>Add the background that matters. Let Hintio help turn a conversation or a complex screen into something you can work with.</p>
+                    <p>
+                        Import a PDF or DOCX resume, choose a session profile, and add your own instructions. Hintio includes this background when it
+                        generates responses.
+                    </p>
                     <a
                         href="/workflows"
                         onClick={e => {
@@ -385,7 +391,7 @@ function Home({ onDownload, go }: Pick<Props, 'onDownload'> & { go: (page: Page)
                         }}
                         className="text-link"
                     >
-                        Find your workflow <ArrowUpRight />
+                        Explore the features <ArrowUpRight />
                     </a>
                 </div>
                 <ContextPreview />
@@ -393,30 +399,30 @@ function Home({ onDownload, go }: Pick<Props, 'onDownload'> & { go: (page: Page)
             <section className="yellow-section">
                 <div className="wrap home-steps">
                     <h2>
-                        From download
+                        Install, activate,
                         <br />
-                        to dialogue.
+                        then ask.
                     </h2>
                     <ol>
                         <li>
                             <b>01</b>
                             <div>
-                                <h3>Get the desktop app.</h3>
-                                <p>Download and install the complete Windows release.</p>
+                                <h3>Install the Windows app.</h3>
+                                <p>Use the complete installer and check that Hintio opens on your PC.</p>
                             </div>
                         </li>
                         <li>
                             <b>02</b>
                             <div>
-                                <h3>Bring your context.</h3>
-                                <p>Choose a profile. Add your resume or instructions.</p>
+                                <h3>Set up your session.</h3>
+                                <p>Choose a profile and add the background the AI should use.</p>
                             </div>
                         </li>
                         <li>
                             <b>03</b>
                             <div>
-                                <h3>Paste your key. Go live.</h3>
-                                <p>Approved keys open the assistant directly.</p>
+                                <h3>Activate your access key.</h3>
+                                <p>Paste your trial or paid key, then choose Start Session.</p>
                             </div>
                         </li>
                     </ol>
@@ -424,16 +430,19 @@ function Home({ onDownload, go }: Pick<Props, 'onDownload'> & { go: (page: Page)
             </section>
             <section className="wrap access-teaser">
                 <div>
-                    <span className="section-label">A LITTLE CLARITY GOES A LONG WAY</span>
+                    <span className="section-label">FREE TRIAL + PAID ACCESS</span>
                     <h2>
-                        Your next conversation
+                        Test the assistant
                         <br />
-                        starts here.
+                        on your own PC.
                     </h2>
-                    <p>Get the app, choose your access, and make room for clearer thinking.</p>
+                    <p>
+                        Try three sessions of up to 15 minutes each. Monthly and yearly plans add paid access to the same voice, screenshot and text
+                        features.
+                    </p>
                     <div className="hero-actions">
                         <Button onClick={() => go('/pricing')}>
-                            Explore desktop access <ArrowUpRight size={18} />
+                            Compare plans <ArrowUpRight size={18} />
                         </Button>
                         <Button tone="outline" onClick={onDownload}>
                             Download for Windows <Download size={17} />
@@ -453,18 +462,18 @@ function Workflows({ go }: { go: (page: Page) => void }) {
         <>
             <section className="wrap workflow-hero page-hero">
                 <div>
-                    <span className="eyebrow">FIND YOUR FLOW</span>
+                    <span className="eyebrow">WHAT THE DESKTOP APP DOES</span>
                     <h1>
-                        One desktop.
+                        Select audio.
                         <br />
-                        <mark>Every kind of</mark>
+                        <mark>Capture screens.</mark>
                         <br />
-                        conversation.
+                        Ask follow-ups.
                     </h1>
                     <p>
-                        Set the context. Choose a profile.
+                        Pick a profile and add your background.
                         <br />
-                        Bring Hintio into the moment.
+                        Ask about a call, code or document.
                     </p>
                 </div>
                 <div className="workflow-preview">
@@ -481,7 +490,7 @@ function Workflows({ go }: { go: (page: Page) => void }) {
             <section className="dark-section workflow-context">
                 <div className="wrap">
                     <h2>
-                        <span>01 /</span> A conversation with context.
+                        <span>01 /</span> Answers with your background.
                     </h2>
                     <div className="preview-pair">
                         <ContextPreview />
@@ -493,9 +502,9 @@ function Workflows({ go }: { go: (page: Page) => void }) {
             </section>
             <section className="wrap screenshot-story">
                 <h2>
-                    <span className="yellow-number">02 /</span> A screen worth understanding.
+                    <span className="yellow-number">02 /</span> Ask about your screenshots.
                 </h2>
-                <p>Capture up to three screens together. Send after two, or capture a third to send automatically.</p>
+                <p>Ask about code, an error, a chart or a document. Combine up to three screenshots when the question needs more than one image.</p>
                 <div className="preview-pair">
                     <ScreenshotStack />
                     <ArrowRight className="connector" />
@@ -518,27 +527,27 @@ function Workflows({ go }: { go: (page: Page) => void }) {
             <section className="yellow-section">
                 <div className="wrap scenario-band">
                     <h2>
-                        Your meeting.
+                        Interviews.
                         <br />
-                        Your pitch.
+                        Meetings.
                         <br />
-                        Your point.
+                        Presentations.
                     </h2>
                     <div>
                         <p>
                             <strong>Business Meeting</strong>
                             <br />
-                            Work through decisions and next steps.
+                            Ask for a concise reply or help comparing options.
                         </p>
                         <p>
                             <strong>Sales Call</strong>
                             <br />
-                            Get support responding to objections.
+                            Draft a response to a customer question using your session context.
                         </p>
                         <p>
                             <strong>Presentation + Negotiation</strong>
                             <br />
-                            Keep the point clear as the conversation changes.
+                            Rephrase a point or compare alternatives before responding.
                         </p>
                     </div>
                 </div>
@@ -546,14 +555,16 @@ function Workflows({ go }: { go: (page: Page) => void }) {
             <section className="dark-section">
                 <div className="wrap history-story">
                     <h2>
-                        <span>03 /</span> Keep the useful parts.
+                        <span>03 /</span> Review saved responses.
                     </h2>
                     <HistoryPreview />
-                    <p className="center-copy">Revisit responses and screen analyses in History. Copy or save what you need.</p>
+                    <p className="center-copy">
+                        Open History to review saved responses, transcripts and screen analyses. Copy text or save a separate export.
+                    </p>
                 </div>
             </section>
             <Closing
-                title="Find your flow with Hintio."
+                title="Learn the controls. Try a session."
                 action="Explore shortcuts"
                 onClick={() => go('/shortcuts')}
                 secondary={() => go('/pricing')}
@@ -576,11 +587,11 @@ function ShortcutsPage() {
                 <div>
                     <span className="eyebrow">{platform === 'windows' ? 'WINDOWS' : 'MAC'} DEFAULTS</span>
                     <h1>
-                        Less reaching.
+                        Capture, ask,
                         <br />
-                        <mark>More doing.</mark>
+                        <mark>and navigate.</mark>
                     </h1>
-                    <p>The desktop controls that keep you in your flow.</p>
+                    <p>Capture screenshots, submit questions, move the overlay and browse responses from your keyboard.</p>
                     <div className="giant-keys" aria-hidden="true">
                         <kbd>{platform === 'windows' ? 'Ctrl' : 'Cmd'}</kbd>
                         <kbd>Enter ↵</kbd>
@@ -700,11 +711,11 @@ function ShortcutsPage() {
             )}
             <section className="wrap shortcut-customize">
                 <div>
-                    <span className="section-label">YOUR KEYS, YOUR WAY</span>
+                    <span className="section-label">REBIND IN SETTINGS</span>
                     <h2>
-                        Make the
+                        Change your
                         <br />
-                        controls yours.
+                        keyboard shortcuts.
                     </h2>
                     <p>Change bindings in Settings → Keyboard Shortcuts. If another app already uses a combination, choose a different one.</p>
                 </div>
@@ -735,13 +746,13 @@ function GetStarted({ onDownload, go }: Pick<Props, 'onDownload'> & { go: (page:
             <section className="wrap page-hero getting-hero">
                 <span className="eyebrow">THE QUICK-START GUIDE</span>
                 <h1>
-                    Your first session,
+                    Set up Hintio.
                     <br />
-                    <mark>without the guesswork.</mark>
+                    <mark>Start a session.</mark>
                 </h1>
-                <p>Download Hintio. Add your context. Activate your key.</p>
+                <p>Install the Windows app, get an access key, then choose the audio and screen input you want to use.</p>
                 <ol className="setup-progress">
-                    {['Install', 'Set context', 'Activate', 'Go live'].map((step, i) => (
+                    {['Install', 'Set context', 'Activate', 'Ask'].map((step, i) => (
                         <li key={step}>
                             <b>0{i + 1}</b>
                             {step}
@@ -769,8 +780,8 @@ function GetStarted({ onDownload, go }: Pick<Props, 'onDownload'> & { go: (page:
                         open Hintio.
                     </h2>
                     <p>
-                        Use the full installer or portable bundle, rather than a copied EXE. The app needs the runtime files included in the complete
-                        release.
+                        Use the complete Windows installer. Smart App Control can block the current unsigned release, so check that Hintio opens
+                        before purchasing access.
                     </p>
                 </div>
                 <DesktopWindow label="Setup">
@@ -788,11 +799,14 @@ function GetStarted({ onDownload, go }: Pick<Props, 'onDownload'> & { go: (page:
                 <div className="setup-copy">
                     <b className="step-index">02</b>
                     <h2>
-                        Give it the
+                        Add your resume
                         <br />
-                        right context.
+                        and instructions.
                     </h2>
-                    <p>On first launch, complete setup. Add context now or later in AI Context. Choose the profile that fits your conversation.</p>
+                    <p>
+                        Complete the first-launch setup. In AI Context, choose a profile, import your resume and add instructions for the answers you
+                        want.
+                    </p>
                     <div className="profile-tags">
                         {profiles.map(p => (
                             <span key={p}>{p}</span>
@@ -806,16 +820,19 @@ function GetStarted({ onDownload, go }: Pick<Props, 'onDownload'> & { go: (page:
                     <div className="setup-copy">
                         <b className="step-index">03</b>
                         <h2>
-                            Your access key
+                            Paste your key.
                             <br />
-                            is the way in.
+                            Start the session.
                         </h2>
-                        <p>Paste the complete key and choose Start Session. Once approved, Hintio opens the assistant directly.</p>
+                        <p>
+                            Copy your key from this website, paste it into Access Token and choose Start Session. An active, unexpired key opens the
+                            assistant.
+                        </p>
                         <span className="setup-pill">
-                            <CheckCircle2 size={17} /> No voice calibration step
+                            <CheckCircle2 size={17} /> Use the key from your account
                         </span>
                         <p className="small-copy">
-                            Your key has its own expiry and session allowance. A manually issued 28-day key starts when issued.
+                            Trials allow three sessions of up to 15 minutes each. Paid keys remain usable through their verified paid expiry.
                         </p>
                     </div>
                     <DesktopWindow label="Activate">
@@ -869,13 +886,13 @@ function GetStarted({ onDownload, go }: Pick<Props, 'onDownload'> & { go: (page:
             <section className="wrap setup-step">
                 <div>
                     <h2>
-                        You are ready
+                        Ask a question.
                         <br />
-                        to go live.
+                        Capture a screen.
                     </h2>
                     <p>
-                        Speak naturally, analyze a screen, or type a follow-up. End returns you to the home screen. History lets you revisit, copy, or
-                        save responses and screen analyses.
+                        Use the selected audio, capture a screenshot or type a follow-up. End stops the session. History lets you review saved
+                        responses, transcripts and screen analyses.
                     </p>
                 </div>
                 <LivePreview compact />
@@ -884,10 +901,10 @@ function GetStarted({ onDownload, go }: Pick<Props, 'onDownload'> & { go: (page:
                 items={[
                     [
                         'Key rejected?',
-                        'Check that you copied the full key without spaces. It must be active, unexpired, and have sessions remaining. Contact support if you need help with your access.',
+                        'Copy the full key without extra spaces. It must be active and unexpired; trial keys also need sessions remaining. For a paid key, use the recovery link with the Google account you paid with.',
                     ],
                     [
-                        'No voice context?',
+                        'No transcription?',
                         'Check the audio mode in Settings and the capture permissions requested by the desktop app. Speaker Only is the recommended starting point.',
                     ],
                     [
@@ -897,7 +914,7 @@ function GetStarted({ onDownload, go }: Pick<Props, 'onDownload'> & { go: (page:
                 ]}
             />
             <Closing
-                title="Open Hintio. Keep your flow."
+                title="Install Hintio. Start your first session."
                 action="View all shortcuts"
                 onClick={() => go('/shortcuts')}
                 secondary={() => go('/pricing')}
@@ -926,9 +943,9 @@ function Contact() {
         <section className="wrap contact-page page-hero">
             <span className="eyebrow">HINTIO / CONTACT</span>
             <h1>
-                A direct line.
+                Setup or billing?
                 <br />
-                <mark>A clearer next step.</mark>
+                <mark>Contact Hintio.</mark>
             </h1>
             <p className="contact-intro">Get help with setup, desktop access, a bug, or a question about your data.</p>
             <address className="contact-directory">
@@ -973,25 +990,26 @@ function Info({ type }: { type: 'privacy' | 'terms' }) {
     return (
         <section className="wrap info-page page-hero">
             <span className="eyebrow">HINTIO / INFORMATION</span>
-            <h1>{type === 'privacy' ? 'Your context.\nKnow the flow.' : 'Before you\nget access.'}</h1>
+            <h1>{type === 'privacy' ? 'Audio, screenshots\n& your data.' : 'Plans, payments\n& access keys.'}</h1>
             {type === 'privacy' ? (
                 <>
                     <p className="info-lead">
-                        Understand what Hintio captures, where your context is processed, and which controls are available in the desktop app.
+                        See what the Windows app captures, where AI requests are sent, what is saved on your device, and how to remove it.
                     </p>
                     <div className="information-note">
-                        This page describes the product's data flow. Provider retention and processing terms depend on the service and mode you use.
+                        The public Windows release is 1.0.4. Controls marked as Microsoft Store features apply to the prepared Store build, not the
+                        current EXE. Provider data handling depends on the service you use.
                     </div>
                     <h2>01 / What enters a session</h2>
+                    <p>
+                        Your audio mode can use speaker output, microphone input, both, or no audio. Screen analysis uses the screenshots you choose
+                        to capture. Resume text, your domain, and custom instructions can also become session context.
+                    </p>
                     <p>
                         Free trials use a random identifier saved in this browser and keyed hashes of your public IP and that identifier to limit
                         repeat trials. We do not store the raw IP or a hardware fingerprint in the trial eligibility table. These bindings remain
                         while the associated account is retained; browser/network changes can affect eligibility. People sharing a public IP may need
                         support.
-                    </p>
-                    <p>
-                        Your audio mode can use speaker output, microphone input, both, or no audio. Screen analysis uses the screen content you
-                        choose to capture. Resume text, your domain, and custom instructions can also become session context.
                     </p>
                     <p>
                         Review the selected audio source and screen controls before starting. Only capture conversations and content you have
@@ -1003,7 +1021,7 @@ function Info({ type }: { type: 'privacy' | 'terms' }) {
                             <dt>Cloud AI</dt>
                             <dd>
                                 Session context sent to a cloud provider can include audio or transcripts, screenshots, resume text, and custom
-                                instructions. The current Windows 1.0.4 release validates paid access through Hintio and then connects directly to
+                                instructions. The current Windows 1.0.4 release validates your access key through Hintio and then connects directly to
                                 OpenAI for answers and Groq for speech transcription using company credentials delivered to the app. The upcoming
                                 Microsoft Store client uses a server gateway that keeps company provider keys on the server. Infrastructure and AI
                                 providers process requests under their own terms.
@@ -1075,14 +1093,14 @@ function Info({ type }: { type: 'privacy' | 'terms' }) {
                     </p>
                     <h2>Your access key</h2>
                     <p>
-                        Keep your key private. Access depends on its active status, expiry timestamp, and remaining session allowance. A custom 28-day
-                        key is distinct from the website’s monthly and yearly checkout options.
+                        Keep your key private. Trial access includes three sessions of up to 15 minutes and expires after 30 days. Paid access lasts
+                        through its verified expiry without a fixed session-count allowance. Separately issued custom keys can have different terms.
                     </p>
-                    <h2>Purchase questions</h2>
+                    <h2>Monthly and yearly billing</h2>
                     <p>
                         Monthly access is ₹2,049 per billing cycle and renews through Razorpay until cancelled, for up to 120 cycles. Cancel future
-                        renewal through Manage my billing on the Access page. Access continues until the end of the verified paid period. Uninstalling
-                        does not cancel billing.
+                        renewal through Manage my billing on the Pricing page. Access continues until the end of the verified paid period.
+                        Uninstalling does not cancel billing.
                     </p>
                     <p>
                         Yearly access is ₹14,000 prepaid for 365 days, without automatic renewal. Manual yearly renewal retains remaining verified
@@ -1154,7 +1172,7 @@ export default function MarketingSite(props: Props) {
         go(next);
     };
     const nav: [Page, string][] = [
-        ['/workflows', 'Workflows'],
+        ['/workflows', 'Features'],
         ['/shortcuts', 'Shortcuts'],
         ['/get-started', 'Get started'],
         ['/pricing', 'Pricing'],
@@ -1212,7 +1230,7 @@ export default function MarketingSite(props: Props) {
                     <a href="/" onClick={e => clickLink(e, '/')}>
                         <Brand />
                     </a>
-                    <p>A little clarity. Right on cue.</p>
+                    <p>AI assistance for your audio and screen.</p>
                     <div>
                         <a href="/contact" onClick={e => clickLink(e, '/contact')}>
                             Contact
@@ -1221,7 +1239,7 @@ export default function MarketingSite(props: Props) {
                             Privacy & data
                         </a>
                         <a href="/terms" onClick={e => clickLink(e, '/terms')}>
-                            Access information
+                            Billing & access terms
                         </a>
                     </div>
                 </div>

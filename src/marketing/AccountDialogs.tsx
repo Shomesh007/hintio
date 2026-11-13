@@ -130,13 +130,13 @@ export function AuthGateModal({
             open={isOpen}
             onClose={onClose}
             label="YOUR ACCOUNT"
-            title={recovering ? 'Welcome back. Get your key.' : buying ? 'Sign in to get your key.' : 'Your desktop, with Hintio.'}
+            title={recovering ? 'Welcome back. Get your key.' : buying ? 'Sign in to get your key.' : 'Sign in for your free trial.'}
             description={
                 recovering
                     ? 'Use the same Google account you paid with. We’ll retrieve your existing key without opening checkout.'
                     : buying
-                      ? 'Continue with Google, then review your plan in checkout.'
-                      : 'Sign in with Google to download the Windows app.'
+                      ? 'Sign in with Google, review your plan in Razorpay and pay. We’ll link the key to this Google account.'
+                      : 'Sign in with Google to claim three free sessions, then copy your key and download the Windows app.'
             }
             footer={
                 <>
@@ -150,7 +150,7 @@ export function AuthGateModal({
                     {buying ? '↗' : '↓'}
                 </div>
                 <div>
-                    <span>{buying ? 'YOUR SELECTED ACCESS' : 'YOUR DOWNLOAD'}</span>
+                    <span>{buying ? 'YOUR SELECTED ACCESS' : 'YOUR FREE TRIAL'}</span>
                     <strong>{buying ? plan : 'Hintio for Windows'}</strong>
                 </div>
                 <span className="intent-detail">{buying ? 'Desktop app' : 'Windows installer'}</span>
@@ -220,7 +220,7 @@ export function TrialKeyModal({
             onClose={onClose}
             label="TRIAL ACCESS"
             tone="key"
-            title="Your first three sessions."
+            title="Your free trial key is ready."
             description="Three sessions, up to 15 minutes each. Save your key before continuing."
             footer={
                 <>
@@ -266,7 +266,7 @@ export function PaidLicenseModal({
             onClose={onClose}
             label="PAYMENT COMPLETE"
             tone="key"
-            title="Your key. Your next step."
+            title="Your access key is ready."
             description="Save your access key, then paste it into the desktop app to start a session."
             footer={
                 <>
@@ -308,8 +308,8 @@ export function MacComingSoonModal({ isOpen, onClose }: { isOpen: boolean; onClo
             open={isOpen}
             onClose={onClose}
             label="PLATFORM AVAILABILITY"
-            title="Windows is ready. Mac is on the way."
-            description="The Mac installer isn’t available from this site yet. The Windows version is ready to download."
+            title="No Mac installer is available yet."
+            description="We currently offer a Windows installer. There is no Mac download or confirmed release date."
         >
             <div className="platform-availability">
                 <div>
@@ -378,7 +378,7 @@ export function PendingLicenseModal({
             open={isOpen}
             onClose={onClose}
             label="PAYMENT RECEIVED"
-            title="Your key is on its way."
+            title="Retrieving your access key."
             description="Do not pay again. You can download Hintio while we retrieve your key. Keep this tab open; your key will appear here when it’s ready."
             footer={<span>{reference ? `Payment reference: ${reference}` : 'Your key is linked to the account you paid with.'}</span>}
         >

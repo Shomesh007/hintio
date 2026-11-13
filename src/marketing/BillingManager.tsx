@@ -70,7 +70,7 @@ export default function BillingManager() {
         <section id="billing" className="wrap billing-manager">
             <div>
                 <span className="eyebrow">YOUR PURCHASE</span>
-                <h2>Access, on your terms.</h2>
+                <h2>Manage your paid access.</h2>
                 <p>Review your paid period and manage future renewal. Uninstalling Hintio does not cancel a Razorpay subscription.</p>
             </div>
             <div>
@@ -98,7 +98,7 @@ export default function BillingManager() {
                     />
                 )}
                 <div className="billing-proof">
-                    <label htmlFor="billing-reference">Have a captured payment reference?</label>
+                    <label htmlFor="billing-reference">Have a Razorpay payment ID?</label>
                     <input
                         id="billing-reference"
                         value={paymentReference}
