@@ -2,9 +2,9 @@ import { ArrowUpRight, Download, Monitor } from 'lucide-react';
 import { productionRelease } from '../lib/productionRelease';
 
 const preview = {
-    version: '1.0.7',
-    releaseUrl: 'https://github.com/Shomesh007/hintio/releases/tag/v1.0.7-preview.1',
-    assetsUrl: 'https://github.com/Shomesh007/hintio/releases/download/v1.0.7-preview.1',
+    version: '1.0.8',
+    releaseUrl: 'https://github.com/Shomesh007/hintio/releases/tag/v1.0.8-preview.1',
+    assetsUrl: 'https://github.com/Shomesh007/hintio/releases/download/v1.0.8-preview.1',
 };
 
 export default function DownloadPage() {
@@ -23,11 +23,11 @@ export default function DownloadPage() {
                         <Monitor size={19} aria-hidden="true" />
                     </div>
                     <h2>Hintio {preview.version}</h2>
-                    <p>Try the clearer overlay and updated settings on Windows x64.</p>
+                    <p>Keep the overlay at the size you choose on Windows x64.</p>
                     <ul>
+                        <li>Long screenshot answers scroll inside the window.</li>
+                        <li>Docking moves the window and keeps its dimensions.</li>
                         <li>Adjust overlay opacity while keeping response text visible.</li>
-                        <li>Keep your theme and response text size after reopening.</li>
-                        <li>Use microphone-only audio without system loopback.</li>
                     </ul>
                     <a className="hi-btn hi-btn-ink" href={`${preview.assetsUrl}/Hintio-${preview.version}.Setup.exe`}>
                         Download preview <Download size={17} aria-hidden="true" />
