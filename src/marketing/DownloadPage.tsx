@@ -2,9 +2,9 @@ import { ArrowUpRight, Download, Monitor } from 'lucide-react';
 import { productionRelease } from '../lib/productionRelease';
 
 const preview = {
-    version: '1.0.8',
-    releaseUrl: 'https://github.com/Shomesh007/hintio/releases/tag/v1.0.8-preview.1',
-    assetsUrl: 'https://github.com/Shomesh007/hintio/releases/download/v1.0.8-preview.1',
+    version: '1.0.10',
+    releaseUrl: 'https://github.com/Shomesh007/hintio/releases/tag/v1.0.10-preview.1',
+    assetsUrl: 'https://github.com/Shomesh007/hintio/releases/download/v1.0.10-preview.1',
 };
 
 export default function DownloadPage() {
@@ -23,11 +23,11 @@ export default function DownloadPage() {
                         <Monitor size={19} aria-hidden="true" />
                     </div>
                     <h2>Hintio {preview.version}</h2>
-                    <p>Keep the overlay at the size you choose on Windows x64.</p>
+                    <p>Upgrade your existing Windows x64 installation, then open Hintio to refresh its taskbar icon.</p>
                     <ul>
-                        <li>Long screenshot answers scroll inside the window.</li>
-                        <li>Docking moves the window and keeps its dimensions.</li>
-                        <li>Adjust overlay opacity while keeping response text visible.</li>
+                        <li>Folded Cue replaces the old Windows icon on upgrade.</li>
+                        <li>AI Context uses the same layout as Settings and Feedback.</li>
+                        <li>Long answers scroll inside the overlay at the size you set.</li>
                     </ul>
                     <a className="hi-btn hi-btn-ink" href={`${preview.assetsUrl}/Hintio-${preview.version}.Setup.exe`}>
                         Download preview <Download size={17} aria-hidden="true" />
