@@ -18,6 +18,14 @@
     ],
     "rewrites": [
         {
+            "source": "/download",
+            "destination": "/"
+        },
+        {
+            "source": "/download/",
+            "destination": "/"
+        },
+        {
             "source": "/workflows",
             "destination": "/"
         },

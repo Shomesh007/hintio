@@ -28,6 +28,7 @@ import {
 import { shortcuts, profiles, platformKeys, type ShortcutGroup } from './shortcutData';
 import './marketing.css';
 import PricingPage from './PricingPage';
+import DownloadPage from './DownloadPage';
 import { supabase } from '../lib/supabase';
 import { completeBillingReturn } from '../lib/billingAccount';
 
@@ -38,7 +39,7 @@ interface Props {
     onMacDownload: () => void;
     checkoutLoading: boolean;
 }
-type Page = '/' | '/workflows' | '/shortcuts' | '/get-started' | '/access' | '/pricing' | '/privacy' | '/terms' | '/contact';
+type Page = '/' | '/workflows' | '/shortcuts' | '/get-started' | '/download' | '/access' | '/pricing' | '/privacy' | '/terms' | '/contact';
 const support = 'https://wa.me/918438365095';
 const supportEmail = 'admin@builtbygsv.in';
 const titles: Record<Page, string> = {
@@ -46,6 +47,7 @@ const titles: Record<Page, string> = {
     '/workflows': 'Voice, screenshots & session context',
     '/shortcuts': 'Keyboard shortcuts',
     '/get-started': 'Getting started',
+    '/download': 'Download Hintio for Windows',
     '/access': 'Pricing & desktop access',
     '/pricing': 'Pricing & desktop access',
     '/contact': 'Contact Hintio',
@@ -1175,6 +1177,7 @@ export default function MarketingSite(props: Props) {
         ['/workflows', 'Features'],
         ['/shortcuts', 'Shortcuts'],
         ['/get-started', 'Get started'],
+        ['/download', 'Download'],
         ['/pricing', 'Pricing'],
         ['/contact', 'Contact'],
     ];
@@ -1195,7 +1198,7 @@ export default function MarketingSite(props: Props) {
                             </a>
                         ))}
                     </nav>
-                    <Button onClick={() => go('/pricing')}>
+                    <Button onClick={() => go('/download')}>
                         Download for Windows <ArrowUpRight size={17} />
                     </Button>
                     <button
@@ -1217,6 +1220,8 @@ export default function MarketingSite(props: Props) {
                     <ShortcutsPage />
                 ) : page === '/get-started' ? (
                     <GetStarted onDownload={props.onDownload} go={go} />
+                ) : page === '/download' ? (
+                    <DownloadPage />
                 ) : page === '/contact' ? (
                     <Contact />
                 ) : page === '/access' || page === '/pricing' ? (
@@ -1232,6 +1237,9 @@ export default function MarketingSite(props: Props) {
                     </a>
                     <p>AI assistance for your audio and screen.</p>
                     <div>
+                        <a href="/download" onClick={e => clickLink(e, '/download')}>
+                            Download
+                        </a>
                         <a href="/contact" onClick={e => clickLink(e, '/contact')}>
                             Contact
                         </a>
