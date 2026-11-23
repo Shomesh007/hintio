@@ -34,7 +34,7 @@ export class MainView extends LitElement {
             height: 100%;
             min-height: 0;
             padding: 24px;
-            background: var(--bg-app);
+            background: transparent;
             -webkit-app-region: no-drag;
             overflow-y: auto;
         }
@@ -83,18 +83,8 @@ export class MainView extends LitElement {
         .brand-mark {
             width: 32px;
             height: 32px;
-            border-radius: 9px;
-            background: #6366f1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            font-weight: 700;
-            color: #fff;
+            display: block;
             flex-shrink: 0;
-            box-shadow:
-                0 0 0 1px rgba(99, 102, 241, 0.5),
-                0 4px 12px rgba(99, 102, 241, 0.4);
         }
 
         .title {
@@ -349,6 +339,7 @@ export class MainView extends LitElement {
         if (this.isInitializing) return;
 
         if (!this._token.trim()) {
+            window.electronAPI?.invoke('analytics:record', 'session_start_blocked', 'missing_key').catch(() => {});
             this._tokenErrorMessage = 'Access token is required.';
             this.requestUpdate();
             return;
@@ -382,7 +373,7 @@ export class MainView extends LitElement {
             <div class="card">
                 <div class="card-header">
                     <div class="brand-row">
-                        <div class="brand-mark">G</div>
+                        <img class="brand-mark" src="assets/hintio-mark.svg" alt="" />
                     </div>
                     <h1 class="title">Start a session</h1>
                     <p class="subtitle">Enter your access token to connect to the AI assistant</p>

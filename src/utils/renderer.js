@@ -451,6 +451,7 @@ async function startCapture(screenshotIntervalSeconds = 5, imageQuality = 'mediu
     // Refresh preferences cache
     await loadPreferencesCache();
     const audioMode = preferencesCache.audioMode || 'speaker_only';
+    const captureSpeakers = audioMode === 'speaker_only' || audioMode === 'both';
 
     if (audioMode === 'none') {
         // Only screenshots, no audio capture at all
@@ -472,9 +473,11 @@ async function startCapture(screenshotIntervalSeconds = 5, imageQuality = 'mediu
             console.log('Starting macOS capture with SystemAudioDump...');
 
             // Start macOS audio capture
-            const audioResult = await ipcRenderer.invoke('start-macos-audio');
-            if (!audioResult.success) {
-                throw new Error('Failed to start macOS audio capture: ' + audioResult.error);
+            if (captureSpeakers) {
+                const audioResult = await ipcRenderer.invoke('start-macos-audio');
+                if (!audioResult.success) {
+                    throw new Error('Failed to start macOS audio capture: ' + audioResult.error);
+                }
             }
 
             // Get screen capture for screenshots
@@ -518,7 +521,7 @@ async function startCapture(screenshotIntervalSeconds = 5, imageQuality = 'mediu
                         width: { ideal: 1920 },
                         height: { ideal: 1080 },
                     },
-                    audio: {
+                    audio: captureSpeakers && {
                         sampleRate: SAMPLE_RATE,
                         channelCount: 1,
                         echoCancellation: false, // Don't cancel system audio
@@ -530,7 +533,7 @@ async function startCapture(screenshotIntervalSeconds = 5, imageQuality = 'mediu
                 console.log('Linux system audio capture via getDisplayMedia succeeded');
 
                 // Setup audio processing for Linux system audio
-                setupLinuxSystemAudioProcessing();
+                if (captureSpeakers) setupLinuxSystemAudioProcessing();
             } catch (systemAudioError) {
                 console.warn('System audio via getDisplayMedia failed, trying screen-only capture:', systemAudioError);
 
@@ -579,7 +582,7 @@ async function startCapture(screenshotIntervalSeconds = 5, imageQuality = 'mediu
                     width: { ideal: 1920 },
                     height: { ideal: 1080 },
                 },
-                audio: {
+                audio: captureSpeakers && {
                     sampleRate: SAMPLE_RATE,
                     channelCount: 1,
                     echoCancellation: true,
@@ -591,7 +594,7 @@ async function startCapture(screenshotIntervalSeconds = 5, imageQuality = 'mediu
             console.log('Windows capture started with loopback audio');
 
             // Setup audio processing for Windows loopback audio only
-            setupWindowsLoopbackProcessing();
+            if (captureSpeakers) setupWindowsLoopbackProcessing();
 
             if (audioMode === 'mic_only' || audioMode === 'both') {
                 let micStream = null;
@@ -866,13 +869,7 @@ If a question is partially visible, extract as much as possible and answer based
 
 NO introductions, NO "Certainly!", NO "Here is...", NO reasoning preamble, NO "the answer is". Only the extracted questions and their direct answers.
 
-ADDITIONAL TASKS (append these at the very end of your response, each on its own line):
-
-1. LAYOUT DETECTION: Analyze where the code editor, input area, or answer entry zone is positioned on screen. On its own line at the end, output exactly:
-===LAYOUT:position===
-where position is one of: left, right, center, top-left, top-right, bottom-left, bottom-right. This describes where the user's INPUT/CODE area is.
-
-2. CODE ISSUE DETECTION: If you notice any bug, error, wrong logic, syntax issue, or mistake in code visible on screen, append:
+CODE ISSUE DETECTION: If you notice any bug, error, wrong logic, syntax issue, or mistake in code visible on screen, append at the end:
 ===CODE_ISSUE_START===
 [2-3 sentence description of the issue and the fix]
 ===CODE_ISSUE_END===
@@ -935,7 +932,6 @@ function markScreenAnalysisTriggered(mode = 'manual') {
     if (!app) return;
     app._awaitingScreenAnalysis = true;
     app._screenAnalysisMode = mode;
-    app._layoutRepositioned = false;
     app._errorContent = '';
 }
 
@@ -1017,6 +1013,7 @@ async function sendPendingDualScreenshots(trigger = 'manual') {
         });
 
         if (result.success) {
+            recordScreenshotUsage('multi_screenshot');
             console.log(`${trigger} multi-image response completed from ${result.model}`);
         } else {
             console.error('Failed to get multi-image response:', result.error);
@@ -1152,7 +1149,7 @@ async function sendPendingTelegramImages(trigger = 'manual') {
 }
 
 async function captureFrameToBase64(imageQuality = null) {
-    const quality = imageQuality || currentImageQuality;
+    const quality = imageQuality || hintioApp?.selectedImageQuality || currentImageQuality;
 
     if (!mediaStream) {
         console.error('No media stream available');
@@ -1239,6 +1236,10 @@ async function captureFrameToBase64(imageQuality = null) {
     return base64data;
 }
 
+function recordScreenshotUsage(feature) {
+    ipcRenderer?.invoke('analytics:record', 'feature_used', feature)?.catch(() => {});
+}
+
 async function captureManualScreenshot(imageQuality = null) {
     console.log('Manual screenshot triggered');
     markScreenAnalysisTriggered('manual');
@@ -1255,6 +1256,7 @@ async function captureManualScreenshot(imageQuality = null) {
     });
 
     if (result.success) {
+        recordScreenshotUsage('single_screenshot');
         console.log(`Image response completed from ${result.model}`);
     } else {
         console.error('Failed to get image response:', result.error);
@@ -1322,6 +1324,7 @@ async function captureDebugScreenshot(imageQuality = null) {
     });
 
     if (result.success) {
+        recordScreenshotUsage('debug_screenshot');
         console.log(`Debug screenshot response completed from ${result.model}`);
     } else {
         console.error('Failed to debug screenshot:', result.error);
@@ -1436,6 +1439,7 @@ async function saveTextFile(text, defaultName = 'session-export.txt') {
 
 // Listen for conversation data from main process and save to storage
 ipcRenderer.on('save-conversation-turn', async (event, data) => {
+    if (data.turn?.ai_response?.trim()) hintio.element()?.recordCompletedAnswer?.();
     try {
         await storage.saveSession(data.sessionId, { conversationHistory: data.fullHistory });
         console.log('Conversation session saved:', data.sessionId);
@@ -1459,6 +1463,7 @@ ipcRenderer.on('save-session-context', async (event, data) => {
 
 // Listen for screen analysis responses (from ctrl+enter)
 ipcRenderer.on('save-screen-analysis', async (event, data) => {
+    if (data.analysis?.response?.trim()) hintio.element()?.recordCompletedAnswer?.();
     try {
         await storage.saveSession(data.sessionId, {
             screenAnalysisHistory: data.fullHistory,
@@ -1579,10 +1584,8 @@ function handleShortcut(shortcutKey) {
             hintio.storage.updatePreference('selectedProfile', 'exam').catch(() => {});
         }
 
-        // Default coding layout assumption: editor/input is on the right,
-        // so dock overlay to the left full-height pane.
         if (typeof hintio.repositionWindow === 'function') {
-            hintio.repositionWindow('right');
+            hintio.repositionWindow('left');
         }
 
         if (typeof app.requestUpdate === 'function') {
@@ -1593,9 +1596,7 @@ function handleShortcut(shortcutKey) {
 
     if (shortcutKey === 'dock-right') {
         if (typeof hintio.repositionWindow === 'function') {
-            // Put overlay on right side full-height
-            // (means input/editor area is likely on the left)
-            hintio.repositionWindow('left');
+            hintio.repositionWindow('right');
         }
         return;
     }
@@ -1884,6 +1885,8 @@ const theme = {
         root.style.setProperty('--bg-surface', bgSurface);
         root.style.setProperty('--bg-elevated', bgElevated);
         root.style.setProperty('--bg-hover', bgHover);
+        const outline = isLight ? '255, 255, 255' : '0, 0, 0';
+        root.style.setProperty('--overlay-text-shadow', alpha < 0.65 ? `0 1px 3px rgba(${outline}, 0.95), 0 0 1px rgb(${outline})` : 'none');
 
         // Legacy aliases
         root.style.setProperty('--header-background', bgBase);
@@ -1944,6 +1947,7 @@ const theme = {
             const themeName = prefs.theme || 'dark';
             const alpha = prefs.backgroundTransparency ?? 0.8;
             this.apply(themeName, alpha);
+            this.applyResponseFontSize(prefs.fontSize);
             return themeName;
         } catch (err) {
             this.apply('dark');
@@ -1951,10 +1955,13 @@ const theme = {
         }
     },
 
-    async save(themeName) {
-        await storage.updatePreference('theme', themeName);
-        this.apply(themeName);
+    applyResponseFontSize(value) {
+        const size = typeof value === 'number' && Number.isFinite(value) ? Math.min(36, Math.max(12, value)) :
+            value === 'small' ? 16 : value === 'large' ? 24 : 20;
+        document.documentElement.style.setProperty('--response-font-size', `${size}px`);
+        return size;
     },
+
 };
 
 // Consolidated hintio object - all functions in one place

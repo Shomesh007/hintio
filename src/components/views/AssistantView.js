@@ -1,4 +1,3 @@
-import { makeSupportEmailDraft, SUPPORT_EMAIL } from '../../utils/supportDetails.js';
 import '../icons/HintioIcon.js';
 import { html, css, LitElement } from '../../assets/lit-core-2.7.4.min.js';
 
@@ -19,11 +18,14 @@ export class AssistantView extends LitElement {
         /* ── Response area ── */
 
         .response-container {
-            flex: 1;
-            overflow-y: auto;
+            flex: 1 1 0;
+            min-height: 0;
+            min-width: 0;
+            overflow: auto;
             font-size: var(--response-font-size, 15px);
             line-height: var(--line-height);
-            background: var(--bg-app);
+            background: transparent;
+            text-shadow: var(--overlay-text-shadow, none);
             padding: var(--space-sm) var(--space-md);
             scroll-behavior: smooth;
             user-select: text;
@@ -34,6 +36,11 @@ export class AssistantView extends LitElement {
         .response-container * {
             user-select: text;
             cursor: text;
+        }
+
+        .response-nav,
+        .input-bar {
+            flex-shrink: 0;
         }
 
         .response-container a {
@@ -266,7 +273,7 @@ export class AssistantView extends LitElement {
             gap: var(--space-sm);
             padding: var(--space-xs) var(--space-md);
             border-top: 1px solid var(--border);
-            background: var(--bg-app);
+            background: transparent;
         }
 
         .nav-btn {
@@ -327,7 +334,7 @@ export class AssistantView extends LitElement {
             align-items: center;
             gap: var(--space-sm);
             padding: var(--space-md);
-            background: var(--bg-app);
+            background: transparent;
         }
 
         .input-bar-inner {
@@ -537,7 +544,6 @@ export class AssistantView extends LitElement {
 
     static properties = {
         responses: { type: Array },
-        _reportStatus: { state: true },
         currentResponseIndex: { type: Number },
         selectedProfile: { type: String },
         onSendText: { type: Function },
@@ -551,7 +557,6 @@ export class AssistantView extends LitElement {
     constructor() {
         super();
         this.responses = [];
-        this._reportStatus = '';
         this.currentResponseIndex = -1;
         this.selectedProfile = 'interview';
         this.onSendText = () => {};
@@ -977,15 +982,6 @@ export class AssistantView extends LitElement {
         }
     }
 
-    scrollToBottom() {
-        setTimeout(() => {
-            const container = this.shadowRoot.querySelector('.response-container');
-            if (container) {
-                container.scrollTop = container.scrollHeight;
-            }
-        }, 0);
-    }
-
     firstUpdated() {
         super.firstUpdated();
         this.updateResponseContent();
@@ -1016,8 +1012,14 @@ export class AssistantView extends LitElement {
         const container = this.shadowRoot.querySelector('#responseContainer');
         if (container) {
             const currentResponse = this.getCurrentResponse();
+            const sameAnswer = this._renderedResponseIndex === this.currentResponseIndex;
+            if (sameAnswer && this._renderedResponse === currentResponse) return;
+            const scrollTop = sameAnswer ? container.scrollTop : 0;
             container.innerHTML = this.renderMarkdown(currentResponse);
             this._postProcessCodeBlocks(container);
+            this._renderedResponseIndex = this.currentResponseIndex;
+            this._renderedResponse = currentResponse;
+            container.scrollTo({ top: scrollTop, behavior: 'instant' });
             if (this.shouldAnimateResponse) {
                 this.dispatchEvent(new CustomEvent('response-animation-complete', { bubbles: true, composed: true }));
             }
@@ -1110,44 +1112,10 @@ export class AssistantView extends LitElement {
         });
     }
 
-    async reportCurrentResponse() {
-        const response = String(this.getCurrentResponse() || '');
-        if (!response.trim()) return;
-        const url = makeSupportEmailDraft(
-            'Hintio: inappropriate AI response report',
-            'Please describe the concern and remove private information before sending.\n\nAI response excerpt:\n' + response
-        );
-        try {
-            const result = await window.electronAPI.invoke('open-external', url);
-            if (!result?.success) throw new Error('Email application unavailable');
-            this._reportStatus = 'Email draft opened. Review or redact the response and send it from your email app.';
-        } catch {
-            this._reportStatus =
-                'Could not open an email app. Report the concern to ' +
-                SUPPORT_EMAIL +
-                '. Do not include credentials or private third-party content.';
-        }
-    }
-
     render() {
         const hasMultipleResponses = this.responses.length > 1;
 
         return html`
-            <div
-                class="ai-disclosure"
-                style="padding:8px 16px;font-size:11px;line-height:1.5;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:center;flex-wrap:wrap;"
-            >
-                <span>AI-generated content can be inaccurate. Review before relying on it.</span>
-                <button
-                    style="color:var(--text-secondary);background:transparent;border:1px solid var(--border);padding:5px 8px;cursor:pointer;"
-                    ?disabled=${!this.getCurrentResponse()}
-                    @click=${this.reportCurrentResponse}
-                    title="Opens an email draft with a response excerpt. Review and redact before sending."
-                >
-                    Report response by email
-                </button>
-                ${this._reportStatus ? html`<span role="status">${this._reportStatus}</span>` : ''}
-            </div>
             <div class="response-container" id="responseContainer"></div>
 
             ${this._renderErrorPanel()}

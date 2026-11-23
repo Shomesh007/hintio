@@ -8,6 +8,10 @@ Depending on your settings, Hintio can capture speaker output, microphone audio,
 
 Cloud providers can receive audio or transcripts, screenshots, resume text, and custom instructions included in requests. BYOK uses your selected provider and key; it does not keep remote processing on your computer. Local mode components use Ollama and on-device transcription after setup. Access validation, model downloads, and other connected services may still require internet access. Availability depends on your build and configuration.
 
+## Optional usage analytics
+
+Hintio collects product usage analytics by default on supported builds. You can turn it off in Settings → Privacy & Data. Events contain a random install identifier, the app version and distribution, onboarding steps and whether context was blank or provided, session milestones and duration bands, selected modes and presets, and fixed feature labels. Analytics excludes session history, resumes, prompts, audio, screenshots, transcripts, responses, emails, and keys. Turning it off stops new events. Deleting local data also removes the random identifier from the device. The service is configured to retain analytics events for up to 90 days.
+
 ## Local desktop records
 
 The desktop stores configuration, credentials, preferences, shortcuts, and history under `hintio-config`:

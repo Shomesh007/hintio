@@ -53,6 +53,7 @@ function createApp({ approved = true, token = '', remoteVersion = 'v1.0.2', cons
         css: () => '',
         customElements: { define() {} },
         hintio,
+        window: { electronAPI: { invoke: async (...args) => calls.push(args) } },
         fetch: async url => {
             calls.push(['update-url', url]);
             return { ok: true, json: async () => ({ tag_name: remoteVersion }) };
@@ -76,7 +77,7 @@ test('a first-time user goes straight from an approved key to the assistant with
 
     assert.equal(app.currentView, 'assistant');
     assert.equal(app.sessionActive, true);
-    assert.deepEqual(calls, ['save-token', ['validate-and-initialize', 'interview', 'en-US'], 'capture', 'timer']);
+    assert.deepEqual(calls, ['save-token', ['validate-and-initialize', 'interview', 'en-US'], 'capture', 'timer', ['analytics:record', 'session_started', undefined], ['analytics:record', 'session_profile', 'interview']]);
 });
 
 test('desktop update state comes from the main process and recognizes a newer release', async () => {
@@ -100,7 +101,7 @@ test('a rejected key stays on the key screen without starting capture or a sessi
 
     assert.equal(app.currentView, 'main');
     assert.equal(app.sessionActive, false);
-    assert.deepEqual(calls, ['save-token', ['validate-and-initialize', 'interview', 'en-US'], ['error', 'Access token is invalid or expired.']]);
+    assert.deepEqual(calls, ['save-token', ['validate-and-initialize', 'interview', 'en-US'], ['analytics:record', 'session_start_blocked', 'initialization_failed'], ['error', 'Access token is invalid or expired.']]);
 });
 
 test('a missing key cannot start a session', async () => {
@@ -109,7 +110,7 @@ test('a missing key cannot start a session', async () => {
 
     assert.equal(app.currentView, 'main');
     assert.equal(app.sessionActive, false);
-    assert.deepEqual(calls, [['error', 'Access token is required.']]);
+    assert.deepEqual(calls, [['analytics:record', 'session_start_blocked', 'missing_key'], ['error', 'Access token is required.']]);
 });
 
 test('a required update prevents initialization and capture', async () => {
@@ -118,7 +119,7 @@ test('a required update prevents initialization and capture', async () => {
     await app.handleStart('test-access-token');
     assert.equal(app.currentView, 'updates');
     assert.equal(app.sessionActive, false);
-    assert.deepEqual(calls, ['save-token']);
+    assert.deepEqual(calls, ['save-token', ['analytics:record', 'session_start_blocked', 'update_required']]);
 });
 
 test('withheld cloud consent blocks initialization and capture', async () => {
@@ -126,7 +127,7 @@ test('withheld cloud consent blocks initialization and capture', async () => {
     await app.handleStart('test-access-token');
     assert.equal(app.currentView, 'onboarding');
     assert.equal(app.sessionActive, false);
-    assert.deepEqual(calls, ['save-token']);
+    assert.deepEqual(calls, ['save-token', ['analytics:record', 'session_start_blocked', 'setup_required']]);
 });
 
 test('withdrawing cloud consent ends an active session and returns to privacy onboarding', async () => {
@@ -140,4 +141,14 @@ test('withdrawing cloud consent ends an active session and returns to privacy on
     assert.equal(app.currentView, 'onboarding');
     assert.equal(app.sessionActive, false);
     assert.deepEqual(calls, [['config', 'cloudConsent', false], 'end-session']);
+});
+
+test('an active session reports only one completed answer', async () => {
+    const { app, calls } = createApp();
+    app.recordCompletedAnswer();
+    assert.deepEqual(calls, []);
+    await app.handleStart('test-access-token');
+    app.recordCompletedAnswer();
+    app.recordCompletedAnswer();
+    assert.deepEqual(calls.filter(call => call[1] === 'session_answered'), [['analytics:record', 'session_answered', 'completed']]);
 });

@@ -68,7 +68,7 @@ export const unifiedPageStyles = css`
         min-height: 0;
         overflow-y: auto;
         padding: var(--space-lg);
-        background: var(--bg-app);
+        background: transparent;
         position: relative;
     }
 

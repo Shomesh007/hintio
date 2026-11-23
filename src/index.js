@@ -7,12 +7,15 @@ require('dotenv').config();
 const { app, BrowserWindow, shell, ipcMain, dialog, nativeImage, safeStorage } = require('electron');
 const { UpdateService } = require('./utils/updates');
 const { isStoreDistribution, StoreUpdateService } = require('./utils/distribution');
+const { refreshWindowsIcon } = require('./utils/windowsIcon');
 const path = require('path');
 const fs = require('fs');
 const { execFileSync } = require('child_process');
-const { createWindow, updateGlobalShortcuts } = require('./utils/window');
+const { createWindow } = require('./utils/window');
 const { setupProviderRuntimeIpcHandlers, stopMacOSAudioCapture, sendToRenderer, clearRuntimeProviderSecrets } = require('./utils/providerRuntime');
 const storage = require('./storage');
+const { createUsageAnalytics } = require('./utils/usageAnalytics');
+const { url: supabaseUrl } = require('./utils/supabaseConfig');
 const { initTelegramBot, startPolling, stopPolling } = require('./utils/telegramBot');
 const { enforceIpcRateLimit } = require('./utils/abuseProtection');
 const { sanitizeText, ensureSafeUrl, ensureFilePath, ensureSafeFilename, ensurePlainObject } = require('./utils/inputValidation');
@@ -57,7 +60,24 @@ const IPC_RATE_POLICIES = {
 };
 
 function createMainWindow() {
+    let windowsIcon;
+    if (process.platform === 'win32' && app.isPackaged && !isStoreDistribution(app)) {
+        try {
+            windowsIcon = refreshWindowsIcon({
+                executable: app.getPath('exe'),
+                desktop: app.getPath('desktop'),
+                appData: app.getPath('appData'),
+                shell,
+            });
+            if (windowsIcon) app.setAppUserModelId(windowsIcon.appId);
+        } catch (error) {
+            console.warn('[Hintio] Windows icon refresh failed:', error.message);
+        }
+    }
     mainWindow = createWindow(sendToRenderer, providerSessionRef);
+    if (windowsIcon) {
+        mainWindow.setAppDetails({ appId: windowsIcon.appId, appIconPath: windowsIcon.iconPath, appIconIndex: 0 });
+    }
     return mainWindow;
 }
 
@@ -117,6 +137,7 @@ function setupUpdateNotices() {
         app,
         cachePath: path.join(app.getPath('userData'), 'updates', 'policy-cache.json'),
         minimumVersion: require('../update-policy.json').minimumSupportedVersion,
+        includePreviews: require('../package.json').hintioUpdateChannel === 'preview',
         notify: state => sendToRenderer('updates:state', state),
         openExternal: url => shell.openExternal(url),
     });
@@ -198,6 +219,18 @@ app.whenReady().then(async () => {
         const { desktopCapturer } = require('electron');
         desktopCapturer.getSources({ types: ['screen'] }).catch(() => {});
     }
+
+    const recordUsage = createUsageAnalytics({
+        storage,
+        endpoint: app.isPackaged ? `${supabaseUrl.replace(/\/$/, '')}/functions/v1/product-analytics` : process.env.HINTIO_ANALYTICS_URL,
+        version: app.getVersion(),
+        distribution: isStoreDistribution(app) ? 'store' : 'installer',
+    });
+    ipcMain.handle('analytics:record', (event, name, value) => {
+        if (event.sender === mainWindow?.webContents && event.senderFrame === event.sender.mainFrame) {
+            void recordUsage(name, value);
+        }
+    });
 
     createMainWindow();
     setupUpdateNotices();
@@ -580,14 +613,6 @@ function setupGeneralIpcHandlers() {
         } catch (error) {
             console.error('Error opening external URL:', error);
             return { success: false, error: error.message };
-        }
-    });
-
-    ipcMain.on('update-keybinds', (event, newKeybinds) => {
-        if (mainWindow) {
-            // Also save to storage
-            storage.setKeybinds(newKeybinds);
-            updateGlobalShortcuts(newKeybinds, mainWindow, sendToRenderer, providerSessionRef);
         }
     });
 

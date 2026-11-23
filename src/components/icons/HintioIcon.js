@@ -52,6 +52,7 @@ export class HintioIcon extends LitElement {
             width: 100%;
             height: 100%;
             overflow: visible;
+            fill: var(--hintio-icon-fill, none);
         }
     `;
     constructor() {

@@ -1,6 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const RELEASES_URL = 'https://api.github.com/repos/Shomesh007/hintio/releases/latest';
+const PREVIEWS_URL = 'https://api.github.com/repos/Shomesh007/hintio/releases?per_page=20';
 const POLICY_URL = 'https://raw.githubusercontent.com/Shomesh007/hintio/desktop/update-policy.json';
 const DOWNLOAD_ROOT = 'https://github.com/Shomesh007/hintio/releases/download/';
 
@@ -33,8 +34,35 @@ function releaseInfo(release) {
         releaseNotes: String(release.body || '').slice(0, 8000),
     };
 }
+
+function latestPreview(releases) {
+    let newest;
+    for (const release of releases) {
+        if (release.draft || !release.prerelease) continue;
+        const match = /^v(\d+\.\d+\.\d+)-preview\.([1-9]\d{0,5})$/.exec(release.tag_name);
+        if (!match) continue;
+        const [, latestVersion, revision] = match;
+        try {
+            versionParts(latestVersion);
+        } catch {
+            continue;
+        }
+        const installer = `Hintio-${latestVersion}.Setup.exe`;
+        if (!release.assets?.some(asset => asset.name === installer)) continue;
+        const comparison = newest ? compareVersions(latestVersion, newest.latestVersion) : 1;
+        if (comparison < 0 || (comparison === 0 && Number(revision) <= newest.revision)) continue;
+        newest = {
+            latestVersion,
+            revision: Number(revision),
+            installerUrl: `${DOWNLOAD_ROOT}${match[0]}/${installer}`,
+            releaseNotes: String(release.body || '').slice(0, 8000),
+            preview: true,
+        };
+    }
+    return newest;
+}
 class UpdateService {
-    constructor({ app, notify = () => {}, fetchImpl = global.fetch, cachePath, minimumVersion = '1.0.4', now = Date.now, openExternal }) {
+    constructor({ app, notify = () => {}, fetchImpl = global.fetch, cachePath, minimumVersion = '1.0.4', now = Date.now, openExternal, includePreviews = false }) {
         versionParts(app.getVersion());
         versionParts(minimumVersion);
         this.app = app;
@@ -44,6 +72,7 @@ class UpdateService {
         this.cachePath = cachePath;
         this.now = now;
         this.minimumBaseline = minimumVersion;
+        this.includePreviews = includePreviews;
         this.checkPromise = null;
         this.openPromise = null;
         this.state = {
@@ -52,6 +81,7 @@ class UpdateService {
             minimumVersion,
             required: false,
             available: false,
+            preview: false,
             phase: 'idle',
             installerUrl: '',
             releaseNotes: '',
@@ -86,12 +116,12 @@ class UpdateService {
             /* A missing cache must not prevent startup. */
         }
     }
-    saveCache() {
+    saveCache(stableVersion) {
         if (!this.cachePath) return;
         try {
             fs.mkdirSync(path.dirname(this.cachePath), { recursive: true });
             const temporary = this.cachePath + '.tmp';
-            fs.writeFileSync(temporary, JSON.stringify({ latestVersion: this.state.latestVersion, minimumVersion: this.state.minimumVersion }));
+            fs.writeFileSync(temporary, JSON.stringify({ latestVersion: stableVersion, minimumVersion: this.state.minimumVersion }));
             fs.renameSync(temporary, this.cachePath);
         } catch {
             /* Cache failures do not invalidate an otherwise verified update. */
@@ -116,13 +146,13 @@ class UpdateService {
     async performCheck() {
         this.set({ phase: 'checking', error: '' });
         try {
-            const release = releaseInfo(await (await this.response(RELEASES_URL)).json());
+            const stable = releaseInfo(await (await this.response(RELEASES_URL)).json());
             let minimumVersion = this.state.minimumVersion;
             try {
                 const policy = await (await this.response(POLICY_URL)).json();
                 if (policy.schemaVersion !== 1) throw new Error('Unknown update policy');
                 versionParts(policy.minimumSupportedVersion);
-                if (compareVersions(policy.minimumSupportedVersion, release.latestVersion) > 0) throw new Error('Minimum version is not published');
+                if (compareVersions(policy.minimumSupportedVersion, stable.latestVersion) > 0) throw new Error('Minimum version is not published');
                 minimumVersion =
                     compareVersions(policy.minimumSupportedVersion, this.minimumBaseline) >= 0
                         ? policy.minimumSupportedVersion
@@ -130,17 +160,28 @@ class UpdateService {
             } catch {
                 /* Keep the last valid minimum during a policy outage. */
             }
+            const required = compareVersions(this.state.currentVersion, minimumVersion) < 0;
+            let release = stable;
+            if (this.includePreviews && !required) {
+                try {
+                    const preview = latestPreview(await (await this.response(PREVIEWS_URL)).json());
+                    if (preview && compareVersions(preview.latestVersion, stable.latestVersion) > 0) release = preview;
+                } catch {
+                    /* A preview lookup failure must not interrupt stable update checks. */
+                }
+            }
             const available = compareVersions(release.latestVersion, this.state.currentVersion) > 0;
             const result = this.set({
                 ...release,
+                preview: Boolean(release.preview),
                 minimumVersion,
                 available,
-                required: compareVersions(this.state.currentVersion, minimumVersion) < 0,
+                required,
                 phase: available ? 'available' : 'current',
                 checkedAt: this.now(),
                 error: '',
             });
-            this.saveCache();
+            this.saveCache(stable.latestVersion);
             return result;
         } catch (error) {
             return this.set({
@@ -166,7 +207,8 @@ class UpdateService {
             if (!this.state.installerUrl) await this.check();
             if (!this.state.latestVersion || !this.state.installerUrl)
                 throw new Error('The installer link is unavailable. Check for updates and retry.');
-            const url = downloadUrl(this.state.latestVersion, 'Hintio-' + this.state.latestVersion + '.Setup.exe');
+            // Set only from a validated release tag/asset or reconstructed stable cache.
+            const url = this.state.installerUrl;
             if (typeof this.openExternal !== 'function') throw new Error('The browser could not be opened. Please retry.');
             await this.openExternal(url);
             return this.set({ error: '', notice: 'Installer link opened. Close Hintio, run the downloaded installer, then reopen the app.' });
@@ -175,4 +217,4 @@ class UpdateService {
         }
     }
 }
-module.exports = { UpdateService, versionParts, compareVersions, releaseInfo, downloadUrl, RELEASES_URL, POLICY_URL };
+module.exports = { UpdateService, versionParts, compareVersions, releaseInfo, downloadUrl, RELEASES_URL, POLICY_URL, PREVIEWS_URL };

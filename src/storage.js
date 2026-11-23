@@ -51,8 +51,10 @@ const DEFAULT_PREFERENCES = {
     selectedImageQuality: 'medium',
     advancedMode: false,
     audioMode: 'speaker_only',
+    usageAnalytics: true,
     fontSize: 'medium',
     backgroundTransparency: 0.8,
+    theme: 'dark',
     googleSearchEnabled: false,
     ollamaHost: 'http://127.0.0.1:11434',
     ollamaModel: 'llama3.1',
@@ -273,6 +275,7 @@ const PREFERENCE_KEYS = {
         return quality;
     },
     advancedMode: value => ensureBoolean(value, 'preferences.advancedMode'),
+    usageAnalytics: value => ensureBoolean(value, 'preferences.usageAnalytics'),
     audioMode: value => {
         const mode = sanitizeText(String(value), { fieldName: 'preferences.audioMode', maxLength: 20, multiline: false });
         if (!['speaker_only', 'mic_only', 'both', 'none'].includes(mode)) {
@@ -291,6 +294,13 @@ const PREFERENCE_KEYS = {
         return size;
     },
     backgroundTransparency: value => ensureNumber(value, { fieldName: 'preferences.backgroundTransparency', min: 0, max: 1 }),
+    theme: value => {
+        const theme = sanitizeText(value, { fieldName: 'preferences.theme', maxLength: 24, multiline: false });
+        if (!['dark', 'light', 'midnight', 'sepia', 'catppuccin', 'gruvbox', 'rosepine', 'solarized', 'tokyonight'].includes(theme)) {
+            throw new Error('Unknown appearance theme');
+        }
+        return theme;
+    },
     googleSearchEnabled: value => ensureBoolean(value, 'preferences.googleSearchEnabled'),
     ollamaHost: value =>
         ensureSafeUrl(String(value), {

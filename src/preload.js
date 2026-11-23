@@ -1,6 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 const invokeChannels = new Set([
+    'analytics:record',
     'auth:calibration-analyze',
     'auth:calibration-transcribe',
     'clear-runtime-provider-secrets',

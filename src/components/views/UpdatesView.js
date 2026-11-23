@@ -181,7 +181,9 @@ export class UpdatesView extends LitElement {
         const title = s.required ? 'An update is required.' : available ? 'A newer Hintio is ready.' : 'Keep Hintio up to date.';
         const intro = s.required
             ? 'This version is no longer supported for new sessions. Download the latest installer to continue.'
-            : 'Check what’s new and download the latest Windows installer from the official Hintio release.';
+            : available
+              ? 'You can update now or keep using this version.'
+              : 'Check what’s new and download the latest Windows installer from the official Hintio release.';
         return html`<section class="page" aria-labelledby="updates-title">
             <div class="eyebrow">Hintio / Updates</div>
             <h1 id="updates-title">${title}</h1>
@@ -189,7 +191,8 @@ export class UpdatesView extends LitElement {
             <div class="versions">
                 <div><span class="label">Installed</span><span class="version">${s.currentVersion ? 'v' + s.currentVersion : 'Checking…'}</span></div>
                 <div>
-                    <span class="label">Latest release</span><span class="version">${s.latestVersion ? 'v' + s.latestVersion : 'Not checked'}</span>
+                    <span class="label">${s.preview ? 'Latest preview' : 'Latest release'}</span>
+                    <span class="version">${s.latestVersion ? 'v' + s.latestVersion : 'Not checked'}</span>
                 </div>
             </div>
             ${s.required
@@ -199,7 +202,7 @@ export class UpdatesView extends LitElement {
                 : ''}
             <div class="actions">
                 ${available && s.installerUrl
-                    ? html`<button class="primary" ?disabled=${busy} @click=${() => this.onOpenInstaller?.()}>Download latest version ↗</button>`
+                    ? html`<button class="primary" ?disabled=${busy} @click=${() => this.onOpenInstaller?.()}>${s.preview ? 'Download preview' : 'Download latest version'} ↗</button>`
                     : ''}
                 <button ?disabled=${busy} @click=${() => this.onCheck?.()}>${busy ? 'Checking…' : 'Check for updates'}</button>
                 ${!s.required
@@ -209,6 +212,7 @@ export class UpdatesView extends LitElement {
             ${s.phase === 'current' ? html`<p class="status" role="status">You’re up to date.</p>` : ''}
             ${s.error ? html`<p class="status error" role="alert">${s.error}</p>` : ''}
             ${s.notice ? html`<p class="status" role="status">${s.notice}</p>` : ''}
+            ${s.preview ? html`<p class="note">This preview installer is unsigned. Windows may block installation.</p>` : ''}
             <p class="note">
                 The download opens in your browser. Finish your session, close Hintio, run the downloaded installer, then reopen the app. Settings and
                 history are kept. Hintio does not download, install, or restart itself.

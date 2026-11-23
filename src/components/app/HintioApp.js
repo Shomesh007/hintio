@@ -67,7 +67,7 @@ export class HintioApp extends LitElement {
             display: block;
             width: 100%;
             height: 100vh;
-            background: var(--bg-app);
+            background: transparent;
             color: var(--text-primary);
         }
 
@@ -89,7 +89,7 @@ export class HintioApp extends LitElement {
             padding: 0 12px;
             height: 44px;
             min-height: 44px;
-            background: rgba(9, 9, 11, 0.97);
+            background: transparent;
             border-bottom: 1px solid var(--border);
             -webkit-app-region: drag;
             flex-shrink: 0;
@@ -107,7 +107,6 @@ export class HintioApp extends LitElement {
             display: flex;
             align-items: center;
             gap: 7px;
-            -webkit-app-region: no-drag;
             margin-right: 4px;
             flex-shrink: 0;
         }
@@ -115,19 +114,8 @@ export class HintioApp extends LitElement {
         .nav-brand-mark {
             width: 26px;
             height: 26px;
-            border-radius: 7px;
-            background: #6366f1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            font-weight: 700;
-            color: #fff;
-            letter-spacing: -0.03em;
+            display: block;
             flex-shrink: 0;
-            box-shadow:
-                0 0 0 1px rgba(99, 102, 241, 0.5),
-                0 2px 8px rgba(99, 102, 241, 0.3);
         }
 
         .nav-brand-name {
@@ -143,7 +131,7 @@ export class HintioApp extends LitElement {
             display: flex;
             align-items: center;
             gap: 1px;
-            flex: 1 1 auto;
+            flex: 0 1 auto;
             min-width: 0;
             overflow-x: auto;
             scrollbar-width: none;
@@ -152,10 +140,24 @@ export class HintioApp extends LitElement {
         }
 
         .nav-drag-spacer {
-            flex: 0 1 16px;
-            min-width: 0;
+            /* Keep a full-height drag target even when the navigation scrolls. */
+            flex: 1 0 28px;
             height: 100%;
             -webkit-app-region: drag;
+            /* Transparent Windows windows need a painted surface to receive pointer input. */
+            background: rgba(0, 0, 0, 0.01);
+            display: grid;
+            place-items: center;
+        }
+
+        .nav-drag-spacer::after {
+            content: '';
+            width: 14px;
+            height: 4px;
+            border-radius: 4px;
+            background: var(--text-muted);
+            opacity: 0.5;
+            pointer-events: none;
         }
 
         .nav-item {
@@ -212,7 +214,6 @@ export class HintioApp extends LitElement {
             display: flex;
             align-items: center;
             gap: 6px;
-            -webkit-app-region: no-drag;
             margin-left: 4px;
             flex-shrink: 0;
         }
@@ -221,6 +222,35 @@ export class HintioApp extends LitElement {
             font-size: 10px;
             color: var(--text-muted);
             font-family: var(--font-mono);
+        }
+
+        .top-nav button,
+        .live-bar button,
+        .live-bar .clickable {
+            -webkit-app-region: no-drag;
+        }
+
+        .update-notice {
+            flex: none;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px 16px;
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-surface);
+            color: var(--text-primary);
+            font-size: 13px;
+        }
+
+        .update-notice button {
+            padding: 6px 10px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--bg-elevated);
+            color: inherit;
+            cursor: pointer;
         }
 
         /* ── Main content area ── */
@@ -273,7 +303,7 @@ export class HintioApp extends LitElement {
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            background: var(--bg-app);
+            background: transparent;
             position: relative;
         }
 
@@ -285,7 +315,7 @@ export class HintioApp extends LitElement {
             align-items: center;
             justify-content: space-between;
             padding: 0 16px;
-            background: rgba(8, 8, 10, 0.96);
+            background: transparent;
             border-bottom: 1px solid rgba(0, 212, 255, 0.12);
             height: 34px;
             -webkit-app-region: drag;
@@ -296,7 +326,6 @@ export class HintioApp extends LitElement {
             display: flex;
             align-items: center;
             gap: 10px;
-            -webkit-app-region: no-drag;
             z-index: 1;
         }
 
@@ -371,7 +400,6 @@ export class HintioApp extends LitElement {
             display: flex;
             align-items: center;
             gap: 12px;
-            -webkit-app-region: no-drag;
             z-index: 1;
         }
 
@@ -432,7 +460,7 @@ export class HintioApp extends LitElement {
             position: fixed;
             inset: 0;
             z-index: 100;
-            background: var(--bg-app);
+            background: transparent;
         }
 
         /* ── Scrollbar ── */
@@ -508,7 +536,6 @@ export class HintioApp extends LitElement {
         this._awaitingScreenAnalysis = false;
         this._screenAnalysisMode = '';
         this._errorContent = '';
-        this._layoutRepositioned = false;
         this._sessionTimeoutHandled = false;
         this.sessionLimitMs = null;
 
@@ -519,7 +546,7 @@ export class HintioApp extends LitElement {
     _applyUpdateState(state) {
         this._updateState = { ...this._updateState, ...state };
         this._localVersion = state.currentVersion || this._localVersion;
-        this._updateAvailable = Boolean(state.required || state.available || state.phase === 'available');
+        this._updateAvailable = Boolean(this._updateState.required || this._updateState.available || this._updateState.phase === 'available');
         this.requestUpdate();
     }
 
@@ -589,7 +616,6 @@ export class HintioApp extends LitElement {
             ipcRenderer.on('screen-analysis-triggered', () => {
                 this._awaitingScreenAnalysis = true;
                 this._screenAnalysisMode = 'manual';
-                this._layoutRepositioned = false;
                 this._errorContent = '';
             });
         }
@@ -702,19 +728,8 @@ export class HintioApp extends LitElement {
     }
 
     _extractScreenAnalysisMarkers(text) {
-        let cleaned = text;
-
-        // Always strip layout markers from displayed text; only act on the hint
-        // when a screen analysis is in progress.
-        const layoutMatch = cleaned.match(/===LAYOUT:(left|right|center|top-left|top-right|bottom-left|bottom-right)===/i);
-        if (layoutMatch && this._awaitingScreenAnalysis && !this._layoutRepositioned) {
-            this._layoutRepositioned = true;
-            const hint = layoutMatch[1].toLowerCase();
-            if (window.hintio?.repositionWindow) {
-                window.hintio.repositionWindow(hint);
-            }
-        }
-        cleaned = cleaned.replace(/\n?===LAYOUT:[a-z-]+===\n?/gi, '');
+        // Older responses may still include layout hints. They are display metadata only.
+        let cleaned = text.replace(/\n?===LAYOUT:[a-z-]+===\n?/gi, '\n');
 
         // For debug screenshot mode, keep code-issue details inline so no popup click is required.
         // For all other modes, strip marker blocks from visible text.
@@ -745,7 +760,18 @@ export class HintioApp extends LitElement {
         return Boolean(this.startTime) && Date.now() - this.startTime >= sessionLimitMs;
     }
 
+    _recordUsage(event, value) {
+        window.electronAPI?.invoke('analytics:record', event, value)?.catch(() => {});
+    }
+
+    recordCompletedAnswer() {
+        if (!this.sessionActive || this._recordedSessionAnswer) return;
+        this._recordedSessionAnswer = true;
+        this._recordUsage('session_answered', 'completed');
+    }
+
     async _endSessionToHome() {
+        const endedAt = Date.now();
         hintio.stopCapture();
         if (window.electronAPI) {
             const ipcRenderer = window.electronAPI;
@@ -753,6 +779,11 @@ export class HintioApp extends LitElement {
         }
         if (window.hintio?.clearSessionProviderSecrets) {
             await window.hintio.clearSessionProviderSecrets();
+        }
+        if (this.sessionActive && this.startTime) {
+            const minutes = Math.max(0, endedAt - this.startTime) / 60000;
+            const duration = minutes < 1 ? 'under_1m' : minutes < 5 ? '1_to_5m' : minutes < 15 ? '5_to_15m' : '15m_plus';
+            this._recordUsage('session_ended', duration);
         }
         this.sessionActive = false;
         this.startTime = null;
@@ -781,6 +812,10 @@ export class HintioApp extends LitElement {
     }
 
     navigate(view) {
+        const feature = { history: 'history', customize: 'settings', 'ai-customize': 'ai_context' }[view];
+        if (feature && view !== this.currentView) {
+            window.electronAPI?.invoke('analytics:record', 'feature_used', feature)?.catch(() => {});
+        }
         this.currentView = view;
         this.requestUpdate();
     }
@@ -841,12 +876,14 @@ export class HintioApp extends LitElement {
 
     async _startSession() {
         if (this._updateState?.required) {
+            this._recordUsage('session_start_blocked', 'update_required');
             this.currentView = 'updates';
             this.requestUpdate();
             return;
         }
         const config = await hintio.storage.getConfig();
         if (!config.cloudConsent) {
+            this._recordUsage('session_start_blocked', 'setup_required');
             this.currentView = 'onboarding';
             this.requestUpdate();
             return;
@@ -858,12 +895,14 @@ export class HintioApp extends LitElement {
         const creds = await hintio.storage.getCredentials();
         const accessToken = (creds.cloudToken || '').trim();
         if (!accessToken) {
+            this._recordUsage('session_start_blocked', 'missing_key');
             this._showMainViewTokenError('Access token is required.');
             return;
         }
 
         const success = await hintio.initializeGemini(this.selectedProfile, this.selectedLanguage);
         if (!success) {
+            this._recordUsage('session_start_blocked', 'initialization_failed');
             const initError = typeof hintio.getLastInitError === 'function' ? hintio.getLastInitError() : '';
             this._showMainViewTokenError(initError || 'Access token is invalid or expired.');
             return;
@@ -879,6 +918,9 @@ export class HintioApp extends LitElement {
         this.sessionActive = true;
         this.currentView = 'assistant';
         this._startTimer();
+        this._recordedSessionAnswer = false;
+        this._recordUsage('session_started');
+        this._recordUsage('session_profile', this.selectedProfile);
     }
 
     async handleAPIKeyHelp() {
@@ -1064,7 +1106,6 @@ export class HintioApp extends LitElement {
                         @screen-analysis-triggered=${() => {
                             this._awaitingScreenAnalysis = true;
                             this._screenAnalysisMode = 'manual';
-                            this._layoutRepositioned = false;
                             this._errorContent = '';
                         }}
                         @dismiss-error-panel=${() => {
@@ -1121,7 +1162,7 @@ export class HintioApp extends LitElement {
             <div class="top-nav ${this._isLiveMode() ? 'hidden' : ''}">
                 <!-- Brand -->
                 <div class="nav-brand">
-                    <div class="nav-brand-mark">G</div>
+                    <img class="nav-brand-mark" src="assets/hintio-mark.svg" alt="" />
                     <span class="nav-brand-name">Hintio</span>
                 </div>
 
@@ -1189,13 +1230,6 @@ export class HintioApp extends LitElement {
                     ${hasSessionLimit ? html`<span class="live-bar-text ${remainingTimeClass}">Left ${remainingSessionTime}</span>` : ''}
                     <span class="live-bar-text">${this.getElapsedTime()}</span>
                     ${this._isClickThrough ? html`<span class="live-bar-text">[pass-thru]</span>` : ''}
-                    <button
-                        class="live-bar-text clickable"
-                        style="font:inherit;font-size:11px;background:transparent;color:var(--text-secondary);border:1px solid var(--border);padding:4px 7px;-webkit-app-region:no-drag;"
-                        @click=${() => this.withdrawCloudConsent()}
-                    >
-                        Stop &amp; withdraw consent
-                    </button>
                     <span class="live-bar-text clickable" @click=${() => this.handleHideToggle()}>[hide]</span>
                 </div>
             </div>
@@ -1221,6 +1255,12 @@ export class HintioApp extends LitElement {
 
                 <div class="content">
                     ${isLive ? this.renderLiveBar() : ''}
+                    ${this.currentView === 'main' && this._updateState?.available
+                        ? html`<div class="update-notice">
+                              <strong role="status">Update available · ${this._updateState.latestVersion}${this._updateState.preview ? ' Preview' : ''}</strong>
+                              <button @click=${() => this.navigate('updates')}>Update Hintio</button>
+                          </div>`
+                        : ''}
                     <div class="content-inner ${isLive ? 'live' : ''}">
                         ${this.renderCurrentView()} ${showResizeHandles ? html`<resize-handles></resize-handles>` : ''}
                     </div>

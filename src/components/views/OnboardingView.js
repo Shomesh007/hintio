@@ -254,6 +254,33 @@ export class OnboardingView extends LitElement {
             font-size: 16px;
         }
 
+        .policy-agreement {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 24px;
+            color: #d4d4d8;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .policy-agreement input {
+            margin-top: 4px;
+            flex-shrink: 0;
+            accent-color: #818cf8;
+        }
+
+        .policy-agreement a {
+            color: #a5b4fc;
+            text-underline-offset: 3px;
+            cursor: pointer;
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.45;
+            cursor: default;
+        }
+
         .skip-hint {
             font-size: 12px;
             color: #52525b;
@@ -277,16 +304,25 @@ export class OnboardingView extends LitElement {
         this.onComplete = () => {};
     }
 
-    _openHelpGuide() {
-        const helpUrl = 'https://www.hintio.tech/get-started';
+    _openPolicy(event) {
+        event.preventDefault();
+        const url = event.currentTarget.href;
         if (window.electronAPI) {
-            const ipcRenderer = window.electronAPI;
-            ipcRenderer.invoke('open-external', helpUrl).catch(error => {
-                console.error('Failed to open help guide:', error);
-            });
-            return;
+            void window.electronAPI.invoke('open-external', url).catch(() => {});
+        } else {
+            window.open(url, '_blank', 'noopener,noreferrer');
         }
-        window.open(helpUrl, '_blank', 'noopener,noreferrer');
+    }
+
+    connectedCallback() {
+        super.connectedCallback();
+        void window.electronAPI?.invoke('analytics:record', 'onboarding_step', 'welcome').catch(() => {});
+    }
+
+    _goToStep(step) {
+        this.currentSlide = step;
+        const name = { 1: 'context', 2: 'review' }[step];
+        if (name) void window.electronAPI?.invoke('analytics:record', 'onboarding_step', name).catch(() => {});
     }
 
     handleContextInput(e) {
@@ -294,13 +330,21 @@ export class OnboardingView extends LitElement {
     }
 
     async completeOnboarding() {
-        if (!this.privacyAccepted) return;
-        if (this.contextText.trim()) {
-            await hintio.storage.updatePreference('customPrompt', this.contextText.trim());
+        if (!this.privacyAccepted || this._completing) return;
+        this._completing = true;
+        try {
+            const firstSetup = !(await hintio.storage.getConfig()).onboarded;
+            const context = this.contextText.trim();
+            if (context) await hintio.storage.updatePreference('customPrompt', context);
+            const completed = await hintio.storage.setConfig({ cloudConsent: true, onboarded: true });
+            if (!completed?.success) return;
+            if (firstSetup) {
+                void window.electronAPI?.invoke('analytics:record', 'onboarding_completed', context ? 'provided' : 'blank').catch(() => {});
+            }
+            this.onComplete();
+        } finally {
+            this._completing = false;
         }
-        await hintio.storage.updateConfig('cloudConsent', true);
-        await hintio.storage.updateConfig('onboarded', true);
-        this.onComplete();
     }
 
     renderSlideOne() {
@@ -347,7 +391,7 @@ export class OnboardingView extends LitElement {
                     <button
                         class="btn-primary"
                         @click=${() => {
-                            this.currentSlide = 1;
+                            this._goToStep(1);
                         }}
                     >
                         Configure Setup <hintio-icon class="icon" style="font-size: 16px;" name="arrow_forward"></hintio-icon>
@@ -392,7 +436,7 @@ export class OnboardingView extends LitElement {
                     <button
                         class="btn-primary"
                         @click=${() => {
-                            this.currentSlide = 2;
+                            this._goToStep(2);
                         }}
                     >
                         Continue
@@ -412,49 +456,32 @@ export class OnboardingView extends LitElement {
                 </div>
 
                 <div class="header-group">
-                    <div class="title">Choose what you share</div>
-                    <div class="subtitle">
-                        Starting a cloud session can send selected audio or transcripts, screenshots, resume text, and instructions to the configured
-                        AI providers. Capture only material you have permission to share. Stop the session to stop capture; choose No Audio and use
-                        the screen-capture controls to limit capture.
-                    </div>
+                    <div class="title">Terms and privacy</div>
                 </div>
 
-                <div class="feature-list" style="margin-bottom: 28px;">
-                    <div class="feature-item">
-                        <div class="feature-icon-wrap"><hintio-icon class="icon" name="menu_book"></hintio-icon></div>
-                        <div class="feature-text">
-                            <strong>Usage Help Guide</strong>
-                            <span>Open the guide to avoid common mistakes and use your key correctly.</span>
-                        </div>
-                    </div>
-                </div>
-
-                <p style="font-size:12px;line-height:1.6;margin-bottom:14px;">
-                    Store builds protect local records with Windows-backed encryption. EXE builds currently use local JSON files. Exports are separate
-                    and may be unencrypted. See Settings → Privacy &amp; Data for storage and deletion controls.
-                </p>
-                <label style="display:flex;gap:10px;font-size:12px;line-height:1.6;margin-bottom:16px;"
-                    ><input
+                <label class="policy-agreement">
+                    <input
                         type="checkbox"
                         .checked=${this.privacyAccepted}
-                        @change=${e => {
-                            this.privacyAccepted = e.target.checked;
+                        @change=${event => {
+                            this.privacyAccepted = event.target.checked;
                         }}
                     />
-                    I agree to sending my selected session context through Hintio’s Supabase gateway to OpenAI for answers and Groq for transcription.
-                    I will only capture content I am authorized to share. I can withdraw this consent in Settings.</label
-                >
+                    <span>
+                        I agree to the <a href="https://www.hintio.tech/terms" @click=${this._openPolicy}>Terms &amp; Conditions</a> and
+                        <a href="https://www.hintio.tech/privacy" @click=${this._openPolicy}>Privacy Policy</a>,
+                        and to cloud processing of my selected session content.
+                    </span>
+                </label>
                 <div class="actions">
                     <button
                         class="btn-secondary"
                         @click=${() => {
-                            this.currentSlide = 1;
+                            this._goToStep(1);
                         }}
                     >
                         <hintio-icon class="icon" name="arrow_back"></hintio-icon> Back
                     </button>
-                    <button class="btn-secondary" @click=${() => this._openHelpGuide()}>Open Help Guide</button>
                     <button class="btn-primary" ?disabled=${!this.privacyAccepted} @click=${this.completeOnboarding}>Go to Start Session</button>
                 </div>
             </div>

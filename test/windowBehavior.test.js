@@ -97,13 +97,11 @@ test('screen capture handles no sources and capture denial without unhandled err
         );
     }
 });
-test('screen capture selects an available source using the documented loopback API', async () => {
-    const h = windowHarness([{ id: 'screen:0' }]);
-    await new Promise(resolve =>
-        h.displayHandler({}, value => {
-            assert.equal(value.video.id, 'screen:0');
-            assert.equal(value.audio, 'loopback');
-            resolve();
-        })
-    );
+test('screen capture includes loopback only when audio was requested', async () => {
+    for (const audioRequested of [false, true]) {
+        const h = windowHarness([{ id: 'screen:0' }]);
+        const chosen = await new Promise(resolve => h.displayHandler({ audioRequested }, resolve));
+        assert.equal(chosen.video.id, 'screen:0');
+        assert.equal(chosen.audio, audioRequested ? 'loopback' : undefined);
+    }
 });

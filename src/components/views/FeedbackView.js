@@ -49,11 +49,6 @@ export class FeedbackView extends LitElement {
                 font-size: 22px;
                 font-weight: normal;
                 line-height: 1;
-                font-variation-settings:
-                    'FILL' 0,
-                    'wght' 400,
-                    'GRAD' 0,
-                    'opsz' 24;
                 transition:
                     color var(--transition),
                     transform var(--transition);
@@ -61,21 +56,13 @@ export class FeedbackView extends LitElement {
 
             .star-btn.active {
                 color: #f59e0b;
-                font-variation-settings:
-                    'FILL' 1,
-                    'wght' 400,
-                    'GRAD' 0,
-                    'opsz' 24;
+                --hintio-icon-fill: currentColor;
             }
 
             .star-btn:hover {
                 color: #f59e0b;
                 transform: scale(1.2);
-                font-variation-settings:
-                    'FILL' 1,
-                    'wght' 400,
-                    'GRAD' 0,
-                    'opsz' 24;
+                --hintio-icon-fill: currentColor;
             }
 
             /* ── Category chips ── */
@@ -333,7 +320,7 @@ export class FeedbackView extends LitElement {
                     <div class="page-title">Feedback & AI reports</div>
                     <p style="font-size:12px;color:var(--text-secondary);">
                         Opens a draft to admin@builtbygsv.in. Review and redact before sending; nothing is sent automatically. For an AI response
-                        report, describe the issue or use Report response in the assistant.
+                        report, describe the issue here.
                     </p>
 
                     <!-- Rating -->
@@ -348,12 +335,14 @@ export class FeedbackView extends LitElement {
                                 n => html`
                                     <button
                                         class="star-btn ${this._rating >= n ? 'active' : ''}"
+                                        aria-label=${n === 1 ? '1 star' : `${n} stars`}
+                                        aria-pressed=${this._rating === n ? 'true' : 'false'}
                                         @click=${() => {
                                             this._rating = n;
                                             this.requestUpdate();
                                         }}
                                     >
-                                        star
+                                        <hintio-icon name="star" aria-hidden="true"></hintio-icon>
                                     </button>
                                 `
                             )}

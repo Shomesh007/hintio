@@ -6,7 +6,7 @@ https://github.com/Shomesh007/hintio/releases/download/v1.0.4/Hintio-1.0.4.Setup
 
 Original installer SHA-256: 6d19663e17895936b7a99458c4759a21c7fc2b1f46fbb29635cbb2e9ea4871ef. Do not rebuild or replace this asset under its old version.
 
-1.0.6 stays the maintained Store candidate. Keep its source, tests, manifests, final installers/MSIX and reports. Do not point public downloads at it before Store readiness is approved. package.json retains 1.0.6 to avoid relabelling candidate binaries as 1.0.4. release-channels.json and website productionRelease.ts explicitly separate these versions.
+1.0.6 stays the maintained Store candidate. Keep its source, tests, manifests, final installers/MSIX and reports. Do not point public downloads at it before Store readiness is approved. The Store candidate remains version 1.0.6. This branch packages the separate Windows preview. release-channels.json and website productionRelease.ts explicitly separate these versions.
 
 ## Access
 
@@ -33,3 +33,10 @@ The original 1.0.4 installer remains unsigned and was blocked by this PC's Windo
 At the owner's request in a separate chat, v1.0.6-preview.1 is published only for friend testing, with prerelease=true and latest=false. Production, purchase links and minimum supported version remain 1.0.4. The candidate binaries are unchanged.
 
 The owner also assigned a separate coordinated chat to isolate trial OpenAI/Groq credentials and provider restrictions. That chat owns resolver credential-routing changes after v18. Account/IP/browser guards do not isolate provider credentials by themselves. Until that follow-up ships, the legacy v18 trial path uses the previously approved company credentials; after fail-closed isolated routing is deployed, new trial starts require the dedicated trial credentials. Do not claim provider isolation is configured merely because this release-policy work is complete.
+
+
+## 1.0.11 desktop preview
+
+The preview carries forward the application files from the checksum-verified public 1.0.10 preview. It adds desktop product analytics, shortens the final onboarding screen to a Terms and Privacy agreement, and retains the explicit cloud-processing consent. Use the 1.0.11 version and preview channel for this build.
+
+A portable x64 candidate can be inspected separately from the Squirrel installer. Verify the app on Windows and build the release installer before attaching `Hintio-1.0.11.Setup.exe` and `SHA256SUMS.txt` to `v1.0.11-preview.1`. Switch the website preview version after the published assets are reachable.

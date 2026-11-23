@@ -112,7 +112,20 @@ export class CustomizeView extends LitElement {
                 padding: 2px 8px;
             }
 
-            .slider-input {
+        .opacity-scale {
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-secondary);
+            font-size: 11px;
+        }
+
+        .appearance-note {
+            margin: 0;
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+
+        .slider-input {
                 -webkit-appearance: none;
                 appearance: none;
                 width: 100%;
@@ -282,6 +295,7 @@ export class CustomizeView extends LitElement {
         onContactSupport: { type: Function },
         onWithdrawConsent: { type: Function },
         protectedRecords: { type: Boolean },
+        usageAnalytics: { type: Boolean },
         pendingDataAction: { type: String },
         selectedProfile: { type: String },
         selectedLanguage: { type: String },
@@ -291,6 +305,9 @@ export class CustomizeView extends LitElement {
         googleSearchEnabled: { type: Boolean },
         backgroundTransparency: { type: Number },
         fontSize: { type: Number },
+        audioMode: { type: String },
+        appearanceError: { type: String },
+        shortcutError: { type: String },
         theme: { type: String },
         onProfileChange: { type: Function },
         onLanguageChange: { type: Function },
@@ -322,7 +339,10 @@ export class CustomizeView extends LitElement {
         this.clearStatusType = '';
         this.backgroundTransparency = 0.8;
         this.fontSize = 20;
+        this.appearanceError = '';
+        this.shortcutError = '';
         this.audioMode = 'speaker_only';
+        this.usageAnalytics = false;
         this.customPrompt = '';
         this.theme = 'dark';
         this._loadFromStorage();
@@ -337,8 +357,9 @@ export class CustomizeView extends LitElement {
             const [prefs, keybinds] = await Promise.all([hintio.storage.getPreferences(), hintio.storage.getKeybinds()]);
             this.googleSearchEnabled = prefs.googleSearchEnabled ?? true;
             this.backgroundTransparency = prefs.backgroundTransparency ?? 0.8;
-            this.fontSize = prefs.fontSize ?? 20;
+            this.fontSize = hintio.theme.applyResponseFontSize(prefs.fontSize);
             this.audioMode = prefs.audioMode ?? 'speaker_only';
+            this.usageAnalytics = prefs.usageAnalytics === true;
             this.customPrompt = prefs.customPrompt ?? '';
             this.theme = prefs.theme ?? 'dark';
             if (keybinds) {
@@ -439,10 +460,11 @@ export class CustomizeView extends LitElement {
     }
 
     async saveKeybinds() {
-        await hintio.storage.setKeybinds(this.keybinds);
+        const result = await hintio.storage.setKeybinds(this.keybinds);
+        if (!result.success) throw new Error(result.error || 'Could not save shortcuts.');
         if (window.electronAPI) {
             const ipcRenderer = window.electronAPI;
-            ipcRenderer.send('update-keybinds', this.keybinds);
+            ipcRenderer.send('update-keybinds');
         }
     }
 
@@ -480,9 +502,8 @@ export class CustomizeView extends LitElement {
 
     async handleThemeChange(e) {
         this.theme = e.target.value;
-        await hintio.theme.save(this.theme);
-        this.updateBackgroundAppearance();
-        this.requestUpdate();
+        hintio.theme.apply(this.theme, this.backgroundTransparency);
+        await this.saveAppearance('theme', this.theme);
     }
 
     async handleGoogleSearchChange(e) {
@@ -499,11 +520,9 @@ export class CustomizeView extends LitElement {
         this.requestUpdate();
     }
 
-    async handleBackgroundTransparencyChange(e) {
+    handleBackgroundTransparencyChange(e) {
         this.backgroundTransparency = parseFloat(e.target.value);
-        await hintio.storage.updatePreference('backgroundTransparency', this.backgroundTransparency);
         this.updateBackgroundAppearance();
-        this.requestUpdate();
     }
 
     updateBackgroundAppearance() {
@@ -511,21 +530,38 @@ export class CustomizeView extends LitElement {
         hintio.theme.applyBackgrounds(colors.background, this.backgroundTransparency);
     }
 
-    async handleFontSizeChange(e) {
+    handleFontSizeChange(e) {
         this.fontSize = parseInt(e.target.value, 10);
-        await hintio.storage.updatePreference('fontSize', this.fontSize);
         this.updateFontSize();
-        this.requestUpdate();
     }
 
     updateFontSize() {
-        document.documentElement.style.setProperty('--response-font-size', `${this.fontSize}px`);
+        hintio.theme.applyResponseFontSize(this.fontSize);
     }
 
-    handleKeybindChange(action, value) {
+    async saveAppearance(key, value) {
+        this.appearanceError = '';
+        try {
+            const result = await hintio.storage.updatePreference(key, value);
+            if (!result.success) throw new Error(result.error);
+        } catch (error) {
+            console.error('Could not save appearance:', error);
+            this.appearanceError = 'Could not save appearance. Try changing the setting again.';
+        }
+    }
+
+    async handleKeybindChange(action, value) {
+        const previous = this.keybinds;
+        this.shortcutError = '';
         this.keybinds = { ...this.keybinds, [action]: value };
-        this.saveKeybinds();
-        this.requestUpdate();
+        try {
+            await this.saveKeybinds();
+            return true;
+        } catch (error) {
+            this.keybinds = previous;
+            this.shortcutError = error.message;
+            return false;
+        }
     }
 
     handleKeybindFocus(e) {
@@ -533,7 +569,8 @@ export class CustomizeView extends LitElement {
         e.target.select();
     }
 
-    handleKeybindInput(e) {
+    async handleKeybindInput(e) {
+        if (e.key === 'Tab') return;
         e.preventDefault();
         const modifiers = [];
         if (e.ctrlKey) modifiers.push('Ctrl');
@@ -573,17 +610,24 @@ export class CustomizeView extends LitElement {
 
         const action = e.target.dataset.action;
         const keybind = [...modifiers, mainKey].join('+');
-        this.handleKeybindChange(action, keybind);
-        e.target.value = keybind;
-        e.target.blur();
+        const input = e.target;
+        const duplicate = Object.entries(this.keybinds).some(([name, value]) => name !== action && value.toLowerCase() === keybind.toLowerCase());
+        if (duplicate) {
+            this.shortcutError = 'That shortcut is already assigned in Hintio.';
+            return;
+        }
+        if (await this.handleKeybindChange(action, keybind)) input.blur();
     }
 
     async resetKeybinds() {
-        this.keybinds = this.getDefaultKeybinds();
-        await hintio.storage.setKeybinds(null);
-        if (window.electronAPI) {
-            const ipcRenderer = window.electronAPI;
-            ipcRenderer.send('update-keybinds', this.keybinds);
+        this.shortcutError = '';
+        try {
+            const result = await hintio.storage.setKeybinds(null);
+            if (!result.success) throw new Error(result.error || 'Could not reset shortcuts.');
+            this.keybinds = this.getDefaultKeybinds();
+            window.electronAPI?.send('update-keybinds');
+        } catch (error) {
+            this.shortcutError = error.message;
         }
         this.requestUpdate();
     }
@@ -616,16 +660,16 @@ export class CustomizeView extends LitElement {
                 googleSearchEnabled: false,
                 theme: 'dark',
             };
-            for (const [key, value] of Object.entries(defaults)) {
-                await hintio.storage.updatePreference(key, value);
-            }
+            const result = await hintio.storage.setPreferences(defaults);
+            if (!result.success) throw new Error(result.error || 'Could not restore preferences.');
 
             // Restore keybinds
             this.keybinds = this.getDefaultKeybinds();
-            await hintio.storage.setKeybinds(null);
+            const shortcutsResult = await hintio.storage.setKeybinds(null);
+            if (!shortcutsResult.success) throw new Error(shortcutsResult.error || 'Could not reset shortcuts.');
             if (window.electronAPI) {
                 const ipcRenderer = window.electronAPI;
-                ipcRenderer.send('update-keybinds', this.keybinds);
+                ipcRenderer.send('update-keybinds');
             }
 
             // Apply to local state
@@ -645,9 +689,9 @@ export class CustomizeView extends LitElement {
             this.onImageQualityChange(defaults.selectedImageQuality);
 
             // Apply visual changes
-            this.updateBackgroundAppearance();
             this.updateFontSize();
-            await hintio.theme.save(defaults.theme);
+            hintio.theme.apply(defaults.theme, defaults.backgroundTransparency);
+            await hintio.refreshPreferencesCache();
 
             this.clearStatusMessage = 'All settings restored to defaults';
             this.clearStatusType = 'success';
@@ -673,7 +717,8 @@ export class CustomizeView extends LitElement {
         this.clearStatusType = '';
         this.requestUpdate();
         try {
-            await hintio.storage.clearAll();
+            const result = await hintio.storage.clearAll();
+            if (!result.success) throw new Error(result.error || 'Could not clear local data.');
             this.clearStatusMessage = 'Successfully cleared all local data';
             this.clearStatusType = 'success';
             this.requestUpdate();
@@ -706,20 +751,18 @@ export class CustomizeView extends LitElement {
                 </div>
                 <div class="form-grid">
                     <div class="form-group">
-                        <label class="form-label">Audio Mode</label>
-                        <select class="control" .value=${this.audioMode} @change=${this.handleAudioModeSelect}>
+                        <label class="form-label" for="audio-mode">Audio Mode</label>
+                        <select id="audio-mode" class="control" .value=${this.audioMode} @change=${this.handleAudioModeSelect}>
                             <option value="speaker_only">Speaker Only (Interviewer)</option>
                             <option value="mic_only">Microphone Only (Me)</option>
                             <option value="both">Both Speaker and Microphone</option>
                             <option value="none">No Audio (Screenshots Only)</option>
                         </select>
                     </div>
-                    ${this.audioMode !== 'speaker_only'
-                        ? html` <div class="warning-callout">May cause unexpected behavior. Only change this if you know what you're doing.</div> `
-                        : ''}
+                    <p class="appearance-note">Audio mode and speech language apply when you start a new session.</p>
                     <div class="form-group">
-                        <label class="form-label">Image Quality</label>
-                        <select class="control" .value=${this.selectedImageQuality} @change=${this.handleImageQualitySelect}>
+                        <label class="form-label" for="image-quality">Image Quality</label>
+                        <select id="image-quality" class="control" .value=${this.selectedImageQuality} @change=${this.handleImageQualitySelect}>
                             <option value="high">High Quality</option>
                             <option value="medium">Medium Quality</option>
                             <option value="low">Low Quality</option>
@@ -739,9 +782,9 @@ export class CustomizeView extends LitElement {
                 </div>
                 <div class="form-grid">
                     <div class="form-group">
-                        <label class="form-label">Speech Language</label>
-                        <select class="control" .value=${this.selectedLanguage} @change=${this.handleLanguageSelect}>
-                            ${this.getLanguages().map(language => html`<option value=${language.value}>${language.name}</option>`)}
+                        <label class="form-label" for="speech-language">Speech Language</label>
+                        <select id="speech-language" class="control" @change=${this.handleLanguageSelect}>
+                            ${this.getLanguages().map(language => html`<option value=${language.value} ?selected=${language.value === this.selectedLanguage}>${language.name}</option>`)}
                         </select>
                     </div>
                 </div>
@@ -758,41 +801,48 @@ export class CustomizeView extends LitElement {
                 </div>
                 <div class="form-grid">
                     <div class="form-group">
-                        <label class="form-label">Theme</label>
-                        <select class="control" .value=${this.theme} @change=${this.handleThemeChange}>
-                            ${this.getThemes().map(theme => html`<option value=${theme.value}>${theme.name}</option>`)}
+                        <label class="form-label" for="overlay-theme">Theme</label>
+                        <select id="overlay-theme" class="control" @change=${this.handleThemeChange}>
+                            ${this.getThemes().map(theme => html`<option value=${theme.value} ?selected=${theme.value === this.theme}>${theme.name}</option>`)}
                         </select>
                     </div>
                     <div class="form-group slider-wrap">
                         <div class="slider-header">
-                            <label class="form-label">Background Transparency</label>
+                            <label class="form-label" for="overlay-opacity">Overlay opacity</label>
                             <span class="slider-value">${Math.round(this.backgroundTransparency * 100)}%</span>
                         </div>
                         <input
                             class="slider-input"
+                            id="overlay-opacity"
                             type="range"
                             min="0"
                             max="1"
                             step="0.01"
                             .value=${this.backgroundTransparency}
                             @input=${this.handleBackgroundTransparencyChange}
+                            @change=${() => this.saveAppearance('backgroundTransparency', this.backgroundTransparency)}
                         />
+                        <div class="opacity-scale" aria-hidden="true"><span>Clear</span><span>Solid</span></div>
                     </div>
                     <div class="form-group slider-wrap">
                         <div class="slider-header">
-                            <label class="form-label">Response Font Size</label>
+                            <label class="form-label" for="response-size">Response font size</label>
                             <span class="slider-value">${this.fontSize}px</span>
                         </div>
                         <input
                             class="slider-input"
+                            id="response-size"
                             type="range"
                             min="12"
-                            max="32"
+                            max="36"
                             step="1"
                             .value=${this.fontSize}
                             @input=${this.handleFontSizeChange}
+                            @change=${() => this.saveAppearance('fontSize', this.fontSize)}
                         />
+                        <p class="appearance-note" style="font-size:${this.fontSize}px">This is how responses will read.</p>
                     </div>
+                    ${this.appearanceError ? html`<p class="appearance-note" role="alert">${this.appearanceError}</p>` : ''}
                 </div>
             </section>
         `;
@@ -814,6 +864,7 @@ export class CustomizeView extends LitElement {
                                 class="control keybind-input"
                                 .value=${this.keybinds[action.key]}
                                 data-action=${action.key}
+                                aria-label=${action.name}
                                 @keydown=${this.handleKeybindInput}
                                 @focus=${this.handleKeybindFocus}
                                 readonly
@@ -824,6 +875,7 @@ export class CustomizeView extends LitElement {
                 <div style="margin-top: var(--space-sm);">
                     <button class="control" style="width:auto;padding:8px 10px;" @click=${this.resetKeybinds}>Reset to defaults</button>
                 </div>
+                ${this.shortcutError ? html`<p class="appearance-note" role="alert">${this.shortcutError}</p>` : ''}
             </section>
         `;
     }
@@ -867,6 +919,25 @@ export class CustomizeView extends LitElement {
                 <div class="privacy-support">
                     <button class="control" @click=${() => this.onWithdrawConsent?.()}>Withdraw cloud-processing consent</button>
                     <p>Stops an active session and returns to the privacy step. Saved records are retained. You can agree again later.</p>
+                </div>
+                <div class="privacy-support">
+                    <label>
+                        <input type="checkbox" .checked=${this.usageAnalytics} @change=${async event => {
+                            const checkbox = event.target;
+                            checkbox.disabled = true;
+                            try {
+                                const result = await hintio.storage.updatePreference('usageAnalytics', checkbox.checked);
+                                if (result.success) this.usageAnalytics = checkbox.checked;
+                            } catch {
+                                // Keep the previously saved setting when storage is unavailable.
+                            } finally {
+                                checkbox.checked = this.usageAnalytics;
+                                checkbox.disabled = false;
+                            }
+                        }} />
+                        Share product usage analytics
+                    </label>
+                    <p>Shares a random install ID, app version, setup progress, session milestones, and feature usage. You can turn this off here.</p>
                 </div>
                 <div class="privacy-support">
                     <strong>Questions or a data request?</strong>
@@ -932,7 +1003,7 @@ export class CustomizeView extends LitElement {
                     <div class="settings-banner">
                         <div>
                             <div class="settings-banner-title">Settings</div>
-                            <div class="settings-banner-sub">Configure runtime parameters</div>
+                            <div class="settings-banner-sub">Audio, appearance, shortcuts, and privacy</div>
                         </div>
                     </div>
                     ${this.renderAudioSection()} ${this.renderLanguageSection()} ${this.renderAppearanceSection()} ${this.renderKeyboardSection()}
