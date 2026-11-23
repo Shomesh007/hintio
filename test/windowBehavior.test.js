@@ -7,7 +7,9 @@ function windowHarness(sources) {
     let displayHandler;
     const events = new Map(),
         once = new Map(),
-        ipc = new Map();
+        ipc = new Map(),
+        messages = new Map();
+    let bounds = { width: 1080, height: 560, x: 0, y: 0 };
     let options;
     const methods = [];
     const contents = {
@@ -30,7 +32,16 @@ function windowHarness(sources) {
                     },
                     isDestroyed: () => false,
                     isVisible: () => true,
-                    getBounds: () => ({ width: 1080, height: 560, x: 0, y: 0 }),
+                    getBounds: () => ({ ...bounds }),
+                    getMinimumSize: () => [560, 420],
+                    setBounds(next) {
+                        bounds = { ...next };
+                        methods.push(['setBounds', next]);
+                    },
+                    setPosition(x, y) {
+                        bounds = { ...bounds, x, y };
+                        methods.push(['setPosition', x, y]);
+                    },
                 },
                 {
                     get(target, name) {
@@ -44,9 +55,12 @@ function windowHarness(sources) {
     const electron = {
         app: { isPackaged: true },
         BrowserWindow,
-        screen: { getPrimaryDisplay: () => ({ workAreaSize: { width: 1920, height: 1080 }, workArea: { width: 1920, height: 1080, x: 0, y: 0 } }) },
+        screen: {
+            getPrimaryDisplay: () => ({ workAreaSize: { width: 1920, height: 1080 }, workArea: { width: 1920, height: 1080, x: 0, y: 0 } }),
+            getDisplayMatching: () => ({ workArea: { width: 1600, height: 900, x: -1600, y: 30 } }),
+        },
         globalShortcut: { register: () => true, unregisterAll() {} },
-        ipcMain: { handle: (name, fn) => ipc.set(name, fn), on() {} },
+        ipcMain: { handle: (name, fn) => ipc.set(name, fn), on: (name, fn) => messages.set(name, fn) },
         session: {
             defaultSession: {
                 setDisplayMediaRequestHandler: fn => {
@@ -77,8 +91,51 @@ function windowHarness(sources) {
     };
     vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../src/utils/window.js'), 'utf8'), context);
     context.module.exports.createWindow(() => {}, { current: null });
-    return { options, events, methods, displayHandler };
+    return { options, events, methods, displayHandler, ipc, messages, getBounds: () => ({ ...bounds }) };
 }
+
+test('navigation preserves the size and position set by a manual resize', () => {
+    const h = windowHarness([]);
+    h.messages.get('window-manual-resize-start')({}, { edge: 'br', startX: 100, startY: 100 });
+    h.messages.get('window-manual-resize-step')({}, { dx: -200, dy: 45 });
+    h.messages.get('window-manual-resize-end')();
+    const userBounds = h.getBounds();
+    assert.equal(userBounds.width, 780);
+    assert.equal(userBounds.height, 505);
+    h.methods.length = 0;
+    for (const view of ['assistant', 'main', 'customize', 'assistant']) h.messages.get('view-changed')({}, view);
+    assert.deepEqual(h.getBounds(), userBounds);
+    assert.ok(!h.methods.some(([method]) => ['setBounds', 'setSize', 'setPosition'].includes(method)));
+});
+
+test('docking only moves the current width and height, and rejects obsolete position hints', async () => {
+    const h = windowHarness([]);
+    const { width, height } = h.getBounds();
+    for (const [destination, x] of [['left', -1600], ['right', -1080], ['default', -1340]]) {
+        assert.equal((await h.ipc.get('reposition-window')({}, destination)).success, true);
+        assert.deepEqual(h.getBounds(), { x, y: 30, width, height });
+    }
+    const docked = h.getBounds();
+    assert.equal((await h.ipc.get('reposition-window')({}, 'top-left')).success, false);
+    assert.deepEqual(h.getBounds(), docked);
+});
+
+test('leaving the assistant cancels a drag, and invalid coordinates cannot change bounds', () => {
+    const h = windowHarness([]);
+    const start = h.messages.get('window-manual-resize-start');
+    const move = h.messages.get('window-manual-resize-step');
+    const before = h.getBounds();
+    start({}, { edge: 'invalid', startX: 0, startY: 0 });
+    move({}, { dx: 100, dy: 100 });
+    assert.deepEqual(h.getBounds(), before);
+    h.messages.get('view-changed')({}, 'assistant');
+    start({}, { edge: 'br', startX: 0, startY: 0 });
+    move({}, { dx: Infinity, dy: 100 });
+    assert.deepEqual(h.getBounds(), before);
+    h.messages.get('view-changed')({}, 'main');
+    move({}, { dx: 100, dy: 100 });
+    assert.deepEqual(h.getBounds(), before);
+});
 test('desktop window allows normal taskbar and minimize behavior without enforcement loops', () => {
     const h = windowHarness([]);
     assert.equal(h.options.skipTaskbar, false);

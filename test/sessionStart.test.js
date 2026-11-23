@@ -53,6 +53,7 @@ function createApp({ approved = true, token = '', remoteVersion = 'v1.0.2', cons
         css: () => '',
         customElements: { define() {} },
         hintio,
+        window: { hintio: { repositionWindow: hint => calls.push(['reposition', hint]) } },
         fetch: async url => {
             calls.push(['update-url', url]);
             return { ok: true, json: async () => ({ tag_name: remoteVersion }) };
@@ -60,6 +61,8 @@ function createApp({ approved = true, token = '', remoteVersion = 'v1.0.2', cons
     });
     const app = Object.assign(Object.create(App.prototype), {
         currentView: 'main',
+        responses: [],
+        currentResponseIndex: -1,
         sessionActive: false,
         selectedProfile: 'interview',
         selectedLanguage: 'en-US',
@@ -69,6 +72,17 @@ function createApp({ approved = true, token = '', remoteVersion = 'v1.0.2', cons
     });
     return { app, calls };
 }
+
+test('screen analysis responses and streamed updates ignore legacy window layout hints', () => {
+    const { app, calls } = createApp();
+    app._awaitingScreenAnalysis = true;
+    app._screenAnalysisMode = 'manual';
+    app.addNewResponse('First answer\n===LAYOUT:right===');
+    assert.equal(app.responses[0], 'First answer');
+    app.updateCurrentResponse('Expanded answer\n===LAYOUT:bottom-left===\nMore details');
+    assert.equal(app.responses[0], 'Expanded answer\nMore details');
+    assert.deepEqual(calls, []);
+});
 
 test('a first-time user goes straight from an approved key to the assistant without voice setup', async () => {
     const { app, calls } = createApp();

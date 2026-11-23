@@ -508,7 +508,6 @@ export class HintioApp extends LitElement {
         this._awaitingScreenAnalysis = false;
         this._screenAnalysisMode = '';
         this._errorContent = '';
-        this._layoutRepositioned = false;
         this._sessionTimeoutHandled = false;
         this.sessionLimitMs = null;
 
@@ -589,7 +588,6 @@ export class HintioApp extends LitElement {
             ipcRenderer.on('screen-analysis-triggered', () => {
                 this._awaitingScreenAnalysis = true;
                 this._screenAnalysisMode = 'manual';
-                this._layoutRepositioned = false;
                 this._errorContent = '';
             });
         }
@@ -702,19 +700,8 @@ export class HintioApp extends LitElement {
     }
 
     _extractScreenAnalysisMarkers(text) {
-        let cleaned = text;
-
-        // Always strip layout markers from displayed text; only act on the hint
-        // when a screen analysis is in progress.
-        const layoutMatch = cleaned.match(/===LAYOUT:(left|right|center|top-left|top-right|bottom-left|bottom-right)===/i);
-        if (layoutMatch && this._awaitingScreenAnalysis && !this._layoutRepositioned) {
-            this._layoutRepositioned = true;
-            const hint = layoutMatch[1].toLowerCase();
-            if (window.hintio?.repositionWindow) {
-                window.hintio.repositionWindow(hint);
-            }
-        }
-        cleaned = cleaned.replace(/\n?===LAYOUT:[a-z-]+===\n?/gi, '');
+        // Older responses may still include layout hints. They are display metadata only.
+        let cleaned = text.replace(/\n?===LAYOUT:[a-z-]+===\n?/gi, '\n');
 
         // For debug screenshot mode, keep code-issue details inline so no popup click is required.
         // For all other modes, strip marker blocks from visible text.
@@ -1064,7 +1051,6 @@ export class HintioApp extends LitElement {
                         @screen-analysis-triggered=${() => {
                             this._awaitingScreenAnalysis = true;
                             this._screenAnalysisMode = 'manual';
-                            this._layoutRepositioned = false;
                             this._errorContent = '';
                         }}
                         @dismiss-error-panel=${() => {

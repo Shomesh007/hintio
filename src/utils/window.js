@@ -7,8 +7,6 @@ let currentView = 'main';
 
 const DEFAULT_WIDTH = 1080;
 const DEFAULT_HEIGHT = 560;
-const LIVE_WIDTH = 850;
-const LIVE_HEIGHT = 400;
 
 function normalizeAcceleratorForPlatform(keybind) {
     const raw = String(keybind || '').trim();
@@ -386,30 +384,13 @@ function setupWindowIpcHandlers(mainWindow, sendToRenderer, providerSessionRef) 
     let manualResizeState = null;
 
     ipcMain.on('view-changed', (event, view) => {
-        if (!mainWindow.isDestroyed()) {
-            currentView = view;
-            const primaryDisplay = screen.getPrimaryDisplay();
-            const workArea = primaryDisplay.workArea;
-            const { width: screenWidth, x: workX, y: workY } = workArea;
-
-            if (view === 'assistant') {
-                // Shrink window for live view
-                const liveWidth = Math.min(Math.floor(workArea.width * 0.88), LIVE_WIDTH);
-                const liveHeight = Math.min(Math.floor(workArea.height * 0.65), LIVE_HEIGHT);
-                const x = workX + Math.floor((screenWidth - liveWidth) / 2);
-                mainWindow.setSize(liveWidth, liveHeight);
-                mainWindow.setPosition(x, workY);
-            } else {
-                // Restore full size
-                const fullWidth = Math.min(Math.floor(workArea.width * 0.92), DEFAULT_WIDTH);
-                const fullHeight = Math.min(Math.floor(workArea.height * 0.85), DEFAULT_HEIGHT);
-                const x = workX + Math.floor((screenWidth - fullWidth) / 2);
-                mainWindow.setSize(fullWidth, fullHeight);
-                mainWindow.setPosition(x, workY);
-                mouseEventsIgnored = false;
-                mainWindow.setIgnoreMouseEvents(false);
-                mainWindow.webContents.send('click-through-toggled', false);
-            }
+        if (mainWindow.isDestroyed()) return;
+        currentView = view;
+        if (view !== 'assistant') {
+            manualResizeState = null;
+            mouseEventsIgnored = false;
+            mainWindow.setIgnoreMouseEvents(false);
+            mainWindow.webContents.send('click-through-toggled', false);
         }
     });
 
@@ -449,98 +430,28 @@ function setupWindowIpcHandlers(mainWindow, sendToRenderer, providerSessionRef) 
         return { success: true };
     });
 
-    // Reposition window to the opposite side of where the user's input area is
-    ipcMain.handle('reposition-window', async (event, hint) => {
-        if (!mainWindow || mainWindow.isDestroyed()) return { success: false };
+    // Explicit docking shortcuts move the overlay on its current display.
+    ipcMain.handle('reposition-window', async (event, destination) => {
+        if (mainWindow.isDestroyed() || !['left', 'right', 'default'].includes(destination)) return { success: false };
 
-        const primaryDisplay = screen.getPrimaryDisplay();
-        const workArea = primaryDisplay.workArea;
-        const screenWidth = workArea.width;
-        const screenHeight = workArea.height;
-        const workX = workArea.x;
-        const workY = workArea.y;
-        const [winW, winH] = mainWindow.getSize();
-        const margin = 20;
-        const sideWidth = Math.max(300, Math.floor(screenWidth * 0.33));
+        const bounds = mainWindow.getBounds();
+        const workArea = screen.getDisplayMatching(bounds).workArea;
+        const horizontalSpace = Math.max(0, workArea.width - bounds.width);
+        const offset = destination === 'left' ? 0 : destination === 'right' ? horizontalSpace : Math.floor(horizontalSpace / 2);
 
-        let x, y;
-        let width = winW;
-        let height = winH;
-
-        const dockLeftFullHeight = () => {
-            x = workX;
-            y = workY;
-            width = sideWidth;
-            height = screenHeight;
-        };
-
-        const dockRightFullHeight = () => {
-            x = workX + screenWidth - sideWidth;
-            y = workY;
-            width = sideWidth;
-            height = screenHeight;
-        };
-
-        switch (hint) {
-            case 'right':
-                // Input on right → window goes left
-                dockLeftFullHeight();
-                break;
-            case 'left':
-                // Input on left → window goes right
-                dockRightFullHeight();
-                break;
-            case 'bottom-right':
-                dockLeftFullHeight();
-                break;
-            case 'bottom-left':
-                dockRightFullHeight();
-                break;
-            case 'top-right':
-                dockLeftFullHeight();
-                break;
-            case 'top-left':
-                dockRightFullHeight();
-                break;
-            case 'default': {
-                const defaultWidth = Math.min(Math.floor(screenWidth * 0.92), DEFAULT_WIDTH);
-                const defaultHeight = Math.min(Math.floor(screenHeight * 0.85), DEFAULT_HEIGHT);
-                width = defaultWidth;
-                height = defaultHeight;
-                x = workX + Math.floor((screenWidth - defaultWidth) / 2);
-                y = workY;
-                break;
-            }
-            case 'center':
-            default:
-                // Default: top-right corner
-                x = workX + screenWidth - winW - margin;
-                y = workY + margin;
-                break;
-        }
-
-        if (width !== winW || height !== winH) {
-            mainWindow.setBounds({
-                x: Math.max(workX, Math.round(x)),
-                y: Math.max(workY, Math.round(y)),
-                width: Math.round(width),
-                height: Math.round(height),
-            });
-        } else {
-            mainWindow.setPosition(Math.max(workX, Math.round(x)), Math.max(workY, Math.round(y)));
-        }
+        mainWindow.setPosition(workArea.x + offset, workArea.y);
         return { success: true };
     });
 
     ipcMain.on('window-manual-resize-start', (event, payload = {}) => {
         if (!mainWindow || mainWindow.isDestroyed()) return;
-        const edge = String(payload.edge || '').toLowerCase();
-        if (!edge) return;
+        const { edge, startX, startY } = payload ?? {};
+        if (!['t', 'b', 'l', 'r', 'tl', 'tr', 'bl', 'br'].includes(edge) || !Number.isFinite(startX) || !Number.isFinite(startY)) return;
         manualResizeState = {
             edge,
             startBounds: mainWindow.getBounds(),
-            startX: Number(payload.startX || 0),
-            startY: Number(payload.startY || 0),
+            startX,
+            startY,
         };
     });
 
@@ -548,8 +459,8 @@ function setupWindowIpcHandlers(mainWindow, sendToRenderer, providerSessionRef) 
         if (!mainWindow || mainWindow.isDestroyed() || !manualResizeState) return;
 
         const edge = manualResizeState.edge;
-        const currentX = Number(payload.dx || 0);
-        const currentY = Number(payload.dy || 0);
+        const { dx: currentX, dy: currentY } = payload ?? {};
+        if (!Number.isFinite(currentX) || !Number.isFinite(currentY)) return;
         const deltaX = currentX - manualResizeState.startX;
         const deltaY = currentY - manualResizeState.startY;
 

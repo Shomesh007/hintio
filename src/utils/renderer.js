@@ -869,13 +869,7 @@ If a question is partially visible, extract as much as possible and answer based
 
 NO introductions, NO "Certainly!", NO "Here is...", NO reasoning preamble, NO "the answer is". Only the extracted questions and their direct answers.
 
-ADDITIONAL TASKS (append these at the very end of your response, each on its own line):
-
-1. LAYOUT DETECTION: Analyze where the code editor, input area, or answer entry zone is positioned on screen. On its own line at the end, output exactly:
-===LAYOUT:position===
-where position is one of: left, right, center, top-left, top-right, bottom-left, bottom-right. This describes where the user's INPUT/CODE area is.
-
-2. CODE ISSUE DETECTION: If you notice any bug, error, wrong logic, syntax issue, or mistake in code visible on screen, append:
+CODE ISSUE DETECTION: If you notice any bug, error, wrong logic, syntax issue, or mistake in code visible on screen, append at the end:
 ===CODE_ISSUE_START===
 [2-3 sentence description of the issue and the fix]
 ===CODE_ISSUE_END===
@@ -938,7 +932,6 @@ function markScreenAnalysisTriggered(mode = 'manual') {
     if (!app) return;
     app._awaitingScreenAnalysis = true;
     app._screenAnalysisMode = mode;
-    app._layoutRepositioned = false;
     app._errorContent = '';
 }
 
@@ -1582,10 +1575,8 @@ function handleShortcut(shortcutKey) {
             hintio.storage.updatePreference('selectedProfile', 'exam').catch(() => {});
         }
 
-        // Default coding layout assumption: editor/input is on the right,
-        // so dock overlay to the left full-height pane.
         if (typeof hintio.repositionWindow === 'function') {
-            hintio.repositionWindow('right');
+            hintio.repositionWindow('left');
         }
 
         if (typeof app.requestUpdate === 'function') {
@@ -1596,9 +1587,7 @@ function handleShortcut(shortcutKey) {
 
     if (shortcutKey === 'dock-right') {
         if (typeof hintio.repositionWindow === 'function') {
-            // Put overlay on right side full-height
-            // (means input/editor area is likely on the left)
-            hintio.repositionWindow('left');
+            hintio.repositionWindow('right');
         }
         return;
     }

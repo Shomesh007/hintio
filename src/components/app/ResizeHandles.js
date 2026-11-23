@@ -3,41 +3,47 @@ import { html, css, LitElement } from '../../assets/lit-core-2.7.4.min.js';
 export class ResizeHandles extends LitElement {
     constructor() {
         super();
-        this._activeEdge = null;
-        this._onPointerMove = this._onPointerMove.bind(this);
-        this._onPointerUp = this._onPointerUp.bind(this);
+        this._activePointer = null;
+        this._stopResize = this._stopResize.bind(this);
+    }
+
+    connectedCallback() {
+        super.connectedCallback();
+        window.addEventListener('blur', this._stopResize);
+    }
+
+    disconnectedCallback() {
+        window.removeEventListener('blur', this._stopResize);
+        this._stopResize();
+        super.disconnectedCallback();
     }
 
     _startResize(edge, event) {
-        if (event.button !== 0 || !window.electronAPI) return;
-        const ipcRenderer = window.electronAPI;
-        this._activeEdge = edge;
-        ipcRenderer.send('window-manual-resize-start', {
+        if (event.button !== 0 || this._activePointer || !window.electronAPI) return;
+        const handle = event.currentTarget;
+        handle.setPointerCapture(event.pointerId);
+        this._activePointer = { id: event.pointerId, handle };
+        window.electronAPI.send('window-manual-resize-start', {
             edge,
             startX: event.screenX,
             startY: event.screenY,
         });
-        window.addEventListener('pointermove', this._onPointerMove);
-        window.addEventListener('pointerup', this._onPointerUp, { once: true });
     }
 
     _onPointerMove(event) {
-        if (!this._activeEdge || !window.electronAPI) return;
-        const ipcRenderer = window.electronAPI;
-        ipcRenderer.send('window-manual-resize-step', {
-            edge: this._activeEdge,
+        if (event.pointerId !== this._activePointer?.id) return;
+        window.electronAPI?.send('window-manual-resize-step', {
             dx: event.screenX,
             dy: event.screenY,
         });
     }
 
-    _onPointerUp() {
-        if (window.electronAPI) {
-            const ipcRenderer = window.electronAPI;
-            ipcRenderer.send('window-manual-resize-end');
-        }
-        this._activeEdge = null;
-        window.removeEventListener('pointermove', this._onPointerMove);
+    _stopResize(event) {
+        const pointer = this._activePointer;
+        if (!pointer || (event?.pointerId !== undefined && event.pointerId !== pointer.id)) return;
+        this._activePointer = null;
+        if (pointer.handle.hasPointerCapture(pointer.id)) pointer.handle.releasePointerCapture(pointer.id);
+        window.electronAPI?.send('window-manual-resize-end');
     }
 
     static styles = css`
@@ -50,6 +56,8 @@ export class ResizeHandles extends LitElement {
         .handle {
             position: absolute;
             pointer-events: auto;
+            touch-action: none;
+            -webkit-app-region: no-drag;
             background: var(--accent, #3b82f6);
             opacity: 0.7;
             border-radius: 2px;
@@ -113,16 +121,17 @@ export class ResizeHandles extends LitElement {
     `;
 
     render() {
-        return html`
-            <div class="handle handle-h handle-t" @pointerdown=${e => this._startResize('t', e)}></div>
-            <div class="handle handle-h handle-b" @pointerdown=${e => this._startResize('b', e)}></div>
-            <div class="handle handle-v handle-l" @pointerdown=${e => this._startResize('l', e)}></div>
-            <div class="handle handle-v handle-r" @pointerdown=${e => this._startResize('r', e)}></div>
-            <div class="handle handle-corner handle-tl" @pointerdown=${e => this._startResize('tl', e)}></div>
-            <div class="handle handle-corner handle-tr" @pointerdown=${e => this._startResize('tr', e)}></div>
-            <div class="handle handle-corner handle-bl" @pointerdown=${e => this._startResize('bl', e)}></div>
-            <div class="handle handle-corner handle-br" @pointerdown=${e => this._startResize('br', e)}></div>
-        `;
+        return ['t', 'b', 'l', 'r', 'tl', 'tr', 'bl', 'br'].map(edge => {
+            const kind = edge.length === 2 ? 'corner' : edge === 't' || edge === 'b' ? 'h' : 'v';
+            return html`<div
+                class="handle handle-${kind} handle-${edge}"
+                @pointerdown=${event => this._startResize(edge, event)}
+                @pointermove=${this._onPointerMove}
+                @pointerup=${this._stopResize}
+                @pointercancel=${this._stopResize}
+                @lostpointercapture=${this._stopResize}
+            ></div>`;
+        });
     }
 }
 

@@ -19,8 +19,10 @@ export class AssistantView extends LitElement {
         /* ── Response area ── */
 
         .response-container {
-            flex: 1;
-            overflow-y: auto;
+            flex: 1 1 0;
+            min-height: 0;
+            min-width: 0;
+            overflow: auto;
             font-size: var(--response-font-size, 15px);
             line-height: var(--line-height);
             background: transparent;
@@ -35,6 +37,12 @@ export class AssistantView extends LitElement {
         .response-container * {
             user-select: text;
             cursor: text;
+        }
+
+        .ai-disclosure,
+        .response-nav,
+        .input-bar {
+            flex-shrink: 0;
         }
 
         .response-container a {
@@ -978,15 +986,6 @@ export class AssistantView extends LitElement {
         }
     }
 
-    scrollToBottom() {
-        setTimeout(() => {
-            const container = this.shadowRoot.querySelector('.response-container');
-            if (container) {
-                container.scrollTop = container.scrollHeight;
-            }
-        }, 0);
-    }
-
     firstUpdated() {
         super.firstUpdated();
         this.updateResponseContent();
@@ -1017,8 +1016,14 @@ export class AssistantView extends LitElement {
         const container = this.shadowRoot.querySelector('#responseContainer');
         if (container) {
             const currentResponse = this.getCurrentResponse();
+            const sameAnswer = this._renderedResponseIndex === this.currentResponseIndex;
+            if (sameAnswer && this._renderedResponse === currentResponse) return;
+            const scrollTop = sameAnswer ? container.scrollTop : 0;
             container.innerHTML = this.renderMarkdown(currentResponse);
             this._postProcessCodeBlocks(container);
+            this._renderedResponseIndex = this.currentResponseIndex;
+            this._renderedResponse = currentResponse;
+            container.scrollTo({ top: scrollTop, behavior: 'instant' });
             if (this.shouldAnimateResponse) {
                 this.dispatchEvent(new CustomEvent('response-animation-complete', { bubbles: true, composed: true }));
             }
