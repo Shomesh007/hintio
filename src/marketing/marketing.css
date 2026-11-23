@@ -105,31 +105,8 @@
     line-height: 1;
     white-space: nowrap;
 }
-.pixel-mark {
-    display: inline-flex;
-    align-items: center;
-    width: 26px;
-    height: 32px;
-    position: relative;
-}
-.pixel-mark i {
-    display: block;
-    width: 10px;
-    height: 10px;
-    position: absolute;
-    background: var(--acid);
-}
-.pixel-mark i:nth-child(1) {
-    bottom: 0;
-    left: 0;
-}
-.pixel-mark i:nth-child(2) {
-    bottom: 10px;
-    left: 10px;
-}
-.pixel-mark i:nth-child(3) {
-    bottom: 20px;
-    left: 20px;
+.hi-brand-icon {
+    flex: none;
 }
 .hi-nav nav {
     display: flex;
@@ -328,11 +305,6 @@
     font-weight: 450;
     font-style: normal;
     color: #bac1d0;
-}
-.mini-pixels {
-    color: var(--acid);
-    font-size: 24px;
-    line-height: 1;
 }
 .window-controls {
     display: flex;
@@ -2154,10 +2126,9 @@
         font-size: 29px;
         letter-spacing: -1.5px;
     }
-    .pixel-mark {
-        transform: scale(0.75);
-        transform-origin: left center;
-        width: 23px;
+    .hi-brand-icon {
+        width: 26px;
+        height: 26px;
     }
     .hi-nav > .hi-btn {
         font-size: 10px;

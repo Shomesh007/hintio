@@ -63,11 +63,7 @@ export function Brand() {
     return (
         <span className="hi-brand">
             Hintio
-            <span className="pixel-mark" aria-hidden="true">
-                <i />
-                <i />
-                <i />
-            </span>
+            <img className="hi-brand-icon" src="/favicon.svg" width={35} height={35} alt="" />
         </span>
     );
 }
@@ -118,9 +114,7 @@ function DesktopWindow({ children, label = 'live', className = '' }: { children:
         <div className={`desktop-window ${className}`}>
             <div className="desktop-title">
                 <span>
-                    <span className="mini-pixels" aria-hidden="true">
-                        ▟
-                    </span>{' '}
+                    <img src="/favicon.svg" width={24} height={24} alt="" />
                     Hintio <em>/ {label}</em>
                 </span>
                 <span className="window-controls" aria-hidden="true">

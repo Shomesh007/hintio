@@ -15,7 +15,7 @@ function AssistantStrip() {
     return (
         <div className="plan-assistant" aria-hidden="true">
             <span className="plan-assistant-brand">
-                <i /> Hintio
+                <img src="/favicon.svg" width={16} height={16} alt="" /> Hintio
             </span>
             <span className="plan-assistant-wave">
                 {[9, 18, 26, 15, 22, 10, 6].map((height, i) => (

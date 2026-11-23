@@ -219,13 +219,6 @@
     font-size: 12px;
     font-weight: 700;
 }
-.plan-assistant-brand > i {
-    width: 7px;
-    height: 7px;
-    background: var(--acid);
-    box-shadow: 4px -4px 0 var(--acid);
-    margin: 4px 4px 0 0;
-}
 .plan-assistant-wave {
     display: flex;
     align-items: center;

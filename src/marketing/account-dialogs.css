@@ -51,11 +51,6 @@
     letter-spacing: -1.1px;
     line-height: 1;
 }
-.account-brand > span {
-    color: #dcff00;
-    font-size: 26px;
-    transform: translateY(-1px);
-}
 .account-header-label {
     font-size: 9px;
     letter-spacing: 0.12em;
@@ -551,31 +546,6 @@
     }
 }
 
-.account-mark {
-    display: inline-block;
-    position: relative;
-    width: 23px;
-    height: 23px;
-    margin-left: 3px;
-}
-.account-mark i {
-    position: absolute;
-    width: 7px;
-    height: 7px;
-    background: #dcff00;
-}
-.account-mark i:nth-child(1) {
-    left: 0;
-    bottom: 0;
-}
-.account-mark i:nth-child(2) {
-    left: 7px;
-    bottom: 7px;
-}
-.account-mark i:nth-child(3) {
-    left: 14px;
-    bottom: 14px;
-}
 .account-header-label {
     font-size: 10px;
 }

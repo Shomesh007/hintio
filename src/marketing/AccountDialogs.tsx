@@ -6,11 +6,7 @@ function Wordmark() {
     return (
         <span className="account-brand">
             Hintio
-            <span className="account-mark" aria-hidden="true">
-                <i />
-                <i />
-                <i />
-            </span>
+            <img src="/favicon.svg" width={24} height={24} alt="" />
         </span>
     );
 }
