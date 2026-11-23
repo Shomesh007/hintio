@@ -67,7 +67,7 @@ export class HintioApp extends LitElement {
             display: block;
             width: 100%;
             height: 100vh;
-            background: var(--bg-app);
+            background: transparent;
             color: var(--text-primary);
         }
 
@@ -89,7 +89,7 @@ export class HintioApp extends LitElement {
             padding: 0 12px;
             height: 44px;
             min-height: 44px;
-            background: rgba(9, 9, 11, 0.97);
+            background: transparent;
             border-bottom: 1px solid var(--border);
             -webkit-app-region: drag;
             flex-shrink: 0;
@@ -273,7 +273,7 @@ export class HintioApp extends LitElement {
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            background: var(--bg-app);
+            background: transparent;
             position: relative;
         }
 
@@ -285,7 +285,7 @@ export class HintioApp extends LitElement {
             align-items: center;
             justify-content: space-between;
             padding: 0 16px;
-            background: rgba(8, 8, 10, 0.96);
+            background: transparent;
             border-bottom: 1px solid rgba(0, 212, 255, 0.12);
             height: 34px;
             -webkit-app-region: drag;
@@ -432,7 +432,7 @@ export class HintioApp extends LitElement {
             position: fixed;
             inset: 0;
             z-index: 100;
-            background: var(--bg-app);
+            background: transparent;
         }
 
         /* ── Scrollbar ── */

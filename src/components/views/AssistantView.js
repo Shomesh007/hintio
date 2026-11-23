@@ -23,7 +23,8 @@ export class AssistantView extends LitElement {
             overflow-y: auto;
             font-size: var(--response-font-size, 15px);
             line-height: var(--line-height);
-            background: var(--bg-app);
+            background: transparent;
+            text-shadow: var(--overlay-text-shadow, none);
             padding: var(--space-sm) var(--space-md);
             scroll-behavior: smooth;
             user-select: text;
@@ -266,7 +267,7 @@ export class AssistantView extends LitElement {
             gap: var(--space-sm);
             padding: var(--space-xs) var(--space-md);
             border-top: 1px solid var(--border);
-            background: var(--bg-app);
+            background: transparent;
         }
 
         .nav-btn {
@@ -327,7 +328,7 @@ export class AssistantView extends LitElement {
             align-items: center;
             gap: var(--space-sm);
             padding: var(--space-md);
-            background: var(--bg-app);
+            background: transparent;
         }
 
         .input-bar-inner {

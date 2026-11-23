@@ -53,6 +53,7 @@ const DEFAULT_PREFERENCES = {
     audioMode: 'speaker_only',
     fontSize: 'medium',
     backgroundTransparency: 0.8,
+    theme: 'dark',
     googleSearchEnabled: false,
     ollamaHost: 'http://127.0.0.1:11434',
     ollamaModel: 'llama3.1',
@@ -291,6 +292,13 @@ const PREFERENCE_KEYS = {
         return size;
     },
     backgroundTransparency: value => ensureNumber(value, { fieldName: 'preferences.backgroundTransparency', min: 0, max: 1 }),
+    theme: value => {
+        const theme = sanitizeText(value, { fieldName: 'preferences.theme', maxLength: 24, multiline: false });
+        if (!['dark', 'light', 'midnight', 'sepia', 'catppuccin', 'gruvbox', 'rosepine', 'solarized', 'tokyonight'].includes(theme)) {
+            throw new Error('Unknown appearance theme');
+        }
+        return theme;
+    },
     googleSearchEnabled: value => ensureBoolean(value, 'preferences.googleSearchEnabled'),
     ollamaHost: value =>
         ensureSafeUrl(String(value), {

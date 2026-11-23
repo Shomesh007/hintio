@@ -34,7 +34,7 @@ export class MainView extends LitElement {
             height: 100%;
             min-height: 0;
             padding: 24px;
-            background: var(--bg-app);
+            background: transparent;
             -webkit-app-region: no-drag;
             overflow-y: auto;
         }

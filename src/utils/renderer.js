@@ -451,6 +451,7 @@ async function startCapture(screenshotIntervalSeconds = 5, imageQuality = 'mediu
     // Refresh preferences cache
     await loadPreferencesCache();
     const audioMode = preferencesCache.audioMode || 'speaker_only';
+    const captureSpeakers = audioMode === 'speaker_only' || audioMode === 'both';
 
     if (audioMode === 'none') {
         // Only screenshots, no audio capture at all
@@ -472,9 +473,11 @@ async function startCapture(screenshotIntervalSeconds = 5, imageQuality = 'mediu
             console.log('Starting macOS capture with SystemAudioDump...');
 
             // Start macOS audio capture
-            const audioResult = await ipcRenderer.invoke('start-macos-audio');
-            if (!audioResult.success) {
-                throw new Error('Failed to start macOS audio capture: ' + audioResult.error);
+            if (captureSpeakers) {
+                const audioResult = await ipcRenderer.invoke('start-macos-audio');
+                if (!audioResult.success) {
+                    throw new Error('Failed to start macOS audio capture: ' + audioResult.error);
+                }
             }
 
             // Get screen capture for screenshots
@@ -518,7 +521,7 @@ async function startCapture(screenshotIntervalSeconds = 5, imageQuality = 'mediu
                         width: { ideal: 1920 },
                         height: { ideal: 1080 },
                     },
-                    audio: {
+                    audio: captureSpeakers && {
                         sampleRate: SAMPLE_RATE,
                         channelCount: 1,
                         echoCancellation: false, // Don't cancel system audio
@@ -530,7 +533,7 @@ async function startCapture(screenshotIntervalSeconds = 5, imageQuality = 'mediu
                 console.log('Linux system audio capture via getDisplayMedia succeeded');
 
                 // Setup audio processing for Linux system audio
-                setupLinuxSystemAudioProcessing();
+                if (captureSpeakers) setupLinuxSystemAudioProcessing();
             } catch (systemAudioError) {
                 console.warn('System audio via getDisplayMedia failed, trying screen-only capture:', systemAudioError);
 
@@ -579,7 +582,7 @@ async function startCapture(screenshotIntervalSeconds = 5, imageQuality = 'mediu
                     width: { ideal: 1920 },
                     height: { ideal: 1080 },
                 },
-                audio: {
+                audio: captureSpeakers && {
                     sampleRate: SAMPLE_RATE,
                     channelCount: 1,
                     echoCancellation: true,
@@ -591,7 +594,7 @@ async function startCapture(screenshotIntervalSeconds = 5, imageQuality = 'mediu
             console.log('Windows capture started with loopback audio');
 
             // Setup audio processing for Windows loopback audio only
-            setupWindowsLoopbackProcessing();
+            if (captureSpeakers) setupWindowsLoopbackProcessing();
 
             if (audioMode === 'mic_only' || audioMode === 'both') {
                 let micStream = null;
@@ -1152,7 +1155,7 @@ async function sendPendingTelegramImages(trigger = 'manual') {
 }
 
 async function captureFrameToBase64(imageQuality = null) {
-    const quality = imageQuality || currentImageQuality;
+    const quality = imageQuality || hintioApp?.selectedImageQuality || currentImageQuality;
 
     if (!mediaStream) {
         console.error('No media stream available');
@@ -1884,6 +1887,8 @@ const theme = {
         root.style.setProperty('--bg-surface', bgSurface);
         root.style.setProperty('--bg-elevated', bgElevated);
         root.style.setProperty('--bg-hover', bgHover);
+        const outline = isLight ? '255, 255, 255' : '0, 0, 0';
+        root.style.setProperty('--overlay-text-shadow', alpha < 0.65 ? `0 1px 3px rgba(${outline}, 0.95), 0 0 1px rgb(${outline})` : 'none');
 
         // Legacy aliases
         root.style.setProperty('--header-background', bgBase);
@@ -1944,6 +1949,7 @@ const theme = {
             const themeName = prefs.theme || 'dark';
             const alpha = prefs.backgroundTransparency ?? 0.8;
             this.apply(themeName, alpha);
+            this.applyResponseFontSize(prefs.fontSize);
             return themeName;
         } catch (err) {
             this.apply('dark');
@@ -1951,10 +1957,13 @@ const theme = {
         }
     },
 
-    async save(themeName) {
-        await storage.updatePreference('theme', themeName);
-        this.apply(themeName);
+    applyResponseFontSize(value) {
+        const size = typeof value === 'number' && Number.isFinite(value) ? Math.min(36, Math.max(12, value)) :
+            value === 'small' ? 16 : value === 'large' ? 24 : 20;
+        document.documentElement.style.setProperty('--response-font-size', `${size}px`);
+        return size;
     },
+
 };
 
 // Consolidated hintio object - all functions in one place

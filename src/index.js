@@ -10,7 +10,7 @@ const { isStoreDistribution, StoreUpdateService } = require('./utils/distributio
 const path = require('path');
 const fs = require('fs');
 const { execFileSync } = require('child_process');
-const { createWindow, updateGlobalShortcuts } = require('./utils/window');
+const { createWindow } = require('./utils/window');
 const { setupProviderRuntimeIpcHandlers, stopMacOSAudioCapture, sendToRenderer, clearRuntimeProviderSecrets } = require('./utils/providerRuntime');
 const storage = require('./storage');
 const { initTelegramBot, startPolling, stopPolling } = require('./utils/telegramBot');
@@ -580,14 +580,6 @@ function setupGeneralIpcHandlers() {
         } catch (error) {
             console.error('Error opening external URL:', error);
             return { success: false, error: error.message };
-        }
-    });
-
-    ipcMain.on('update-keybinds', (event, newKeybinds) => {
-        if (mainWindow) {
-            // Also save to storage
-            storage.setKeybinds(newKeybinds);
-            updateGlobalShortcuts(newKeybinds, mainWindow, sendToRenderer, providerSessionRef);
         }
     });
 

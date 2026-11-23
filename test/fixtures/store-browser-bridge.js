@@ -71,7 +71,7 @@ window.hintio = {
         },
         getVoiceProfile: async () => null,
     },
-    theme: { getAll: () => [{ value: 'dark', name: 'Dark' }], get: () => ({ background: '#09090b' }), applyBackgrounds() {}, save: async () => {} },
+    theme: { getAll: () => [{ value: 'dark', name: 'Dark' }], get: () => ({ background: '#09090b' }), applyBackgrounds() {}, apply() {}, applyResponseFontSize: size => typeof size === 'number' ? size : 20 },
     updates: {
         getState: async () => updates,
         check: async () => updates,

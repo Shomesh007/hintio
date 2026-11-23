@@ -106,7 +106,7 @@ function createWindow(sendToRenderer, providerSessionRef) {
             desktopCapturer
                 .getSources({ types: ['screen'] })
                 .then(sources => {
-                    callback(sources.length ? { video: sources[0], audio: 'loopback' } : {});
+                    callback(sources.length ? { video: sources[0], ...(request.audioRequested ? { audio: 'loopback' } : {}) } : {});
                 })
                 .catch(() => callback({}));
         },
@@ -419,9 +419,9 @@ function setupWindowIpcHandlers(mainWindow, sendToRenderer, providerSessionRef) 
         }
     });
 
-    ipcMain.on('update-keybinds', (event, newKeybinds) => {
+    ipcMain.on('update-keybinds', () => {
         if (!mainWindow.isDestroyed()) {
-            updateGlobalShortcuts(newKeybinds, mainWindow, sendToRenderer, providerSessionRef);
+            updateGlobalShortcuts({ ...getDefaultKeybinds(), ...storage.getKeybinds() }, mainWindow, sendToRenderer, providerSessionRef);
         }
     });
 

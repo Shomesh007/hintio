@@ -100,10 +100,18 @@ test('screen capture handles no sources and capture denial without unhandled err
 test('screen capture selects an available source using the documented loopback API', async () => {
     const h = windowHarness([{ id: 'screen:0' }]);
     await new Promise(resolve =>
-        h.displayHandler({}, value => {
+        h.displayHandler({ audioRequested: true }, value => {
             assert.equal(value.video.id, 'screen:0');
             assert.equal(value.audio, 'loopback');
             resolve();
         })
     );
+});
+
+test('screen-only capture never attaches system loopback audio', async () => {
+    const source = { id: 'screen:1' };
+    const h = windowHarness([source]);
+    const result = await new Promise(resolve => h.displayHandler({ audioRequested: false }, resolve));
+    assert.equal(result.video, source);
+    assert.equal('audio' in result, false);
 });
