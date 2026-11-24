@@ -1,5 +1,6 @@
 import { ArrowUpRight, Check, Mic, Monitor, Layers } from 'lucide-react';
 import { productionRelease } from '../lib/productionRelease';
+import { trackWebEvent } from '../lib/productAnalytics';
 import BillingManager from './BillingManager';
 import './pricing.css';
 
@@ -10,6 +11,7 @@ export interface PricingPageProps {
     onMacDownload: () => void;
     checkoutLoading: boolean;
 }
+
 
 function AssistantStrip() {
     return (
@@ -186,7 +188,7 @@ export default function PricingPage({ onDownload, onUpgrade, onRecover, onMacDow
                 </div>
                 <div className="pricing-existing">
                     <span>Already have a key?</span>
-                    <a href={productionRelease.windowsDownloadUrl}>
+                    <a href={productionRelease.windowsDownloadUrl} onClick={() => trackWebEvent('download_clicked', 'production')}>
                         Download Windows app <ArrowUpRight size={16} />
                     </a>
                     <button onClick={onMacDownload}>Looking for Mac?</button>

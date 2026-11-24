@@ -17,7 +17,7 @@ function actualFunction(name: string, context: Record<string, unknown>) {
     const compiled = ts.transpileModule(`const fn=${declaration.initializer!.getText(parsed)};fn;`, {
         compilerOptions: { target: ts.ScriptTarget.ES2022 },
     }).outputText;
-    return vm.runInNewContext(compiled, context);
+    return vm.runInNewContext(compiled, { trackWebEvent: () => {}, ...context });
 }
 test('public installer stays on official 1.0.4', () => {
     const opened: unknown[][] = [];

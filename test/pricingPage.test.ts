@@ -15,6 +15,7 @@ const scope = {
     exports: {} as Record<string, any>,
     require: (name: string) => {
         if (name.endsWith('.css')) return {};
+        if (name === '../lib/productAnalytics') return { trackWebEvent: () => {} };
         if (name.includes('BillingManager')) return { default: () => null };
         if (name.includes('productionRelease')) return { productionRelease };
         return localRequire(name);

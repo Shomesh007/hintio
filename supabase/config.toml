@@ -1,0 +1,7 @@
+project_id = "hintio"
+
+[functions.product-analytics]
+verify_jwt = false
+
+[functions.analytics-admin]
+verify_jwt = false
