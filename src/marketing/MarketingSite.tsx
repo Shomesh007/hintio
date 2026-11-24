@@ -31,6 +31,14 @@ import PricingPage from './PricingPage';
 import DownloadPage from './DownloadPage';
 import { supabase } from '../lib/supabase';
 import { completeBillingReturn } from '../lib/billingAccount';
+import {
+    analyticsEnabled,
+    analyticsPrivacySignal,
+    getAnalyticsChoice,
+    saveAnalyticsChoice,
+    trackWebEvent,
+    type AnalyticsChoice,
+} from '../lib/productAnalytics';
 
 interface Props {
     onDownload: () => void;
@@ -39,6 +47,7 @@ interface Props {
     onMacDownload: () => void;
     checkoutLoading: boolean;
 }
+
 type Page = '/' | '/workflows' | '/shortcuts' | '/get-started' | '/download' | '/access' | '/pricing' | '/privacy' | '/terms' | '/contact';
 const support = 'https://wa.me/918438365095';
 const supportEmail = 'admin@builtbygsv.in';
@@ -1074,6 +1083,14 @@ function Info({ type }: { type: 'privacy' | 'terms' }) {
                         information needed for their respective flows. Check the details shown by the service before signing in or confirming a
                         payment.
                     </p>
+                    <h2>Optional usage analytics</h2>
+                    <p>
+                        Hintio measures product usage when analytics is enabled. It counts page visits and selected website actions, plus setup progress,
+                        session milestones, duration ranges, audio modes, and feature usage on supported desktop builds. It records whether
+                        onboarding context was skipped or provided. Random browser and install IDs help count repeat activity separately. Analytics
+                        excludes account details and session content. You can turn it off under Analytics preferences in the website footer or
+                        under Settings → Privacy &amp; Data in the desktop app. Hintio keeps analytics events for up to 90 days.
+                    </p>
                     <h2>Questions or a data request?</h2>
                     <p>
                         Email <a href={`mailto:${supportEmail}`}>{supportEmail}</a> or contact us on <a href="tel:+918438365095">8438365095</a>.
@@ -1121,6 +1138,34 @@ function Info({ type }: { type: 'privacy' | 'terms' }) {
 
 export default function MarketingSite(props: Props) {
     const [page, setPage] = useState<Page>(currentPage);
+    const [analyticsChoice, setAnalyticsChoice] = useState(getAnalyticsChoice);
+    const [analyticsPreferencesOpen, setAnalyticsPreferencesOpen] = useState(false);
+    const lastTrackedPage = useRef<Page | null>(null);
+    const canOfferAnalytics = analyticsEnabled && !analyticsPrivacySignal();
+
+    useEffect(() => {
+        if (!canOfferAnalytics) return;
+        const syncChoice = () => setAnalyticsChoice(getAnalyticsChoice());
+        window.addEventListener('storage', syncChoice);
+        return () => window.removeEventListener('storage', syncChoice);
+    }, [canOfferAnalytics]);
+
+    useEffect(() => {
+        if (!canOfferAnalytics || analyticsChoice !== 'allow') {
+            lastTrackedPage.current = null;
+            return;
+        }
+        if (lastTrackedPage.current !== page) {
+            lastTrackedPage.current = page;
+            trackWebEvent('page_viewed', page);
+        }
+    }, [page, analyticsChoice, canOfferAnalytics]);
+
+    const chooseAnalytics = (choice: AnalyticsChoice) => {
+        saveAnalyticsChoice(choice);
+        setAnalyticsChoice(choice);
+        setAnalyticsPreferencesOpen(false);
+    };
     useEffect(() => {
         let active = true;
         // Let Supabase finish reading the OAuth code/hash before changing the URL.
@@ -1243,9 +1288,23 @@ export default function MarketingSite(props: Props) {
                         <a href="/terms" onClick={e => clickLink(e, '/terms')}>
                             Billing & access terms
                         </a>
+                        {canOfferAnalytics && (
+                            <button className="analytics-preferences-link" onClick={() => setAnalyticsPreferencesOpen(open => !open)}>
+                                Analytics preferences
+                            </button>
+                        )}
                     </div>
                 </div>
             </footer>
+            {canOfferAnalytics && analyticsPreferencesOpen && (
+                <aside className="analytics-preferences" aria-label="Usage analytics preferences">
+                    <p>Product analytics is {analyticsChoice === 'allow' ? 'on' : 'off'} for this browser.</p>
+                    <div>
+                        <button className="hi-btn hi-btn-outline" onClick={() => chooseAnalytics('decline')}>Turn off</button>
+                        <button className="hi-btn hi-btn-ink" onClick={() => chooseAnalytics('allow')}>Turn on</button>
+                    </div>
+                </aside>
+            )}
         </div>
     );
 }

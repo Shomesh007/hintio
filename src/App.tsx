@@ -38,6 +38,8 @@ import {
     CheckoutStatus,
 } from './marketing/AccountDialogs';
 
+import { trackWebEvent } from './lib/productAnalytics';
+
 export default function App() {
     const windowsDownloadUrl = productionRelease.windowsDownloadUrl;
     const defaultSupabaseUrl = 'https://vsybqtunyuanxspxhzue.supabase.co';
@@ -178,6 +180,7 @@ export default function App() {
     };
 
     const triggerDownload = () => {
+        trackWebEvent('download_clicked', 'production');
         debugLog('triggerDownload called', { windowsDownloadUrl });
         window.open(windowsDownloadUrl, '_blank', 'noopener,noreferrer');
     };
@@ -858,6 +861,7 @@ export default function App() {
         }
     };
     const handleDownloadClick = async () => {
+        trackWebEvent('trial_clicked', 'free_trial');
         setAuthError(null);
         setAuthIntent('download');
         if (!supabase) {
@@ -883,6 +887,7 @@ export default function App() {
     };
 
     const handleUpgradeClick = async (plan: 'monthly' | 'yearly') => {
+        trackWebEvent('upgrade_clicked', plan);
         setAuthError(null);
         debugLog('handleUpgradeClick called', { plan });
         setAuthIntent(plan === 'monthly' ? 'upgrade_monthly' : 'upgrade_yearly');

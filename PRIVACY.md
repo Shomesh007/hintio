@@ -33,6 +33,10 @@ Deleting local records does not delete exports or records held by AI, authentica
 
 The website uses Google sign-in through its authentication service and Razorpay for checkout. Pending payment recovery stores the selected plan and payment reference locally; it does not store the access key, payment signature, or login credentials in that recovery reminder. A closed browser cannot continue checking delivery.
 
+## Product usage analytics
+
+When analytics is enabled, Hintio counts selected page visits and website actions, desktop onboarding steps, session milestones, settings and feature use. It records whether context was blank or provided during setup. Random browser and install identifiers support repeat-usage counts. Analytics events exclude account details and session content. You can turn collection off using Analytics preferences in the website footer or Settings → Privacy & Data in supported desktop builds. The website also respects Global Privacy Control and Do Not Track. Events are retained for up to 90 days.
+
 ## Questions and requests
 
 Email **admin@builtbygsv.in** or contact **+91 8438365095**. Describe whether the request concerns desktop records, website access, or a connected provider. Do not attach private session content or credentials.

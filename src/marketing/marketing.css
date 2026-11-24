@@ -2660,3 +2660,37 @@
 @media(max-width:760px){.billing-manager{grid-template-columns:1fr;gap:24px;padding-top:48px;padding-bottom:48px;}.billing-confirm button{width:100%;}}
 
 .billing-proof {margin:28px 0;padding-top:24px;border-top:1px solid #cbd0dc}.billing-proof label{display:block;font-weight:700;margin-bottom:12px}.billing-proof input{display:block;max-width:100%;width:100%;padding:12px 14px;border:1px solid #cbd0dc;background:transparent;color:var(--ink);margin-bottom:12px}
+
+.analytics-preferences-link {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+    text-align: left;
+}
+
+.analytics-preferences {
+    position: fixed;
+    z-index: 10;
+    inset: auto 1rem 1rem auto;
+    width: min(25rem, calc(100% - 2rem));
+    padding: 1rem;
+    border: 1px solid #252b28;
+    border-radius: 0.75rem;
+    background: #f8faf5;
+    color: #171e19;
+    box-shadow: 0 0.5rem 2rem #1d241d29;
+}
+
+.analytics-preferences p {
+    margin: 0 0 0.75rem;
+}
+
+.analytics-preferences > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}

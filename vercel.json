@@ -18,6 +18,14 @@
     ],
     "rewrites": [
         {
+            "source": "/admin/analytics",
+            "destination": "/"
+        },
+        {
+            "source": "/admin/analytics/",
+            "destination": "/"
+        },
+        {
             "source": "/download",
             "destination": "/"
         },
@@ -99,6 +107,15 @@
         }
     ],
     "headers": [
+        {
+            "source": "/admin/analytics/:path*",
+            "headers": [
+                {
+                    "key": "X-Robots-Tag",
+                    "value": "noindex, nofollow"
+                }
+            ]
+        },
         {
             "source": "/(.*)",
             "headers": [
