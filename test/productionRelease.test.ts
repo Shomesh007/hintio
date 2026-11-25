@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import ts from 'typescript';
 import { productionRelease } from '../src/lib/productionRelease';
+import { previewRelease } from '../src/lib/previewRelease';
 const source = fs.readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
 const parsed = ts.createSourceFile('App.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
 function actualFunction(name: string, context: Record<string, unknown>) {
@@ -60,10 +61,79 @@ test('OAuth download continuation retrieves a trial key', async () => {
         debugLog: () => {},
         clearIntentMarkers: () => {},
         setIsAuthModalOpen: () => {},
+        setAuthIntent: () => {},
         claimTrialAndDownload: async () => claims++,
     });
     await next('download');
     assert.equal(claims, 1);
+});
+test('preview visitors sign in, keep their installer choice after OAuth, and download only from the key dialog', async () => {
+    let intent: unknown;
+    let auth = false;
+    const click = actualFunction('handleDownloadClick', {
+        setAuthError: () => {},
+        setAuthIntent: (value: unknown) => (intent = value),
+        supabase: { auth: { getSession: async () => ({ data: { session: null }, error: null }) } },
+        setIsAuthModalOpen: (value: boolean) => (auth = value),
+        claimTrialAndDownload: () => assert.fail('Must sign in first'),
+    });
+    await click('download_preview');
+    assert.equal(intent, 'download_preview');
+    assert.equal(auth, true);
+
+    let claims = 0;
+    const next = actualFunction('continueIntent', {
+        debugLog: () => {},
+        clearIntentMarkers: () => {},
+        setAuthIntent: (value: unknown) => (intent = value),
+        claimTrialAndDownload: async () => claims++,
+    });
+    intent = undefined;
+    await next('download_preview');
+    assert.equal(intent, 'download_preview');
+    assert.equal(claims, 1);
+
+    const opened: unknown[] = [];
+    const download = actualFunction('triggerDownload', {
+        debugLog: () => {},
+        previewRelease,
+        window: { open: (url: unknown) => opened.push(url) },
+    });
+    const finish = actualFunction('downloadAfterTrialKey', {
+        setIsTrialModalOpen: () => {},
+        setIsKeyCopied: () => {},
+        authIntent: intent,
+        triggerDownload: download,
+    });
+    finish();
+    assert.deepEqual(opened, [previewRelease.windowsDownloadUrl]);
+});
+test('preview Google sign-in uses the allowed root callback with the preview intent', async () => {
+    let redirectTo: string | undefined;
+    const oauth = actualFunction('startGoogleSignIn', {
+        URL,
+        authIntent: 'download_preview',
+        setAuthError: () => {},
+        setIsAuthModalOpen: () => {},
+        setIsSigningIn: () => {},
+        debugLog: () => {},
+        AUTH_INTENT_STORAGE_KEY: 'hintio_auth_intent',
+        window: {
+            localStorage: { setItem: () => {} },
+            location: { href: 'https://www.hintio.tech/download', assign: () => {} },
+        },
+        supabase: {
+            auth: {
+                signInWithOAuth: async (options: { provider: string; options: { redirectTo: string } }) => {
+                    assert.equal(options.provider, 'google');
+                    redirectTo = options.options.redirectTo;
+                    return { data: { url: 'https://accounts.google.com/' }, error: null };
+                },
+            },
+        },
+    });
+    await oauth();
+    assert.equal(redirectTo, 'https://www.hintio.tech/?intent=download_preview');
 });
 for (const isNew of [true, false])
     test('trial key shown before download including returning user ' + isNew, async () => {

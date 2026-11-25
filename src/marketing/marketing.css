@@ -726,7 +726,7 @@
 .download-build .hi-btn {
     margin-top: 24px;
 }
-.download-build-preview a.hi-btn-ink {
+.download-build-preview .hi-btn-ink {
     color: white;
 }
 .download-build-links {
