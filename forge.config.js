@@ -59,6 +59,7 @@ function resolvePackagedOutputPaths(options = {}) {
 
 module.exports = {
     packagerConfig: {
+        electronZipDir: process.env.HINTIO_ELECTRON_ZIP_DIR,
         ignore: [
             ...(storeBuild
                 ? [

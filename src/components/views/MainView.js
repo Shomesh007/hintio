@@ -158,9 +158,15 @@ export class MainView extends LitElement {
         }
 
         .hint {
-            font-size: 11px;
-            color: var(--text-muted);
+            font-size: 12px;
+            color: var(--text-secondary);
             line-height: 1.45;
+        }
+
+        .hint a {
+            color: inherit;
+            font-weight: 600;
+            text-underline-offset: 3px;
         }
 
         .error-alert {
@@ -382,15 +388,28 @@ export class MainView extends LitElement {
                 <div class="divider"></div>
 
                 <div class="form-group">
-                    <label class="form-label">Access Token</label>
+                    <label class="form-label" for="access-token">Access Token</label>
                     <input
+                        id="access-token"
                         type="password"
                         placeholder="Enter access token"
+                        aria-describedby="access-token-help"
                         .value=${this._token}
                         @input=${e => this._saveToken(e.target.value)}
                         class=${this._tokenErrorMessage ? 'error' : ''}
                     />
-                    <div class="hint">Enter a valid access token</div>
+                    <div class="hint" id="access-token-help">
+                        Need a key?
+                        <a
+                            href="https://www.hintio.tech/pricing"
+                            @click=${event => {
+                                event.preventDefault();
+                                this.onExternalLink(event.currentTarget.href);
+                            }}
+                        >
+                            Get your free key
+                        </a>
+                    </div>
                 </div>
 
                 ${this._tokenErrorMessage ? html`<div class="error-alert">${this._tokenErrorMessage}</div>` : ''}
