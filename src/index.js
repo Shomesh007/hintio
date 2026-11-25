@@ -445,6 +445,9 @@ function setupStorageIpcHandlers() {
     ipcMain.handle('storage:set-preferences', async (event, preferences) => {
         try {
             storage.setPreferences(preferences);
+            if (process.platform === 'win32' && typeof preferences.hideFromTaskbar === 'boolean') {
+                mainWindow?.setSkipTaskbar(preferences.hideFromTaskbar);
+            }
             return { success: true };
         } catch (error) {
             console.error('Error setting preferences:', error);
@@ -455,6 +458,9 @@ function setupStorageIpcHandlers() {
     ipcMain.handle('storage:update-preference', async (event, key, value) => {
         try {
             storage.updatePreference(key, value);
+            if (process.platform === 'win32' && key === 'hideFromTaskbar') {
+                mainWindow?.setSkipTaskbar(value);
+            }
             return { success: true };
         } catch (error) {
             console.error('Error updating preference:', error);

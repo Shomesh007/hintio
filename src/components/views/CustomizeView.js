@@ -304,6 +304,7 @@ export class CustomizeView extends LitElement {
         keybinds: { type: Object },
         googleSearchEnabled: { type: Boolean },
         backgroundTransparency: { type: Number },
+        hideFromTaskbar: { type: Boolean },
         fontSize: { type: Number },
         audioMode: { type: String },
         appearanceError: { type: String },
@@ -338,6 +339,7 @@ export class CustomizeView extends LitElement {
         this.clearStatusMessage = '';
         this.clearStatusType = '';
         this.backgroundTransparency = 0.8;
+        this.hideFromTaskbar = true;
         this.fontSize = 20;
         this.appearanceError = '';
         this.shortcutError = '';
@@ -357,6 +359,7 @@ export class CustomizeView extends LitElement {
             const [prefs, keybinds] = await Promise.all([hintio.storage.getPreferences(), hintio.storage.getKeybinds()]);
             this.googleSearchEnabled = prefs.googleSearchEnabled ?? true;
             this.backgroundTransparency = prefs.backgroundTransparency ?? 0.8;
+            this.hideFromTaskbar = prefs.hideFromTaskbar !== false;
             this.fontSize = hintio.theme.applyResponseFontSize(prefs.fontSize);
             this.audioMode = prefs.audioMode ?? 'speaker_only';
             this.usageAnalytics = prefs.usageAnalytics === true;
@@ -544,9 +547,25 @@ export class CustomizeView extends LitElement {
         try {
             const result = await hintio.storage.updatePreference(key, value);
             if (!result.success) throw new Error(result.error);
+            return true;
         } catch (error) {
             console.error('Could not save appearance:', error);
             this.appearanceError = 'Could not save appearance. Try changing the setting again.';
+            return false;
+        }
+    }
+
+    async handleTaskbarChange(event) {
+        const input = event.currentTarget;
+        input.disabled = true;
+        try {
+            if (await this.saveAppearance('hideFromTaskbar', input.checked)) {
+                this.hideFromTaskbar = input.checked;
+            } else {
+                input.checked = this.hideFromTaskbar;
+            }
+        } finally {
+            input.disabled = false;
         }
     }
 
@@ -657,6 +676,7 @@ export class CustomizeView extends LitElement {
                 audioMode: 'speaker_only',
                 fontSize: 20,
                 backgroundTransparency: 0.8,
+                hideFromTaskbar: true,
                 googleSearchEnabled: false,
                 theme: 'dark',
             };
@@ -679,6 +699,7 @@ export class CustomizeView extends LitElement {
             this.audioMode = defaults.audioMode;
             this.fontSize = defaults.fontSize;
             this.backgroundTransparency = defaults.backgroundTransparency;
+            this.hideFromTaskbar = defaults.hideFromTaskbar;
             this.googleSearchEnabled = defaults.googleSearchEnabled;
             this.customPrompt = defaults.customPrompt;
             this.theme = defaults.theme;
@@ -806,6 +827,20 @@ export class CustomizeView extends LitElement {
                             ${this.getThemes().map(theme => html`<option value=${theme.value} ?selected=${theme.value === this.theme}>${theme.name}</option>`)}
                         </select>
                     </div>
+                    ${navigator.platform.startsWith('Win')
+                        ? html`
+                              <label class="toggle-row">
+                                  <input
+                                      class="toggle-input"
+                                      id="hide-from-taskbar"
+                                      type="checkbox"
+                                      .checked=${this.hideFromTaskbar}
+                                      @change=${this.handleTaskbarChange}
+                                  />
+                                  <span class="toggle-label">Hide from taskbar</span>
+                              </label>
+                          `
+                        : ''}
                     <div class="form-group slider-wrap">
                         <div class="slider-header">
                             <label class="form-label" for="overlay-opacity">Overlay opacity</label>

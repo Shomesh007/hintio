@@ -80,7 +80,7 @@ function createWindow(sendToRenderer, providerSessionRef) {
         transparent: !visibleMode,
         hasShadow: visibleMode,
         alwaysOnTop: !visibleMode,
-        skipTaskbar: false,
+        skipTaskbar: process.platform === 'win32' && storage.getPreferences().hideFromTaskbar !== false,
         maximizable: false,
         webPreferences: {
             preload: path.join(__dirname, '../preload.js'),

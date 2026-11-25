@@ -3,7 +3,7 @@ const test = require('node:test'),
     fs = require('node:fs'),
     path = require('node:path'),
     vm = require('node:vm');
-function windowHarness(sources) {
+function windowHarness(sources, preferences = {}, platform = 'win32') {
     let displayHandler;
     const events = new Map(),
         once = new Map(),
@@ -64,8 +64,8 @@ function windowHarness(sources) {
     };
     const context = {
         module: { exports: {} },
-        require: name => (name === 'electron' ? electron : name === '../storage' ? { getKeybinds: () => null } : require(name)),
-        process: { platform: 'win32' },
+        require: name => (name === 'electron' ? electron : name === '../storage' ? { getKeybinds: () => null, getPreferences: () => preferences } : require(name)),
+        process: { platform },
         console,
         setTimeout() {},
         clearTimeout() {},
@@ -79,9 +79,11 @@ function windowHarness(sources) {
     context.module.exports.createWindow(() => {}, { current: null });
     return { options, events, methods, displayHandler };
 }
-test('desktop window allows normal taskbar and minimize behavior without enforcement loops', () => {
+test('Windows taskbar visibility follows the saved preference with no enforcement loops', () => {
     const h = windowHarness([]);
-    assert.equal(h.options.skipTaskbar, false);
+    assert.equal(h.options.skipTaskbar, true);
+    assert.equal(windowHarness([], { hideFromTaskbar: false }).options.skipTaskbar, false);
+    assert.equal(windowHarness([], { hideFromTaskbar: true }, 'linux').options.skipTaskbar, false);
     assert.equal(h.events.has('minimize'), false);
     assert.equal(h.events.has('blur'), false);
     assert.ok(!h.methods.some(row => row[0] === 'restore'));

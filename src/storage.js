@@ -50,6 +50,7 @@ const DEFAULT_PREFERENCES = {
     selectedScreenshotInterval: '5',
     selectedImageQuality: 'medium',
     advancedMode: false,
+    hideFromTaskbar: true,
     audioMode: 'speaker_only',
     usageAnalytics: true,
     fontSize: 'medium',
@@ -275,6 +276,7 @@ const PREFERENCE_KEYS = {
         return quality;
     },
     advancedMode: value => ensureBoolean(value, 'preferences.advancedMode'),
+    hideFromTaskbar: value => ensureBoolean(value, 'preferences.hideFromTaskbar'),
     usageAnalytics: value => ensureBoolean(value, 'preferences.usageAnalytics'),
     audioMode: value => {
         const mode = sanitizeText(String(value), { fieldName: 'preferences.audioMode', maxLength: 20, multiline: false });
