@@ -1,15 +1,8 @@
 import { ArrowUpRight, Download, Monitor } from 'lucide-react';
 import { productionRelease } from '../lib/productionRelease';
-import { trackWebEvent } from '../lib/productAnalytics';
+import { previewRelease } from '../lib/previewRelease';
 
-const previewVersion = '1.0.11';
-const previewTag = `v${previewVersion}-preview.1`;
-const releaseBase = 'https://github.com/gurugsv7/skillissue/releases';
-const releaseUrl = `${releaseBase}/tag/${previewTag}`;
-const assetsUrl = `${releaseBase}/download/${previewTag}`;
-const installerName = `Hintio-${previewVersion}.Setup.exe`;
-
-export default function DownloadPage() {
+export default function DownloadPage({ onDownload, onPreviewDownload }: { onDownload: () => void; onPreviewDownload: () => void }) {
     return (
         <div className="wrap download-page">
             <header className="page-hero">
@@ -24,28 +17,29 @@ export default function DownloadPage() {
                         <span>Latest preview</span>
                         <Monitor size={19} aria-hidden="true" />
                     </div>
-                    <h2>Hintio {previewVersion}</h2>
+                    <h2>Hintio {previewRelease.version}</h2>
                     <p>Run the Windows x64 installer, then open Hintio.</p>
                     <ul>
+                        <li>Get a free key from Pricing using the link below the access-key field.</li>
                         <li>Onboarding has a shorter Terms and Privacy Policy screen.</li>
                         <li>Usage analytics measures onboarding, activation, and session modes when the backend is available.</li>
                         <li>You can turn analytics off in Settings → Privacy &amp; Data.</li>
                     </ul>
-                    <a className="hi-btn hi-btn-ink" href={`${assetsUrl}/${installerName}`} onClick={() => trackWebEvent('download_clicked', 'preview')}>
+                    <button type="button" className="hi-btn hi-btn-ink" onClick={onPreviewDownload}>
                         Download preview installer <Download size={17} aria-hidden="true" />
-                    </a>
+                    </button>
                     <div className="download-build-links">
-                        <a href={releaseUrl}>Release notes <ArrowUpRight size={14} aria-hidden="true" /></a>
-                        <a href={`${assetsUrl}/SHA256SUMS.txt`}>SHA-256 checksum</a>
+                        <a href={previewRelease.releaseUrl}>Release notes <ArrowUpRight size={14} aria-hidden="true" /></a>
+                        <a href={previewRelease.checksumUrl}>SHA-256 checksum</a>
                     </div>
                 </article>
                 <article className="download-build">
                     <div className="download-build-meta"><span>Stable release</span></div>
                     <h2>Hintio {productionRelease.version}</h2>
                     <p>The production installer for Windows x64.</p>
-                    <a className="hi-btn hi-btn-outline" href={productionRelease.windowsDownloadUrl} onClick={() => trackWebEvent('download_clicked', 'production')}>
+                    <button type="button" className="hi-btn hi-btn-outline" onClick={onDownload}>
                         Download stable <Download size={17} aria-hidden="true" />
-                    </a>
+                    </button>
                     <p className="download-install-note">These Windows builds are unsigned. Smart App Control may block them.</p>
                 </article>
             </section>

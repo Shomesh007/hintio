@@ -42,6 +42,7 @@ import {
 
 interface Props {
     onDownload: () => void;
+    onPreviewDownload: () => void;
     onUpgrade: (plan: 'monthly' | 'yearly') => void;
     onRecover: (plan: 'monthly' | 'yearly') => void;
     onMacDownload: () => void;
@@ -1260,7 +1261,7 @@ export default function MarketingSite(props: Props) {
                 ) : page === '/get-started' ? (
                     <GetStarted onDownload={props.onDownload} go={go} />
                 ) : page === '/download' ? (
-                    <DownloadPage />
+                    <DownloadPage onDownload={props.onDownload} onPreviewDownload={props.onPreviewDownload} />
                 ) : page === '/contact' ? (
                     <Contact />
                 ) : page === '/access' || page === '/pricing' ? (

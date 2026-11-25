@@ -19,6 +19,7 @@ import {
 } from './lib/checkoutReliability';
 import MarketingSite from './marketing/MarketingSite';
 import { productionRelease } from './lib/productionRelease';
+import { previewRelease } from './lib/previewRelease';
 import { getTrialDeviceId } from './lib/trialDevice';
 import './marketing/account-dialogs.css';
 
@@ -45,7 +46,8 @@ export default function App() {
     const defaultSupabaseUrl = 'https://vsybqtunyuanxspxhzue.supabase.co';
     const supabaseFunctionsBaseUrl = import.meta.env.VITE_SUPABASE_URL || defaultSupabaseUrl;
     const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-    type AuthIntent = 'download' | 'upgrade_monthly' | 'upgrade_yearly' | 'recover_monthly' | 'recover_yearly';
+    type DownloadIntent = 'download' | 'download_preview';
+    type AuthIntent = DownloadIntent | 'upgrade_monthly' | 'upgrade_yearly' | 'recover_monthly' | 'recover_yearly';
     const AUTH_INTENT_STORAGE_KEY = 'hintio_auth_intent';
     const checkoutInFlightRef = useRef(false);
     const checkoutScriptLoaderRef = useRef<(() => Promise<boolean>) | null>(null);
@@ -170,7 +172,7 @@ export default function App() {
     const downloadAfterTrialKey = () => {
         setIsTrialModalOpen(false);
         setIsKeyCopied(false);
-        triggerDownload();
+        triggerDownload(authIntent === 'download_preview' ? 'preview' : 'production');
     };
 
     const handleCopyTrialKey = async () => {
@@ -179,10 +181,11 @@ export default function App() {
         setIsKeyCopied(true);
     };
 
-    const triggerDownload = () => {
-        trackWebEvent('download_clicked', 'production');
-        debugLog('triggerDownload called', { windowsDownloadUrl });
-        window.open(windowsDownloadUrl, '_blank', 'noopener,noreferrer');
+    const triggerDownload = (channel: 'preview' | 'production' = 'production') => {
+        const url = channel === 'preview' ? previewRelease.windowsDownloadUrl : windowsDownloadUrl;
+        trackWebEvent('download_clicked', channel);
+        debugLog('triggerDownload called', { url });
+        window.open(url, '_blank', 'noopener,noreferrer');
     };
 
     const fetchPaidLicenseKey = async (plan: 'monthly' | 'yearly', signal: AbortSignal) => {
@@ -663,7 +666,7 @@ export default function App() {
                 hasAuthCallbackMarkers,
             });
 
-            const validIntents = ['download', 'upgrade_monthly', 'upgrade_yearly', 'recover_monthly', 'recover_yearly'];
+            const validIntents = ['download', 'download_preview', 'upgrade_monthly', 'upgrade_yearly', 'recover_monthly', 'recover_yearly'];
             const intent =
                 intentParam && validIntents.includes(intentParam)
                     ? (intentParam as AuthIntent)
@@ -710,6 +713,7 @@ export default function App() {
                     return;
                 }
 
+                setAuthIntent(activeIntent);
                 await claimTrialAndDownload();
             };
 
@@ -793,6 +797,9 @@ export default function App() {
 
         const redirectTo = (() => {
             const redirectUrl = new URL(window.location.href);
+            if ((authIntent === 'download_preview' || authIntent === 'download') && redirectUrl.pathname.replace(/\/$/, '') === '/download') {
+                redirectUrl.pathname = '/';
+            }
             redirectUrl.hash = '';
             redirectUrl.search = '';
             redirectUrl.searchParams.set('intent', authIntent);
@@ -860,10 +867,10 @@ export default function App() {
             setIsAuthModalOpen(true);
         }
     };
-    const handleDownloadClick = async () => {
+    const handleDownloadClick = async (intent: DownloadIntent = 'download') => {
         trackWebEvent('trial_clicked', 'free_trial');
         setAuthError(null);
-        setAuthIntent('download');
+        setAuthIntent(intent);
         if (!supabase) {
             setAuthError('Sign-in is not configured. Please contact support.');
             setIsAuthModalOpen(true);
@@ -898,7 +905,8 @@ export default function App() {
         <div className="bg-charcoal min-h-screen text-white selection:bg-mint selection:text-charcoal">
             <div inert={hasOpenDialog}>
                 <MarketingSite
-                    onDownload={handleDownloadClick}
+                    onDownload={() => handleDownloadClick()}
+                    onPreviewDownload={() => handleDownloadClick('download_preview')}
                     onUpgrade={handleUpgradeClick}
                     onRecover={handleRecoverLicense}
                     onMacDownload={handleMacDownloadClick}
@@ -934,7 +942,7 @@ export default function App() {
                 licenseKey={paidLicenseKey}
                 isCopied={isPaidLicenseCopied}
                 onCopy={handleCopyPaidLicenseKey}
-                onDownload={triggerDownload}
+                onDownload={() => triggerDownload()}
                 onClose={() => setIsPaidLicenseModalOpen(false)}
             />
 
@@ -942,7 +950,7 @@ export default function App() {
                 isOpen={isPendingLicenseOpen}
                 isRecovering={isRecoveringLicense}
                 reference={pendingLicense?.reference || ''}
-                onDownload={triggerDownload}
+                onDownload={() => triggerDownload()}
                 onClose={() => setIsPendingLicenseOpen(false)}
             />
             {isCheckoutLoading && <CheckoutStatus />}

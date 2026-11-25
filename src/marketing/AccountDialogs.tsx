@@ -116,9 +116,9 @@ export function AuthGateModal({
     onSignIn: () => void;
     isSigningIn: boolean;
     error: string | null;
-    intent?: 'download' | 'upgrade_monthly' | 'upgrade_yearly' | 'recover_monthly' | 'recover_yearly';
+    intent?: 'download' | 'download_preview' | 'upgrade_monthly' | 'upgrade_yearly' | 'recover_monthly' | 'recover_yearly';
 }) {
-    const buying = intent !== 'download';
+    const buying = intent !== 'download' && intent !== 'download_preview';
     const recovering = intent === 'recover_monthly' || intent === 'recover_yearly';
     const plan = intent === 'upgrade_yearly' || intent === 'recover_yearly' ? 'Yearly Pro' : 'Monthly Pro';
     return (
