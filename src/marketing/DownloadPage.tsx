@@ -20,6 +20,7 @@ export default function DownloadPage({ onDownload, onPreviewDownload }: { onDown
                     <h2>Hintio {previewRelease.version}</h2>
                     <p>Run the Windows x64 installer, then open Hintio.</p>
                     <ul>
+                        <li>Choose whether Hintio appears in the Windows taskbar under Settings → Appearance.</li>
                         <li>Get a free key from Pricing using the link below the access-key field.</li>
                         <li>Onboarding has a shorter Terms and Privacy Policy screen.</li>
                         <li>Usage analytics measures onboarding, activation, and session modes when the backend is available.</li>
