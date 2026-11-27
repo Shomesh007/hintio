@@ -66,6 +66,15 @@ function sendWebEvent(event: string, value: string, accessToken?: string) {
     }
 }
 
+// The random ID of this browser, when it has one. Used only to mark the admin's own browser as test traffic.
+export function getAnalyticsBrowserId() {
+    try {
+        return localStorage.getItem(browserKey);
+    } catch {
+        return null;
+    }
+}
+
 export function trackWebEvent(...[event, value]: WebAnalyticsEvent) {
     if (canTrack()) sendWebEvent(event, value);
 }
