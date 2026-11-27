@@ -597,3 +597,144 @@
     outline: 2px solid #101625;
     outline-offset: 2px;
 }
+
+/* Install guide: steps past the Windows SmartScreen prompt for the unsigned installer. */
+.install-steps {
+    display: grid;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: install-step;
+    color: #333d50;
+    font-size: 13px;
+    line-height: 1.6;
+}
+.install-steps li {
+    position: relative;
+    padding-left: 34px;
+    counter-increment: install-step;
+}
+.install-steps li::before {
+    content: counter(install-step);
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #101625;
+    color: white;
+    font-size: 11px;
+    font-weight: 650;
+}
+.install-steps strong {
+    font-weight: 650;
+    color: #101625;
+}
+.install-sketch {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 22px 0 18px;
+}
+.install-sketch-window {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+    padding: 14px;
+    border-radius: 6px;
+    background: #1f5fa8;
+    color: #f2f6fc;
+    font-size: 10px;
+    line-height: 1.45;
+}
+.install-sketch-window strong {
+    font-size: 12px;
+    font-weight: 600;
+}
+.install-sketch-window p {
+    margin: 0;
+    color: #d6e3f5;
+}
+.install-sketch-window dl {
+    display: grid;
+    gap: 3px;
+    margin: 0;
+    color: #d6e3f5;
+}
+.install-sketch-window dl div {
+    display: flex;
+    gap: 5px;
+    min-width: 0;
+}
+.install-sketch-window dd {
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.install-sketch-link {
+    align-self: flex-start;
+    margin-top: auto;
+    text-decoration: underline;
+    outline: 2px solid #ffd54a;
+    outline-offset: 3px;
+    border-radius: 2px;
+}
+.install-sketch-buttons {
+    display: flex;
+    gap: 6px;
+    margin-top: auto;
+}
+.install-sketch-buttons span {
+    padding: 4px 8px;
+    border: 1px solid #c9d8ee;
+    border-radius: 3px;
+    white-space: nowrap;
+}
+.install-sketch-buttons .install-sketch-run {
+    outline: 2px solid #ffd54a;
+    outline-offset: 2px;
+}
+.install-sketch i {
+    display: inline-grid;
+    place-items: center;
+    width: 15px;
+    height: 15px;
+    margin-left: 4px;
+    border-radius: 50%;
+    background: #ffd54a;
+    color: #101625;
+    font-size: 9px;
+    font-style: normal;
+    font-weight: 700;
+    vertical-align: 1px;
+}
+.install-note {
+    margin: 0 0 22px;
+    padding: 13px 15px;
+    border-left: 3px solid #b9c2d2;
+    border-radius: 0 6px 6px 0;
+    background: #edf0f7;
+    color: #4d576a;
+    font-size: 12px;
+    line-height: 1.6;
+}
+.install-note strong {
+    color: #101625;
+    font-weight: 650;
+}
+.account-footer a {
+    color: #3f4a5f;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+@media (max-width: 480px) {
+    .install-sketch {
+        grid-template-columns: 1fr;
+    }
+}

@@ -10,6 +10,7 @@ import {
     PaymentSupportModal,
     CheckoutStatus,
     PendingLicenseModal,
+    InstallGuideModal,
 } from '../src/marketing/AccountDialogs';
 import '../src/index.css';
 import '../src/marketing/account-dialogs.css';
@@ -27,7 +28,7 @@ function Review() {
             <h1>Local dialog review</h1>
             <p>Dummy data only. No backend calls.</p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-                {['sign-in', 'download', 'sign-in-error', 'trial', 'paid', 'mac', 'checkout-help', 'pending', 'pending-retry', 'loading'].map(
+                {['sign-in', 'download', 'sign-in-error', 'trial', 'paid', 'mac', 'checkout-help', 'pending', 'pending-retry', 'loading', 'install-guide'].map(
                     name => (
                         <button
                             key={name}
@@ -72,6 +73,14 @@ function Review() {
                     setAction('Copy callback invoked');
                 }}
                 onDownload={() => setAction('Download callback invoked')}
+                onClose={close}
+            />
+            <InstallGuideModal
+                release={
+                    state === 'install-guide'
+                        ? { version: '1.0.13', windowsDownloadUrl: '#demo-installer', checksumUrl: '#demo-checksum' }
+                        : null
+                }
                 onClose={close}
             />
             <MacComingSoonModal isOpen={state === 'mac'} onClose={close} />

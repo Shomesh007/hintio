@@ -42,6 +42,7 @@ function fixture(loading = false) {
         onUpgrade: (plan: string) => calls.push('buy:' + plan),
         onRecover: (plan: string) => calls.push('recover:' + plan),
         onMacDownload: () => calls.push('mac'),
+        onInstallerDownload: () => calls.push('installer'),
         checkoutLoading: loading,
     });
     const nodes = elements(root);
@@ -85,4 +86,8 @@ test('existing key download stays on the stable installer independently of trial
     const a = f.nodes.find(n => n.type === 'a' && text(n.props.children).includes('Download Windows app'));
     assert.equal(a?.props.href, productionRelease.windowsDownloadUrl);
     assert.deepEqual(f.calls, []);
+    let prevented = false;
+    (a!.props.onClick as unknown as (event: { preventDefault: () => void }) => void)({ preventDefault: () => (prevented = true) });
+    assert.equal(prevented, true);
+    assert.deepEqual(f.calls, ['installer'], 'opens the installer download and the SmartScreen guide, not the trial flow');
 });

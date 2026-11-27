@@ -5,7 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { AuthGateModal, PaidLicenseModal, PendingLicenseModal, TrialKeyModal } from '../src/marketing/AccountDialogs';
+import { AuthGateModal, InstallGuideModal, PaidLicenseModal, PendingLicenseModal, TrialKeyModal } from '../src/marketing/AccountDialogs';
 
 const noop = () => {};
 test('returning paid customers sign in for retrieval with no checkout steps', () => {
@@ -129,6 +129,7 @@ test('the actual App Escape handler dismisses an open trial without downloading'
         compilerOptions: { target: ts.ScriptTarget.ES2022 },
     }).outputText;
     let trialOpen = true;
+    let guide: unknown = 'open';
     const onKeyDown = vm.runInNewContext(code, {
         isTrialModalOpen: true,
         setIsTrialModalOpen: (open: boolean) => (trialOpen = open),
@@ -137,7 +138,28 @@ test('the actual App Escape handler dismisses an open trial without downloading'
         setIsPaymentModalOpen: noop,
         setIsPaidLicenseModalOpen: noop,
         setIsPendingLicenseOpen: noop,
+        setInstallGuide: (release: unknown) => (guide = release),
     });
     onKeyDown({ key: 'Escape' });
     assert.equal(trialOpen, false);
+    assert.equal(guide, null, 'Escape also closes the install guide');
+});
+
+test('the install guide walks through SmartScreen for the downloaded installer', () => {
+    const release = {
+        version: '1.0.13',
+        windowsDownloadUrl: 'https://example.com/Hintio-1.0.13.Setup.exe',
+        checksumUrl: 'https://example.com/SHA256SUMS.txt',
+    };
+    const markup = renderToStaticMarkup(createElement(InstallGuideModal, { release, onClose: noop }));
+    assert.match(markup, /Your download has started/);
+    assert.match(markup, /Hintio-1\.0\.13\.Setup\.exe/);
+    assert.match(markup, /Windows protected your PC/);
+    assert.match(markup, /More info/);
+    assert.match(markup, /Run anyway/);
+    assert.match(markup, /Unknown publisher/);
+    assert.match(markup, /Smart App Control/);
+    assert.match(markup, /href="https:\/\/example\.com\/SHA256SUMS\.txt"/);
+    assert.match(markup, /href="https:\/\/example\.com\/Hintio-1\.0\.13\.Setup\.exe"/);
+    assert.equal(renderToStaticMarkup(createElement(InstallGuideModal, { release: null, onClose: noop })), '');
 });

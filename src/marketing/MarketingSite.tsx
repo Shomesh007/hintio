@@ -48,6 +48,7 @@ interface Props {
     onUpgrade: (plan: 'monthly' | 'yearly') => void;
     onRecover: (plan: 'monthly' | 'yearly') => void;
     onMacDownload: () => void;
+    onInstallerDownload: () => void;
     checkoutLoading: boolean;
 }
 
