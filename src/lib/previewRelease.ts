@@ -1,5 +1,5 @@
-const version = '1.0.12';
-const tag = `v${version}-preview.2`;
+const version = '1.0.13';
+const tag = `v${version}-preview.1`;
 const releases = 'https://github.com/Shomesh007/hintio/releases';
 const assets = `${releases}/download/${tag}`;
 
