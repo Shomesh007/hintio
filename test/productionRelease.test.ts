@@ -20,16 +20,31 @@ function actualFunction(name: string, context: Record<string, unknown>) {
     }).outputText;
     return vm.runInNewContext(compiled, { trackWebEvent: () => {}, ...context });
 }
-test('public installer stays on official 1.0.4', () => {
+test('stable installer download opens 1.0.13 and the SmartScreen install guide', () => {
     const opened: unknown[][] = [];
+    const guides: unknown[] = [];
     const download = actualFunction('triggerDownload', {
         debugLog: () => {},
+        previewRelease,
+        productionRelease,
         windowsDownloadUrl: productionRelease.windowsDownloadUrl,
         window: { open: (...args: unknown[]) => opened.push(args) },
+        setInstallGuide: (release: unknown) => guides.push(release),
     });
     download();
     assert.equal(opened.length, 1);
-    assert.match(String(opened[0][0]), /\/v1\.0\.4\/Hintio-1\.0\.4\.Setup\.exe$/);
+    assert.match(String(opened[0][0]), /\/v1\.0\.13-preview\.1\/Hintio-1\.0\.13\.Setup\.exe$/);
+    assert.deepEqual(JSON.parse(JSON.stringify(guides)), [
+        { version: '1.0.13', windowsDownloadUrl: productionRelease.windowsDownloadUrl, checksumUrl: productionRelease.checksumUrl },
+    ]);
+
+    download('preview');
+    assert.equal(opened[1][0], previewRelease.windowsDownloadUrl);
+    assert.deepEqual(JSON.parse(JSON.stringify(guides[1])), {
+        version: previewRelease.version,
+        windowsDownloadUrl: previewRelease.windowsDownloadUrl,
+        checksumUrl: previewRelease.checksumUrl,
+    });
 });
 test('signed-out trial user is asked to sign in before a key is claimed', async () => {
     let auth = false;
@@ -97,7 +112,9 @@ test('preview visitors sign in, keep their installer choice after OAuth, and dow
     const download = actualFunction('triggerDownload', {
         debugLog: () => {},
         previewRelease,
+        productionRelease,
         window: { open: (url: unknown) => opened.push(url) },
+        setInstallGuide: () => {},
     });
     const finish = actualFunction('downloadAfterTrialKey', {
         setIsTrialModalOpen: () => {},
@@ -166,7 +183,8 @@ for (const isNew of [true, false])
         assert.equal(state.auth, false);
     });
 test('production and preserved Store candidate remain separate with trials enabled', () => {
-    assert.equal(productionRelease.version, '1.0.4');
+    assert.equal(productionRelease.version, '1.0.13');
+    assert.match(productionRelease.checksumUrl, /\/v1\.0\.13-preview\.1\/SHA256SUMS\.txt$/);
     assert.equal(productionRelease.storeCandidateVersion, '1.0.6');
     assert.equal(productionRelease.freeTrialsEnabled, true);
 });

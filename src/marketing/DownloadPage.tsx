@@ -42,7 +42,12 @@ export default function DownloadPage({ onDownload, onPreviewDownload }: { onDown
                     <button type="button" className="hi-btn hi-btn-outline" onClick={onDownload}>
                         Download stable <Download size={17} aria-hidden="true" />
                     </button>
-                    <p className="download-install-note">These Windows builds are unsigned. Smart App Control may block them.</p>
+                    <div className="download-build-links">
+                        <a href={productionRelease.checksumUrl}>SHA-256 checksum</a>
+                    </div>
+                    <p className="download-install-note">
+                        These Windows builds are unsigned. Windows SmartScreen may ask you to confirm, and Smart App Control may block them.
+                    </p>
                 </article>
             </section>
             <div className="download-build-links download-help">

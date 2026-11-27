@@ -412,3 +412,82 @@ export function CheckoutStatus() {
         </div>
     );
 }
+
+export type InstallGuideRelease = { version: string; windowsDownloadUrl: string; checksumUrl: string };
+
+// A simplified drawing of the Windows SmartScreen prompt, with the two controls people need marked.
+function SmartScreenSketch({ fileName }: { fileName: string }) {
+    return (
+        <div className="install-sketch" aria-hidden="true">
+            <div className="install-sketch-window">
+                <strong>Windows protected your PC</strong>
+                <p>Microsoft Defender SmartScreen prevented an unrecognized app from starting.</p>
+                <span className="install-sketch-link">
+                    More info <i>1</i>
+                </span>
+            </div>
+            <div className="install-sketch-window">
+                <strong>Windows protected your PC</strong>
+                <dl>
+                    <div>
+                        <dt>App:</dt>
+                        <dd>{fileName}</dd>
+                    </div>
+                    <div>
+                        <dt>Publisher:</dt>
+                        <dd>Unknown publisher</dd>
+                    </div>
+                </dl>
+                <div className="install-sketch-buttons">
+                    <span className="install-sketch-run">
+                        Run anyway <i>2</i>
+                    </span>
+                    <span>Don’t run</span>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+export function InstallGuideModal({ release, onClose }: { release: InstallGuideRelease | null; onClose: () => void }) {
+    const fileName = release ? `Hintio-${release.version}.Setup.exe` : '';
+    return (
+        <DialogFrame
+            open={release !== null}
+            onClose={onClose}
+            label="INSTALL ON WINDOWS"
+            title="Your download has started."
+            description="The Hintio installer isn’t signed yet, so Windows may warn you before it opens. Here’s how to continue."
+            footer={
+                release && (
+                    <>
+                        <a href={release.windowsDownloadUrl}>Download didn’t start? Try again</a>
+                        <a href={release.checksumUrl}>Verify the SHA-256 checksum</a>
+                    </>
+                )
+            }
+        >
+            <ol className="install-steps">
+                <li>
+                    Open <strong>{fileName}</strong> from your Downloads. If your browser says the file isn’t commonly downloaded, choose{' '}
+                    <strong>Keep</strong>.
+                </li>
+                <li>
+                    If a blue <strong>Windows protected your PC</strong> window appears, select <strong>More info</strong>.
+                </li>
+                <li>
+                    Check that the app is <strong>{fileName}</strong>, then select <strong>Run anyway</strong>. “Unknown publisher” is expected until
+                    the installer is signed.
+                </li>
+            </ol>
+            <SmartScreenSketch fileName={fileName} />
+            <p className="install-note">
+                <strong>No Run anyway button?</strong> Smart App Control is probably on. It blocks unsigned apps with no override, so Hintio can’t
+                be installed on that PC yet. Don’t turn Smart App Control off for Hintio; contact us instead.
+            </p>
+            <button className="account-primary" onClick={onClose}>
+                Got it <ArrowRight size={18} />
+            </button>
+        </DialogFrame>
+    );
+}

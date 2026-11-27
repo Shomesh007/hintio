@@ -32,6 +32,8 @@ declare global {
 import {
     AuthGateModal,
     TrialKeyModal,
+    InstallGuideModal,
+    type InstallGuideRelease,
     MacComingSoonModal,
     PaymentSupportModal,
     PaidLicenseModal,
@@ -59,6 +61,7 @@ export default function App() {
     const [trialKey, setTrialKey] = useState('');
     const [isKeyCopied, setIsKeyCopied] = useState(false);
     const [isMacModalOpen, setIsMacModalOpen] = useState(false);
+    const [installGuide, setInstallGuide] = useState<InstallGuideRelease | null>(null);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
     const [isPaidLicenseModalOpen, setIsPaidLicenseModalOpen] = useState(false);
@@ -78,7 +81,13 @@ export default function App() {
     const licenseRecoveryControllerRef = useRef<AbortController | null>(null);
 
     const hasOpenDialog =
-        isAuthModalOpen || isTrialModalOpen || isMacModalOpen || isPaymentModalOpen || isPaidLicenseModalOpen || isPendingLicenseOpen;
+        isAuthModalOpen ||
+        isTrialModalOpen ||
+        isMacModalOpen ||
+        isPaymentModalOpen ||
+        isPaidLicenseModalOpen ||
+        isPendingLicenseOpen ||
+        installGuide !== null;
     useEffect(() => {
         if (!hasOpenDialog) return;
         const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -99,6 +108,7 @@ export default function App() {
                 setIsPaymentModalOpen(false);
                 setIsPaidLicenseModalOpen(false);
                 setIsPendingLicenseOpen(false);
+                setInstallGuide(null);
             }
             if (event.key !== 'Tab') return;
             const controls = getControls();
@@ -182,10 +192,13 @@ export default function App() {
     };
 
     const triggerDownload = (channel: 'preview' | 'production' = 'production') => {
+        const release = channel === 'preview' ? previewRelease : productionRelease;
         const url = channel === 'preview' ? previewRelease.windowsDownloadUrl : windowsDownloadUrl;
         trackWebEvent('download_clicked', channel);
         debugLog('triggerDownload called', { url });
         window.open(url, '_blank', 'noopener,noreferrer');
+        // The installer is unsigned, so walk people through the Windows SmartScreen prompt.
+        setInstallGuide({ version: release.version, windowsDownloadUrl: url, checksumUrl: release.checksumUrl });
     };
 
     const fetchPaidLicenseKey = async (plan: 'monthly' | 'yearly', signal: AbortSignal) => {
@@ -910,6 +923,7 @@ export default function App() {
                     onUpgrade={handleUpgradeClick}
                     onRecover={handleRecoverLicense}
                     onMacDownload={handleMacDownloadClick}
+                    onInstallerDownload={() => triggerDownload()}
                     checkoutLoading={isCheckoutLoading}
                 />
             </div>
@@ -953,6 +967,7 @@ export default function App() {
                 onDownload={() => triggerDownload()}
                 onClose={() => setIsPendingLicenseOpen(false)}
             />
+            <InstallGuideModal release={installGuide} onClose={() => setInstallGuide(null)} />
             {isCheckoutLoading && <CheckoutStatus />}
         </div>
     );
