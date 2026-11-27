@@ -1,6 +1,19 @@
 # Hintio website and billing operations
 
-Production: https://www.hintio.tech . Website source is published from the main branch through the existing Vercel Git integration. Backend project: vsybqtunyuanxspxhzue.
+Production: https://www.hintio.tech . Backend project: vsybqtunyuanxspxhzue.
+
+## Website hosting (Cloudflare Workers)
+
+The website is a static Vite SPA served by Cloudflare Workers Static Assets (Worker name `hintio`, config in `wrangler.jsonc`). It replaces the earlier Vercel project. `vercel.json` stays in the repo only until DNS for hintio.tech points at Cloudflare; delete it (and disconnect the Vercel project) after cutover.
+
+- `wrangler.jsonc` serves `dist/` with `not_found_handling: "single-page-application"`, so every client route (/download, /pricing, /access, /admin/analytics, ...) returns `index.html`.
+- `public/_headers` sets the security headers, `noindex` on /admin/analytics and immutable caching for /assets/*.
+- The apex redirect (hintio.tech -> https://www.hintio.tech, 301, path and query kept) is a Cloudflare Redirect Rule on the hintio.tech zone, not part of the repo.
+- Build variables (public, set in Workers Builds or the shell): `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`. Without the anon key, sign-in, checkout and trials are disabled in the build.
+
+Deploy manually with `npm run deploy` (needs `CLOUDFLARE_API_TOKEN` with Workers Scripts: Edit). With Workers Builds connected to this repository, pushes to `main` deploy automatically using build command `npm run build` and deploy command `npx wrangler deploy`.
+
+Local check on the Workers runtime: `npm run preview:worker` (http://localhost:8787).
 
 ## Current price and renewal policy
 

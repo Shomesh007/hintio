@@ -1,0 +1,18 @@
+{
+    "$schema": "node_modules/wrangler/config-schema.json",
+    // Hintio website: a static Vite SPA served by Workers Static Assets.
+    // There is no Worker script; Cloudflare serves dist/ directly.
+    "name": "hintio",
+    "compatibility_date": "2026-11-01",
+    "assets": {
+        "directory": "./dist",
+        // Unknown paths (/download, /pricing, /admin/analytics, ...) return index.html,
+        // replacing the per-route rewrites that vercel.json used.
+        "not_found_handling": "single-page-application"
+    },
+    // Production domain. Uncomment once the hintio.tech zone is active on this Cloudflare account.
+    // "routes": [{ "pattern": "www.hintio.tech", "custom_domain": true }],
+    "workers_dev": true,
+    "preview_urls": true,
+    "observability": { "enabled": true }
+}

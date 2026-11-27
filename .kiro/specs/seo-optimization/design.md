@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the technical design for improving the SEO posture of the Hintio landing page (hintio.tech). The site is a React 19 / Vite SPA deployed on Vercel. All SEO improvements are static — they target `index.html`, `public/sitemap.xml`, `public/robots.txt`, `public/site.webmanifest`, and `src/App.tsx`. No new routes, backend services, or build pipeline changes are required.
+This document describes the technical design for improving the SEO posture of the Hintio landing page (hintio.tech). The site is a React 19 / Vite SPA deployed on Cloudflare Workers. All SEO improvements are static — they target `index.html`, `public/sitemap.xml`, `public/robots.txt`, `public/site.webmanifest`, and `src/App.tsx`. No new routes, backend services, or build pipeline changes are required.
 
 The goal is to rank competitively for terms like "AI interview copilot", "real-time interview assistant", "invisible overlay", and "undetectable AI" against competitors such as Cluely, Final Round AI, Interview Sidekick, and Verve Copilot.
 
