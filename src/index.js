@@ -14,8 +14,9 @@ const { execFileSync } = require('child_process');
 const { createWindow } = require('./utils/window');
 const { setupProviderRuntimeIpcHandlers, stopMacOSAudioCapture, sendToRenderer, clearRuntimeProviderSecrets } = require('./utils/providerRuntime');
 const storage = require('./storage');
-const { createUsageAnalytics } = require('./utils/usageAnalytics');
+const { createUsageAnalytics, forgetInstallId } = require('./utils/usageAnalytics');
 const { url: supabaseUrl } = require('./utils/supabaseConfig');
+let recordUsage = null;
 const { initTelegramBot, startPolling, stopPolling } = require('./utils/telegramBot');
 const { enforceIpcRateLimit } = require('./utils/abuseProtection');
 const { sanitizeText, ensureSafeUrl, ensureFilePath, ensureSafeFilename, ensurePlainObject } = require('./utils/inputValidation');
@@ -220,7 +221,7 @@ app.whenReady().then(async () => {
         desktopCapturer.getSources({ types: ['screen'] }).catch(() => {});
     }
 
-    const recordUsage = createUsageAnalytics({
+    recordUsage = createUsageAnalytics({
         storage,
         endpoint: app.isPackaged ? `${supabaseUrl.replace(/\/$/, '')}/functions/v1/product-analytics` : process.env.HINTIO_ANALYTICS_URL,
         version: app.getVersion(),
@@ -231,6 +232,7 @@ app.whenReady().then(async () => {
             void recordUsage(name, value);
         }
     });
+    void recordUsage('app_launched');
 
     createMainWindow();
     setupUpdateNotices();
@@ -458,6 +460,7 @@ function setupStorageIpcHandlers() {
     ipcMain.handle('storage:update-preference', async (event, key, value) => {
         try {
             storage.updatePreference(key, value);
+            if (key === 'usageAnalytics' && value === false) forgetInstallId(storage.getConfigDir());
             if (process.platform === 'win32' && key === 'hideFromTaskbar') {
                 mainWindow?.setSkipTaskbar(value);
             }
@@ -614,7 +617,7 @@ function setupGeneralIpcHandlers() {
                 protocols: ['https:', 'http:', 'mailto:'],
                 allowLocalhost: false,
             });
-            await shell.openExternal(safeUrl);
+            await shell.openExternal(recordUsage ? recordUsage.linkUrl(safeUrl) : safeUrl);
             return { success: true };
         } catch (error) {
             console.error('Error opening external URL:', error);

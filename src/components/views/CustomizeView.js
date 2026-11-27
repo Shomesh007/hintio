@@ -972,7 +972,11 @@ export class CustomizeView extends LitElement {
                         }} />
                         Share product usage analytics
                     </label>
-                    <p>Shares a random install ID, app version, setup progress, session milestones, and feature usage. You can turn this off here.</p>
+                    <p>
+                        Shares a random install ID, app version, app launches, setup progress, session milestones, and feature usage. When you open
+                        hintio.tech from the app, a one-time link code connects that visit to this install. Never includes screenshots, audio,
+                        transcripts, or your access key. Turning this off also deletes the install ID.
+                    </p>
                 </div>
                 <div class="privacy-support">
                     <strong>Questions or a data request?</strong>
