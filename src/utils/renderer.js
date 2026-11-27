@@ -91,20 +91,16 @@ async function sendTelegramImageInDebugMode(base64, caption, metadata) {
         const previousCodeContext = buildPreviousCodeContext();
         const debugPrompt = `${DEBUG_SCREENSHOT_PROMPT}${previousCodeContext}`;
 
-        hintio.setStatus('Analyzing error in debug mode...');
-
-        const result = await ipcRenderer.invoke('send-image-content', {
-            images: [base64],
-            prompt: debugPrompt,
-            metadata: { source: 'telegram', mode: 'debug', ...metadata },
-        });
-
-        if (result.success) {
-            console.log('[TELEGRAM DEBUG] Debug analysis completed');
-        } else {
-            console.error('[TELEGRAM DEBUG] Failed to analyze:', result.error);
-            hintio.addNewResponse(`Debug Error: ${result.error}`);
-        }
+        const result = await requestImageAnalysis(
+            'Analyzing error in debug mode...',
+            {
+                images: [base64],
+                prompt: debugPrompt,
+                metadata: { source: 'telegram', mode: 'debug', ...metadata },
+            },
+            'Debug Error'
+        );
+        if (result.success) console.log('[TELEGRAM DEBUG] Debug analysis completed');
     } finally {
         telegramImageRequestInFlight = false;
     }
@@ -996,6 +992,34 @@ function armDualScreenshotTimeout() {
     }, DUAL_SCREENSHOT_WAIT_MS);
 }
 
+// Replaces a temporary "Analyzing..." status once its request is over, unless
+// something newer (an error, a reconnect notice) has replaced it already.
+function clearImageAnalysisStatus(statusText) {
+    const app = hintio.element?.();
+    if (!app || app.statusText !== statusText) return;
+    hintio.setStatus(app.sessionActive ? 'Live' : '');
+}
+
+// Every screenshot request goes through here, so a failure always shows an
+// error response and the "Analyzing..." status never outlives the request.
+async function requestImageAnalysis(statusText, payload, errorLabel = 'Error') {
+    if (statusText) hintio.setStatus(statusText);
+    try {
+        const result = await ipcRenderer.invoke('send-image-content', payload);
+        if (!result?.success) {
+            console.error('Image analysis failed:', result?.error);
+            hintio.addNewResponse(`${errorLabel}: ${result?.error || 'Unknown error'}`);
+        }
+        return result || { success: false };
+    } catch (error) {
+        console.error('Image analysis failed:', error);
+        hintio.addNewResponse(`${errorLabel}: ${error.message}`);
+        return { success: false, error: error.message };
+    } finally {
+        if (statusText) clearImageAnalysisStatus(statusText);
+    }
+}
+
 async function sendPendingDualScreenshots(trigger = 'manual') {
     if (dualScreenshotRequestInFlight) return;
     if (pendingDualScreenshotBase64List.length < 2) return;
@@ -1005,19 +1029,13 @@ async function sendPendingDualScreenshots(trigger = 'manual') {
     dualScreenshotRequestInFlight = true;
 
     try {
-        hintio.setStatus(`Analyzing ${imagesToSend.length} screenshots...`);
-
-        const result = await ipcRenderer.invoke('send-image-content', {
+        const result = await requestImageAnalysis(`Analyzing ${imagesToSend.length} screenshots...`, {
             images: imagesToSend,
             prompt: `${DUAL_SCREENSHOT_PROMPT_PREFIX}${MANUAL_SCREENSHOT_PROMPT}`,
         });
-
         if (result.success) {
             recordScreenshotUsage('multi_screenshot');
             console.log(`${trigger} multi-image response completed from ${result.model}`);
-        } else {
-            console.error('Failed to get multi-image response:', result.error);
-            hintio.addNewResponse(`Error: ${result.error}`);
         }
     } finally {
         dualScreenshotRequestInFlight = false;
@@ -1121,28 +1139,23 @@ async function sendPendingTelegramImages(trigger = 'manual') {
     try {
         // Combine prompts from multiple images
         let combinedPrompt;
+        let statusText;
         if (imagesToSend.length > 1) {
             combinedPrompt = `${TELEGRAM_MULTI_IMAGE_PROMPT_PREFIX}Images in order:\n${allPrompts.map((p, i) => `${i + 1}. ${p}`).join('\n')}`;
-            hintio.setStatus(`Analyzing ${imagesToSend.length} Telegram images...`);
+            statusText = `Analyzing ${imagesToSend.length} Telegram images...`;
             console.log(`[TELEGRAM BATCH] Processing ${imagesToSend.length} images together (no errors detected)`);
         } else {
             combinedPrompt = allPrompts[0] || 'Analyze this image and provide detailed insights.';
-            hintio.setStatus('Analyzing Telegram image...');
+            statusText = 'Analyzing Telegram image...';
             console.log(`[TELEGRAM] Processing single image (no errors detected)`);
         }
 
-        const result = await ipcRenderer.invoke('send-image-content', {
+        const result = await requestImageAnalysis(statusText, {
             images: imagesToSend,
             prompt: combinedPrompt,
             metadata: { source: 'telegram', batch: allMetadata },
         });
-
-        if (result.success) {
-            console.log(`[TELEGRAM] ${trigger} multi-image response completed from ${result.model}`);
-        } else {
-            console.error('[TELEGRAM] Failed to get multi-image response:', result.error);
-            hintio.addNewResponse(`Error: ${result.error}`);
-        }
+        if (result.success) console.log(`[TELEGRAM] ${trigger} multi-image response completed from ${result.model}`);
     } finally {
         telegramImageRequestInFlight = false;
     }
@@ -1250,17 +1263,13 @@ async function captureManualScreenshot(imageQuality = null) {
         return;
     }
 
-    const result = await ipcRenderer.invoke('send-image-content', {
+    const result = await requestImageAnalysis(null, {
         data: base64data,
         prompt: MANUAL_SCREENSHOT_PROMPT,
     });
-
     if (result.success) {
         recordScreenshotUsage('single_screenshot');
         console.log(`Image response completed from ${result.model}`);
-    } else {
-        console.error('Failed to get image response:', result.error);
-        hintio.addNewResponse(`Error: ${result.error}`);
     }
 }
 
@@ -1314,21 +1323,15 @@ async function captureDebugScreenshot(imageQuality = null) {
     const base64data = await captureFrameToBase64(imageQuality);
     if (!base64data) return;
 
-    hintio.setStatus('Analyzing failed test screenshot...');
     const prompt = `${DEBUG_SCREENSHOT_PROMPT}${buildPreviousCodeContext()}`;
-
-    const result = await ipcRenderer.invoke('send-image-content', {
+    const result = await requestImageAnalysis('Analyzing failed test screenshot...', {
         data: base64data,
         prompt,
         mode: 'debug',
     });
-
     if (result.success) {
         recordScreenshotUsage('debug_screenshot');
         console.log(`Debug screenshot response completed from ${result.model}`);
-    } else {
-        console.error('Failed to debug screenshot:', result.error);
-        hintio.addNewResponse(`Error: ${result.error}`);
     }
 }
 
@@ -1956,12 +1959,17 @@ const theme = {
     },
 
     applyResponseFontSize(value) {
-        const size = typeof value === 'number' && Number.isFinite(value) ? Math.min(36, Math.max(12, value)) :
-            value === 'small' ? 16 : value === 'large' ? 24 : 20;
+        const size =
+            typeof value === 'number' && Number.isFinite(value)
+                ? Math.min(36, Math.max(12, value))
+                : value === 'small'
+                  ? 16
+                  : value === 'large'
+                    ? 24
+                    : 20;
         document.documentElement.style.setProperty('--response-font-size', `${size}px`);
         return size;
     },
-
 };
 
 // Consolidated hintio object - all functions in one place

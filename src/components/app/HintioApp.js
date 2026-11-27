@@ -874,7 +874,21 @@ export class HintioApp extends LitElement {
         showError();
     }
 
+    // Ctrl+Enter reaches both the global shortcut and the home screen key
+    // handler, and the Start button can be double-clicked. Without this guard a
+    // second request starts another session and another screen/audio capture on
+    // top of the first, so every audio chunk is sent to transcription twice.
     async _startSession() {
+        if (this._sessionStarting || this.sessionActive) return;
+        this._sessionStarting = true;
+        try {
+            await this._startSessionOnce();
+        } finally {
+            this._sessionStarting = false;
+        }
+    }
+
+    async _startSessionOnce() {
         if (this._updateState?.required) {
             this._recordUsage('session_start_blocked', 'update_required');
             this.currentView = 'updates';
@@ -1255,12 +1269,16 @@ export class HintioApp extends LitElement {
 
                 <div class="content">
                     ${isLive ? this.renderLiveBar() : ''}
-                    ${this.currentView === 'main' && this._updateState?.available
-                        ? html`<div class="update-notice">
-                              <strong role="status">Update available · ${this._updateState.latestVersion}${this._updateState.preview ? ' Preview' : ''}</strong>
-                              <button @click=${() => this.navigate('updates')}>Update Hintio</button>
-                          </div>`
-                        : ''}
+                    ${
+                        this.currentView === 'main' && this._updateState?.available
+                            ? html`<div class="update-notice">
+                                  <strong role="status"
+                                      >Update available · ${this._updateState.latestVersion}${this._updateState.preview ? ' Preview' : ''}</strong
+                                  >
+                                  <button @click=${() => this.navigate('updates')}>Update Hintio</button>
+                              </div>`
+                            : ''
+                    }
                     <div class="content-inner ${isLive ? 'live' : ''}">
                         ${this.renderCurrentView()} ${showResizeHandles ? html`<resize-handles></resize-handles>` : ''}
                     </div>

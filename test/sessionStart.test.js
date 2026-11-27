@@ -77,7 +77,34 @@ test('a first-time user goes straight from an approved key to the assistant with
 
     assert.equal(app.currentView, 'assistant');
     assert.equal(app.sessionActive, true);
-    assert.deepEqual(calls, ['save-token', ['validate-and-initialize', 'interview', 'en-US'], 'capture', 'timer', ['analytics:record', 'session_started', undefined], ['analytics:record', 'session_profile', 'interview']]);
+    assert.deepEqual(calls, [
+        'save-token',
+        ['validate-and-initialize', 'interview', 'en-US'],
+        'capture',
+        'timer',
+        ['analytics:record', 'session_started', undefined],
+        ['analytics:record', 'session_profile', 'interview'],
+    ]);
+});
+
+test('overlapping start requests open one session and one capture', async () => {
+    const { app, calls } = createApp({ token: 'SKI-test-customer-access-token' });
+    // Ctrl+Enter reaches both the global shortcut and the home screen key handler; a double click does the same.
+    await Promise.all([app.handleStart(), app.handleStart()]);
+    assert.equal(calls.filter(c => Array.isArray(c) && c[0] === 'validate-and-initialize').length, 1);
+    assert.equal(calls.filter(c => c === 'capture').length, 1);
+
+    // A start request during a running session must not replace it.
+    await app.handleStart();
+    assert.equal(calls.filter(c => c === 'capture').length, 1);
+    assert.equal(app.sessionActive, true);
+});
+
+test('a failed start can be retried', async () => {
+    const { app, calls } = createApp({ approved: false, token: 'SKI-test-customer-access-token' });
+    await app.handleStart();
+    await app.handleStart();
+    assert.equal(calls.filter(c => Array.isArray(c) && c[0] === 'validate-and-initialize').length, 2);
 });
 
 test('desktop update state comes from the main process and recognizes a newer release', async () => {
@@ -101,7 +128,12 @@ test('a rejected key stays on the key screen without starting capture or a sessi
 
     assert.equal(app.currentView, 'main');
     assert.equal(app.sessionActive, false);
-    assert.deepEqual(calls, ['save-token', ['validate-and-initialize', 'interview', 'en-US'], ['analytics:record', 'session_start_blocked', 'initialization_failed'], ['error', 'Access token is invalid or expired.']]);
+    assert.deepEqual(calls, [
+        'save-token',
+        ['validate-and-initialize', 'interview', 'en-US'],
+        ['analytics:record', 'session_start_blocked', 'initialization_failed'],
+        ['error', 'Access token is invalid or expired.'],
+    ]);
 });
 
 test('a missing key cannot start a session', async () => {
@@ -110,7 +142,10 @@ test('a missing key cannot start a session', async () => {
 
     assert.equal(app.currentView, 'main');
     assert.equal(app.sessionActive, false);
-    assert.deepEqual(calls, [['analytics:record', 'session_start_blocked', 'missing_key'], ['error', 'Access token is required.']]);
+    assert.deepEqual(calls, [
+        ['analytics:record', 'session_start_blocked', 'missing_key'],
+        ['error', 'Access token is required.'],
+    ]);
 });
 
 test('a required update prevents initialization and capture', async () => {
@@ -150,5 +185,8 @@ test('an active session reports only one completed answer', async () => {
     await app.handleStart('test-access-token');
     app.recordCompletedAnswer();
     app.recordCompletedAnswer();
-    assert.deepEqual(calls.filter(call => call[1] === 'session_answered'), [['analytics:record', 'session_answered', 'completed']]);
+    assert.deepEqual(
+        calls.filter(call => call[1] === 'session_answered'),
+        [['analytics:record', 'session_answered', 'completed']]
+    );
 });

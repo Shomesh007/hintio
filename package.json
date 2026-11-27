@@ -1,7 +1,7 @@
 {
     "name": "hintio",
     "productName": "Hintio",
-    "version": "1.0.12",
+    "version": "1.0.13",
     "hintioUpdateChannel": "preview",
     "description": "Hintio",
     "main": "src/index.js",

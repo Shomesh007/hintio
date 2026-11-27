@@ -841,7 +841,15 @@ export class AssistantView extends LitElement {
             this.isAnalyzing = true;
             this._responseCountWhenStarted = this.responses.length;
             this.dispatchEvent(new CustomEvent('screen-analysis-triggered', { bubbles: true, composed: true }));
-            window.captureManualScreenshot();
+            // The capture resolves once the answer has streamed in or failed. Ending the
+            // spinner here too means a failed capture or an empty answer can't lock the button.
+            try {
+                await window.captureManualScreenshot();
+            } catch (error) {
+                console.error('Screen analysis failed:', error);
+            } finally {
+                this.isAnalyzing = false;
+            }
         }
     }
 
@@ -1119,29 +1127,31 @@ export class AssistantView extends LitElement {
             <div class="response-container" id="responseContainer"></div>
 
             ${this._renderErrorPanel()}
-            ${hasMultipleResponses
-                ? html`
-                      <div class="response-nav">
-                          <button
-                              class="nav-btn"
-                              @click=${this.navigateToPreviousResponse}
-                              ?disabled=${this.currentResponseIndex <= 0}
-                              title="Previous response"
-                          >
-                              <hintio-icon class="icon" name="chevron_left"></hintio-icon>
-                          </button>
-                          <span class="response-counter">${this.currentResponseIndex + 1} of ${this.responses.length}</span>
-                          <button
-                              class="nav-btn"
-                              @click=${this.navigateToNextResponse}
-                              ?disabled=${this.currentResponseIndex >= this.responses.length - 1}
-                              title="Next response"
-                          >
-                              <hintio-icon class="icon" name="chevron_right"></hintio-icon>
-                          </button>
-                      </div>
-                  `
-                : ''}
+            ${
+                hasMultipleResponses
+                    ? html`
+                          <div class="response-nav">
+                              <button
+                                  class="nav-btn"
+                                  @click=${this.navigateToPreviousResponse}
+                                  ?disabled=${this.currentResponseIndex <= 0}
+                                  title="Previous response"
+                              >
+                                  <hintio-icon class="icon" name="chevron_left"></hintio-icon>
+                              </button>
+                              <span class="response-counter">${this.currentResponseIndex + 1} of ${this.responses.length}</span>
+                              <button
+                                  class="nav-btn"
+                                  @click=${this.navigateToNextResponse}
+                                  ?disabled=${this.currentResponseIndex >= this.responses.length - 1}
+                                  title="Next response"
+                              >
+                                  <hintio-icon class="icon" name="chevron_right"></hintio-icon>
+                              </button>
+                          </div>
+                      `
+                    : ''
+            }
 
             <div class="input-bar ${this._inputExpanded ? 'expanded' : ''}">
                 <div class="input-bar-inner">
