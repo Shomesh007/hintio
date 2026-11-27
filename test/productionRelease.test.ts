@@ -33,7 +33,7 @@ test('stable installer download opens 1.0.13 and the SmartScreen install guide',
     });
     download();
     assert.equal(opened.length, 1);
-    assert.match(String(opened[0][0]), /\/v1\.0\.13-preview\.1\/Hintio-1\.0\.13\.Setup\.exe$/);
+    assert.match(String(opened[0][0]), /\/download\/v1\.0\.13\/Hintio-1\.0\.13\.Setup\.exe$/);
     assert.deepEqual(JSON.parse(JSON.stringify(guides)), [
         { version: '1.0.13', windowsDownloadUrl: productionRelease.windowsDownloadUrl, checksumUrl: productionRelease.checksumUrl },
     ]);
@@ -184,7 +184,7 @@ for (const isNew of [true, false])
     });
 test('production and preserved Store candidate remain separate with trials enabled', () => {
     assert.equal(productionRelease.version, '1.0.13');
-    assert.match(productionRelease.checksumUrl, /\/v1\.0\.13-preview\.1\/SHA256SUMS\.txt$/);
+    assert.match(productionRelease.checksumUrl, /\/download\/v1\.0\.13\/SHA256SUMS\.txt$/);
     assert.equal(productionRelease.storeCandidateVersion, '1.0.6');
     assert.equal(productionRelease.freeTrialsEnabled, true);
 });
