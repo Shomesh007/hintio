@@ -10,6 +10,8 @@ export type ActorRow = {
     installed_at: string | null;
     onboarded: boolean;
     has_account: boolean;
+    internal: boolean;
+    marked_internal: boolean;
     linked: number;
     events: number;
     page_views: number;
@@ -43,6 +45,8 @@ export type Timeline = {
         last_seen: string;
         version: string | null;
         distribution: string | null;
+        internal: boolean;
+        marked_internal: boolean;
     }>;
     events: TimelineEvent[];
     truncated: boolean;

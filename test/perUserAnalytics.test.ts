@@ -57,11 +57,11 @@ test('admin queries allow only known views, ranges, versions and channels', () =
     const actor = randomUUID();
     assert.deepEqual(parseAdminQuery('GET', url('days=7')), {
         rpc: 'product_analytics_summary',
-        args: { p_days: 7, p_version: null, p_channel: 'all' },
+        args: { p_days: 7, p_version: null, p_channel: 'all', p_audience: 'real' },
     });
     assert.deepEqual(parseAdminQuery('GET', url('view=actors&days=90&version=1.0.13&channel=store')), {
         rpc: 'product_analytics_actors',
-        args: { p_days: 90, p_version: '1.0.13', p_channel: 'store', p_limit: 200 },
+        args: { p_days: 90, p_version: '1.0.13', p_channel: 'store', p_audience: 'real', p_limit: 200 },
     });
     assert.deepEqual(parseAdminQuery('GET', url(`view=timeline&actor=${actor}`)), { rpc: 'product_analytics_timeline', args: { p_actor_id: actor } });
     assert.deepEqual(parseAdminQuery('DELETE', url(`view=actor&actor=${actor}`)), { rpc: 'product_analytics_forget', args: { p_actor_id: actor } });
@@ -134,4 +134,26 @@ test('the people view describes timelines in order and summarises key actions', 
     } as ActorRow;
     assert.deepEqual(keyActions(row), ['set up', '3 sessions', '1 answer', '1 blocked start']);
     assert.equal(actorName(row), 'Install 3f2a9c1d');
+});
+
+test('admin queries filter by audience and mark only valid IDs as test traffic', () => {
+    const url = (query: string) => new URL(`https://example.supabase.co/functions/v1/analytics-admin?${query}`);
+    const actor = randomUUID();
+    assert.deepEqual(parseAdminQuery('GET', url('view=actors&days=7&audience=internal')), {
+        rpc: 'product_analytics_actors',
+        args: { p_days: 7, p_version: null, p_channel: 'all', p_audience: 'internal', p_limit: 200 },
+    });
+    assert.equal(parseAdminQuery('GET', url('days=7&audience=everyone')), null);
+    assert.deepEqual(parseAdminQuery('POST', url(`view=internal&actor=${actor}&internal=true`)), {
+        rpc: 'product_analytics_mark_internal',
+        args: { p_actor_id: actor, p_internal: true, p_reason: 'dashboard' },
+    });
+    assert.deepEqual(parseAdminQuery('POST', url(`view=internal&actor=${actor}&internal=false&reason=admin_browser`)), {
+        rpc: 'product_analytics_mark_internal',
+        args: { p_actor_id: actor, p_internal: false, p_reason: 'admin_browser' },
+    });
+    assert.equal(parseAdminQuery('POST', url(`view=internal&actor=${actor}&internal=yes`)), null);
+    assert.equal(parseAdminQuery('POST', url(`view=internal&actor=${actor}&internal=true&reason=note`)), null);
+    assert.equal(parseAdminQuery('POST', url('view=internal&actor=person@example.com&internal=true')), null);
+    assert.equal(parseAdminQuery('GET', url(`view=internal&actor=${actor}&internal=true`)), null);
 });

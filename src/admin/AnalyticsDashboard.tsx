@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { analyticsCatalog } from '../../supabase/functions/_shared/analyticsContract';
-import { analyticsFunctionsUrl } from '../lib/productAnalytics';
+import { analyticsFunctionsUrl, getAnalyticsBrowserId } from '../lib/productAnalytics';
 import { supabase } from '../lib/supabase';
 import {
     actorName,
@@ -18,7 +18,8 @@ import './analyticsDashboard.css';
 
 type Range = 7 | 30 | 90;
 type Channel = 'all' | 'web' | 'installer' | 'store';
-type Filters = { range: Range; version: string; channel: Channel };
+type Audience = 'real' | 'internal' | 'all';
+type Filters = { range: Range; version: string; channel: Channel; audience: Audience };
 type Tab = 'overview' | 'people';
 type Report = {
     page_views: number;
@@ -29,6 +30,7 @@ type Report = {
     linked_browsers: number;
     linked_installs: number;
     accounts: number;
+    internal_ids: number;
     versions: string[];
     onboarding: Record<
         'welcome' | 'context' | 'review' | 'completed' | 'first_session' | 'first_answer' | 'context_skipped' | 'context_provided',
@@ -44,6 +46,8 @@ const percent = new Intl.NumberFormat(undefined, { style: 'percent', maximumFrac
 const dayLabel = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' });
 const dateTime = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
 const time = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
+const audienceLabels: Record<Audience, string> = { real: 'Real users', internal: 'Test & team', all: 'Everyone' };
+const adminBrowserKey = 'hintio-analytics-admin-browser';
 const channelLabels: Record<Channel, string> = { all: 'All channels', web: 'Website', installer: 'Desktop installer', store: 'Microsoft Store' };
 
 function Breakdown({
@@ -177,7 +181,7 @@ function OnboardingReport({ report }: { report: Report }) {
     );
 }
 
-function ReportView({ report }: { report: Report }) {
+function ReportView({ report, audience }: { report: Report; audience: Audience }) {
     return (
         <>
             <dl className="analytics-kpis">
@@ -201,6 +205,10 @@ function ReportView({ report }: { report: Report }) {
             <p className="analytics-note">
                 Counts cover builds and browsers reporting analytics. An active install has at least one successful session start in the selected
                 range. New installs count first launches on desktop builds that report launches. A version filter shows desktop activity only.
+                {audience === 'real' && report.internal_ids > 0 && (
+                    <> Excludes {number.format(report.internal_ids)} test browsers and installs active in this range.</>
+                )}
+                {audience === 'internal' && <> Shows only test browsers and installs.</>}
             </p>
             <OnboardingReport report={report} />
             <div className="analytics-grid">
@@ -314,7 +322,7 @@ async function adminRequest<T>(
     accessToken: string,
     query: Record<string, string>,
     signal?: AbortSignal,
-    method: 'GET' | 'DELETE' = 'GET'
+    method: 'GET' | 'POST' | 'DELETE' = 'GET'
 ): Promise<T> {
     const response = await fetch(`${analyticsFunctionsUrl}/analytics-admin?${new URLSearchParams(query)}`, {
         method,
@@ -331,7 +339,7 @@ async function adminRequest<T>(
 }
 
 function filterQuery(filters: Filters, view: 'summary' | 'actors') {
-    const query: Record<string, string> = { view, days: String(filters.range), channel: filters.channel };
+    const query: Record<string, string> = { view, days: String(filters.range), channel: filters.channel, audience: filters.audience };
     if (filters.version) query.version = filters.version;
     return query;
 }
@@ -374,6 +382,16 @@ function FilterBar({ filters, versions, onChange }: { filters: Filters; versions
                     {(Object.keys(channelLabels) as Channel[]).map(channel => (
                         <option key={channel} value={channel}>
                             {channelLabels[channel]}
+                        </option>
+                    ))}
+                </select>
+            </label>
+            <label>
+                Audience
+                <select value={filters.audience} onChange={event => onChange({ ...filters, audience: event.target.value as Audience })}>
+                    {(Object.keys(audienceLabels) as Audience[]).map(audience => (
+                        <option key={audience} value={audience}>
+                            {audienceLabels[audience]}
                         </option>
                     ))}
                 </select>
@@ -423,6 +441,14 @@ function PeopleList({ list, selected, onSelect }: { list: ActorList; selected: s
                                     <button className="analytics-link" onClick={() => onSelect(actor.actor_id)}>
                                         {actorName(actor)}
                                     </button>
+                                    {actor.internal && (
+                                        <span
+                                            className="analytics-badge"
+                                            title={actor.marked_internal ? 'Marked as test traffic' : 'Linked to a test browser or install'}
+                                        >
+                                            Test
+                                        </span>
+                                    )}
                                 </th>
                                 <td>{channelName(actor)}</td>
                                 <td>{actor.version ?? '—'}</td>
@@ -443,9 +469,21 @@ function PeopleList({ list, selected, onSelect }: { list: ActorList; selected: s
     );
 }
 
-function TimelineView({ timeline, onClose, onForget }: { timeline: Timeline; onClose: () => void; onForget: () => void }) {
+function TimelineView({
+    timeline,
+    onClose,
+    onForget,
+    onMark,
+}: {
+    timeline: Timeline;
+    onClose: () => void;
+    onForget: () => void;
+    onMark: (internal: boolean) => void;
+}) {
     const names = new Map(timeline.actors.map(actor => [actor.actor_id, actorName(actor)]));
     const multiple = timeline.actors.length > 1;
+    const self = timeline.actors.find(actor => actor.actor_id === timeline.actor_id);
+    const markedBy = timeline.actors.filter(actor => actor.marked_internal && actor.actor_id !== timeline.actor_id);
     return (
         <section className="analytics-panel analytics-timeline" aria-labelledby="analytics-timeline-heading">
             <div className="analytics-timeline-header">
@@ -460,6 +498,24 @@ function TimelineView({ timeline, onClose, onForget }: { timeline: Timeline; onC
                         .join(', ')}
                 </p>
             )}
+            <div className="analytics-test-mark">
+                {self?.marked_internal ? (
+                    <>
+                        <p>Marked as test traffic. It is left out of real-user reports.</p>
+                        <button onClick={() => onMark(false)}>Mark as a real user</button>
+                    </>
+                ) : self?.internal ? (
+                    <p>
+                        Counted as test traffic because it is linked to {markedBy.map(actor => actorName(actor)).join(', ') || 'a test ID'}. Open that
+                        ID to change it.
+                    </p>
+                ) : (
+                    <>
+                        <p>Counted as a real user. Mark your own test browsers and installs to leave them out of real-user reports.</p>
+                        <button onClick={() => onMark(true)}>Mark as test traffic</button>
+                    </>
+                )}
+            </div>
             {timeline.truncated && <p className="analytics-note">Showing the latest 1,000 events.</p>}
             {groupByDay(timeline.events).map(day => (
                 <div key={day.day} className="analytics-day">
@@ -486,7 +542,7 @@ function TimelineView({ timeline, onClose, onForget }: { timeline: Timeline; onC
     );
 }
 
-function PeopleView({ accessToken, filters }: { accessToken: string; filters: Filters }) {
+function PeopleView({ accessToken, filters, onChanged }: { accessToken: string; filters: Filters; onChanged: () => void }) {
     const [selected, setSelected] = useState<string | null>(null);
     const [notice, setNotice] = useState('');
     const list = useAdminData<ActorList>(accessToken, filterQuery(filters, 'actors'));
@@ -504,6 +560,18 @@ function PeopleView({ accessToken, filters }: { accessToken: string; filters: Fi
         }
     }
 
+    async function mark(actorId: string, internal: boolean) {
+        try {
+            await adminRequest(accessToken, { view: 'internal', actor: actorId, internal: String(internal) }, undefined, 'POST');
+            setNotice(internal ? 'Marked as test traffic.' : 'Marked as a real user.');
+            list.reload();
+            timeline.reload();
+            onChanged();
+        } catch (failure) {
+            setNotice(failure instanceof Error ? failure.message : 'The change could not be saved.');
+        }
+    }
+
     if (list.error) return <p role="alert">{list.error}</p>;
     if (!list.data) return <p role="status">Loading browsers and installs…</p>;
     return (
@@ -514,7 +582,12 @@ function PeopleView({ accessToken, filters }: { accessToken: string; filters: Fi
                 (timeline.error ? (
                     <p role="alert">{timeline.error}</p>
                 ) : timeline.data ? (
-                    <TimelineView timeline={timeline.data} onClose={() => setSelected(null)} onForget={() => void forget(selected)} />
+                    <TimelineView
+                        timeline={timeline.data}
+                        onClose={() => setSelected(null)}
+                        onForget={() => void forget(selected)}
+                        onMark={internal => void mark(selected, internal)}
+                    />
                 ) : (
                     <p role="status">Loading timeline…</p>
                 ))}
@@ -524,7 +597,7 @@ function PeopleView({ accessToken, filters }: { accessToken: string; filters: Fi
 
 export default function AnalyticsDashboard() {
     const [session, setSession] = useState<Session | null | undefined>(undefined);
-    const [filters, setFilters] = useState<Filters>({ range: 7, version: '', channel: 'all' });
+    const [filters, setFilters] = useState<Filters>({ range: 7, version: '', channel: 'all', audience: 'real' });
     const [tab, setTab] = useState<Tab>('overview');
     const [error, setError] = useState('');
     const [signingIn, setSigningIn] = useState(false);
@@ -535,6 +608,23 @@ export default function AnalyticsDashboard() {
     useEffect(() => {
         if (summary.data?.versions) setVersions(summary.data.versions);
     }, [summary.data]);
+
+    // The admin's own browser is test traffic. Mark it once per browser ID after sign-in.
+    useEffect(() => {
+        const browserId = getAnalyticsBrowserId();
+        if (!accessToken || !browserId) return;
+        try {
+            if (localStorage.getItem(adminBrowserKey) === browserId) return;
+        } catch {
+            return;
+        }
+        adminRequest(accessToken, { view: 'internal', actor: browserId, internal: 'true', reason: 'admin_browser' }, undefined, 'POST')
+            .then(() => {
+                localStorage.setItem(adminBrowserKey, browserId);
+                summary.reload();
+            })
+            .catch(() => {});
+    }, [accessToken]);
 
     useEffect(() => {
         document.title = 'Hintio | Product analytics';
@@ -604,11 +694,11 @@ export default function AnalyticsDashboard() {
                     </div>
                     <FilterBar filters={filters} versions={versions} onChange={setFilters} />
                     {tab === 'people' ? (
-                        <PeopleView accessToken={accessToken} filters={filters} />
+                        <PeopleView accessToken={accessToken} filters={filters} onChanged={summary.reload} />
                     ) : summary.error ? (
                         <p role="alert">{summary.error}</p>
                     ) : summary.data ? (
-                        <ReportView report={summary.data} />
+                        <ReportView report={summary.data} audience={filters.audience} />
                     ) : (
                         <p role="status">Loading analytics…</p>
                     )}

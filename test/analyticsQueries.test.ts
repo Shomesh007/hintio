@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { PGlite } from '@electric-sql/pglite';
 
-const migrations = ['20261123115453_product_analytics.sql', '20261127120000_per_user_analytics.sql'];
+const migrations = ['20261123115453_product_analytics.sql', '20261127120000_per_user_analytics.sql', '20261127150000_internal_test_actors.sql'];
 
 // PGlite has no pg_cron, so the schedule lines are skipped. Everything else runs as deployed.
 async function database() {
@@ -195,6 +195,70 @@ test('only the service role can run the analytics functions', async () => {
         await assert.rejects(db.query('select public.product_analytics_actors(7)'), /permission denied/);
         await assert.rejects(db.query(`select public.product_analytics_timeline('${browser}')`), /permission denied/);
         await assert.rejects(db.query(`select public.product_analytics_forget('${browser}')`), /permission denied/);
+        await db.exec('reset role');
+    }
+});
+
+test('marking one ID as internal moves it and every linked ID out of real-user reports', async () => {
+    const db = await database();
+    await insert(db, journey);
+    assert.equal(await call<boolean>(db, 'public.product_analytics_mark_internal($1, $2, $3)', [browser, true, 'admin_browser']), true);
+    await call(db, 'public.product_analytics_mark_internal($1, $2, $3)', [browser, true, 'dashboard']);
+
+    const summary = (audience: string) =>
+        call<Record<string, number>>(db, 'public.product_analytics_summary($1, $2, $3, $4)', [7, null, 'all', audience]);
+    const real = await summary('real');
+    assert.equal(real.sessions, 1, 'only the store install is a real user');
+    assert.equal(real.installs, 1);
+    assert.equal(real.browsers, 0);
+    assert.equal(real.accounts, 0);
+    assert.equal(real.internal_ids, 3);
+    assert.equal((await summary('internal')).sessions, 1);
+    assert.equal((await summary('all')).sessions, 2);
+    assert.equal((await call<Record<string, number>>(db, 'public.product_analytics_summary($1)', [7])).sessions, 1, 'real users by default');
+
+    type Actors = { total: number; actors: Array<{ actor_id: string; internal: boolean; marked_internal: boolean }> };
+    const actors = (audience: string) => call<Actors>(db, 'public.product_analytics_actors($1, $2, $3, $4, $5)', [7, null, 'all', 200, audience]);
+    assert.deepEqual(
+        (await actors('real')).actors.map(actor => [actor.actor_id, actor.internal]),
+        [[storeInstall, false]]
+    );
+    const internal = await actors('internal');
+    assert.deepEqual(new Set(internal.actors.map(actor => actor.actor_id)), new Set([browser, otherBrowser, install]));
+    assert.deepEqual(
+        internal.actors.filter(actor => actor.marked_internal).map(actor => actor.actor_id),
+        [browser],
+        'linked IDs are internal without being marked themselves'
+    );
+    assert.equal((await actors('everyone')).total, 0, 'unknown audiences return nothing');
+
+    const timeline = await call<{ actors: Array<{ actor_id: string; internal: boolean; marked_internal: boolean }> }>(
+        db,
+        'public.product_analytics_timeline($1)',
+        [install]
+    );
+    assert.ok(timeline.actors.every(actor => actor.internal));
+    assert.deepEqual(
+        timeline.actors.filter(actor => actor.marked_internal).map(actor => actor.actor_id),
+        [browser]
+    );
+
+    await assert.rejects(call(db, 'public.product_analytics_mark_internal($1, $2, $3)', [storeInstall, true, 'free text']), /check/);
+    assert.equal(await call<boolean>(db, 'public.product_analytics_mark_internal($1, $2, $3)', [browser, false, 'dashboard']), false);
+    assert.equal((await summary('real')).sessions, 2);
+
+    await call(db, 'public.product_analytics_mark_internal($1, $2, $3)', [install, true, 'dashboard']);
+    await call(db, 'public.product_analytics_forget($1)', [install]);
+    const { rows } = await db.query('select * from hintio_analytics.internal_actors');
+    assert.equal(rows.length, 0, 'forgetting an ID also removes its mark');
+});
+
+test('only the service role can mark IDs as internal or read the marks', async () => {
+    const db = await database();
+    for (const role of ['anon', 'authenticated']) {
+        await db.exec(`set role ${role}`);
+        await assert.rejects(db.query(`select public.product_analytics_mark_internal('${browser}', true, 'dashboard')`), /permission denied/);
+        await assert.rejects(db.query('select * from hintio_analytics.internal_actors'), /permission denied/);
         await db.exec('reset role');
     }
 });

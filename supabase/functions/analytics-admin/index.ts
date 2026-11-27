@@ -14,11 +14,11 @@ Deno.serve(async request => {
     if (origin) {
         if (!origins.has(origin)) return reply(403);
         headers.set('Access-Control-Allow-Origin', origin);
-        headers.set('Access-Control-Allow-Methods', 'GET, DELETE, OPTIONS');
+        headers.set('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
         headers.set('Access-Control-Allow-Headers', 'authorization');
     }
     if (request.method === 'OPTIONS') return reply(204);
-    if (request.method !== 'GET' && request.method !== 'DELETE') return reply(405);
+    if (!['GET', 'POST', 'DELETE'].includes(request.method)) return reply(405);
 
     const token = request.headers.get('authorization')?.match(/^Bearer (\S+)$/i)?.[1];
     if (!token) return reply(401);
@@ -35,5 +35,10 @@ Deno.serve(async request => {
     if (error) return reply(503);
 
     headers.set('Content-Type', 'application/json');
-    return new Response(JSON.stringify(query.rpc === 'product_analytics_forget' ? { removed: data } : data), { status: 200, headers });
+    return new Response(
+        JSON.stringify(
+            query.rpc === 'product_analytics_forget' ? { removed: data } : query.rpc === 'product_analytics_mark_internal' ? { internal: data } : data
+        ),
+        { status: 200, headers }
+    );
 });

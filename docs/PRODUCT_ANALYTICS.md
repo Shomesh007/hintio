@@ -71,6 +71,16 @@ A download click can't be tied to the installer that runs, so linking happens la
 
 A timeline follows links transitively, up to 50 IDs, so a browser, an install, a second browser and an account all appear together. The dashboard never shows link codes.
 
+## Test traffic
+
+Reports show **Real users** by default. The Audience filter switches to **Test & team** or **Everyone**.
+
+- In a People timeline, **Mark as test traffic** stores the ID in `hintio_analytics.internal_actors`. **Mark as a real user** removes it.
+- After sign-in, the dashboard marks the admin's own browser automatically, if that browser has an analytics ID.
+- Any ID linked to a marked ID, through a desktop link code or a shared account, also counts as test traffic. So opening hintio.tech from a test install in a marked browser marks the install too.
+- A desktop install's ID is in `%APPDATA%\hintio-config\usage-analytics-id`. QA profiles keep their own copy under their profile folder.
+- Overview totals for real users note how many test IDs were left out. Deleting an ID's analytics also removes its mark.
+
 ## What is stored and for how long
 
 | Data | Where | Retention |
