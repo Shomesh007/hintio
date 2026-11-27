@@ -34,7 +34,9 @@ import { completeBillingReturn } from '../lib/billingAccount';
 import {
     analyticsEnabled,
     analyticsPrivacySignal,
+    captureDesktopLink,
     getAnalyticsChoice,
+    linkAnalyticsAccount,
     saveAnalyticsChoice,
     trackWebEvent,
     type AnalyticsChoice,
@@ -1088,8 +1090,11 @@ function Info({ type }: { type: 'privacy' | 'terms' }) {
                     <p>
                         Hintio measures product usage when analytics is enabled. It counts page visits and selected website actions, plus setup progress,
                         session milestones, duration ranges, audio modes, and feature usage on supported desktop builds. It records whether
-                        onboarding context was skipped or provided. Random browser and install IDs help count repeat activity separately. Analytics
-                        excludes account details and session content. You can turn it off under Analytics preferences in the website footer or
+                        onboarding context was skipped or provided. Random browser and install IDs let us see the steps each browser or install took,
+                        such as visiting the download page and then completing setup. When you open hintio.tech from the desktop app, a one-time
+                        random link code connects that visit to the install. When you sign in on the website, we store a keyed hash of your account
+                        ID, not your email, so visits from different browsers can be grouped. Analytics excludes email addresses, IP addresses,
+                        access keys, and session content such as screenshots, audio, and transcripts. You can turn it off under Analytics preferences in the website footer or
                         under Settings → Privacy &amp; Data in the desktop app. Hintio keeps analytics events for up to 90 days.
                     </p>
                     <h2>Questions or a data request?</h2>
@@ -1161,6 +1166,13 @@ export default function MarketingSite(props: Props) {
             trackWebEvent('page_viewed', page);
         }
     }, [page, analyticsChoice, canOfferAnalytics]);
+
+    useEffect(() => {
+        captureDesktopLink();
+        if (!supabase || !canOfferAnalytics || analyticsChoice !== 'allow') return;
+        const { data } = supabase.auth.onAuthStateChange((_event, session) => linkAnalyticsAccount(session));
+        return () => data.subscription.unsubscribe();
+    }, [analyticsChoice, canOfferAnalytics]);
 
     const chooseAnalytics = (choice: AnalyticsChoice) => {
         saveAnalyticsChoice(choice);
